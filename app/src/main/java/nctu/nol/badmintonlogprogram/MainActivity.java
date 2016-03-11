@@ -197,7 +197,7 @@ public class MainActivity extends Activity {
 	    }
 		
 		Log.d(TAG, "Bind BT Service");
-		//±Ò°ÊBT service
+		//å•Ÿå‹•BT service
         Intent bluetoothSerialPortServiceIntent = new Intent(MainActivity.this, BTCommunicationService.class);
         bindService(bluetoothSerialPortServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
@@ -327,15 +327,15 @@ public class MainActivity extends Activity {
 		            		// AudioRecord Ready
 		    				sw.startRecording(LogFileWriter.TRAINING_TYPE);	
 		    				
-		    				//µ¥«İ1sec«á¶}©l
+		    				//ç­‰å¾…1secå¾Œé–‹å§‹
 							sleep(1000);
 							
-							//³]©w¶}©l®É¶¡
+							//è¨­å®šé–‹å§‹æ™‚é–“
 					        SetMeasureStartTime();
 					      
-					        //³]©w©w®É­n°õ¦æªº¤èªk
+					        //è¨­å®šå®šæ™‚è¦åŸ·è¡Œçš„æ–¹æ³•
 							timerHandler.removeCallbacks(updateTimer);
-							timerHandler.postDelayed(updateTimer, 1000);//³]©wDelayªº®É¶¡
+							timerHandler.postDelayed(updateTimer, 1000);//è¨­å®šDelayçš„æ™‚é–“
 							
 							//Service Start
 							SystemParameters.isServiceRunning.set(true);
@@ -361,7 +361,7 @@ public class MainActivity extends Activity {
 				timerHandler.removeCallbacks(updateTimer);
 				
 				final ProgressDialog dialog = ProgressDialog.show(MainActivity.this,
-	                    "¼gÀÉ¤¤", "³B²zÀÉ®×¤¤¡A½Ğµy«á",true);
+	                    "å¯«æª”ä¸­", "è™•ç†æª”æ¡ˆä¸­ï¼Œè«‹ç¨å¾Œ",true);
 				
 				new Thread(){
 					public void run(){
@@ -410,15 +410,15 @@ public class MainActivity extends Activity {
 			            		// AudioRecord Ready
 			    				sw.startRecording(LogFileWriter.TESTING_TYPE);	
 			    				
-			    				//µ¥«İ1sec«á¶}©l
+			    				//ç­‰å¾…1secå¾Œé–‹å§‹
 								sleep(1000);
 								
-								//³]©w¶}©l®É¶¡
+								//è¨­å®šé–‹å§‹æ™‚é–“
 						        SetMeasureStartTime();
 						      
-						        //³]©w©w®É­n°õ¦æªº¤èªk
+						        //è¨­å®šå®šæ™‚è¦åŸ·è¡Œçš„æ–¹æ³•
 								timerHandler.removeCallbacks(updateTimer);
-								timerHandler.postDelayed(updateTimer, 1000);//³]©wDelayªº®É¶¡
+								timerHandler.postDelayed(updateTimer, 1000);//è¨­å®šDelayçš„æ™‚é–“
 								
 								//Service Start
 								SystemParameters.isServiceRunning.set(true);
@@ -444,7 +444,7 @@ public class MainActivity extends Activity {
 					timerHandler.removeCallbacks(updateTimer);
 					
 					final ProgressDialog dialog = ProgressDialog.show(MainActivity.this,
-		                    "¼gÀÉ¤¤", "³B²zÀÉ®×¤¤¡A½Ğµy«á",true);
+		                    "å¯«æª”ä¸­", "è™•ç†æª”æ¡ˆä¸­ï¼Œè«‹ç¨å¾Œ",true);
 					
 					new Thread(){
 						public void run(){

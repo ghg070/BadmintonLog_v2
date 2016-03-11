@@ -142,7 +142,7 @@ public class LogFileWriter {
 		String dirPath = CheckDirectoryPath(utype);
 		
 		if(isExternalStorageWritable()){
-			//²Î¤@folderªº¦W¦r
+			//çµ±ä¸€folderçš„åå­—
 			curFile = new File(dirPath, fileName);
 			try {
 				outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(curFile)));

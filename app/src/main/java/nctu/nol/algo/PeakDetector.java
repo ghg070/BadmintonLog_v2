@@ -26,7 +26,7 @@ public class PeakDetector {
 			  cur = vals[index], 
 			  next = vals[index+1];
 		
-		//½T»{¬O§_²Å¦X³W«h ( ®ÇÃä¨âÂI¤ñ¦Û¤v¤p, ¥B¤j©óThreshold )
+		//ç¢ºèªæ˜¯å¦ç¬¦åˆè¦å‰‡ ( æ—é‚Šå…©é»æ¯”è‡ªå·±å°, ä¸”å¤§æ–¼Threshold )
 		if( cur > threshold && cur > prev && cur > next)
 			return true;
 		else
@@ -37,7 +37,7 @@ public class PeakDetector {
 	private int CheckNeighborPeak(final float[] attrs, final float[] vals, final int curPeakIndex ){
 		int newPeak = -1;
 		float maxVal = vals[curPeakIndex];
-		//¦V¥ª§ä
+		//å‘å·¦æ‰¾
 		for(int i = curPeakIndex-1; attrs[curPeakIndex]-attrs[i] <= PEAKWINDOWSIZE_IN_MILLISECOND && i > 0; i--){
 			if( IsPeak(vals, i, maxVal) ){
 				newPeak = i;
@@ -45,7 +45,7 @@ public class PeakDetector {
 			}
 		}
 		
-		//¦V¥k§ä
+		//å‘å³æ‰¾
 		for(int i = curPeakIndex+1; attrs[i]-attrs[curPeakIndex] <= PEAKWINDOWSIZE_IN_MILLISECOND && i < vals.length-1; i++){
 			if( IsPeak(vals, i, maxVal) ){
 				newPeak = i;
@@ -72,21 +72,21 @@ public class PeakDetector {
 		List<Integer> peakIndex = new ArrayList<Integer>();
 		
 		while(endPos < attrs.length){
-			//«ü©w¦¹¦¸Windowªº¥kºİ¦ì¸m
+			//æŒ‡å®šæ­¤æ¬¡Windowçš„å³ç«¯ä½ç½®
 			while( endPos < attrs.length && attrs[endPos]-attrs[curPos] <= WINDOWSIZE_IN_MILLISECOND )
 				endPos++;
 			
 			float maxVal = Float.NEGATIVE_INFINITY;
 			int curPeakIndex = -1;
 			
-			// First Stage: §ä®ÇÃä¨âÂI¤ñ¦Û¤v¤p, ¥B¤j©óThreshold ©M maxVal ªºÂI
+			// First Stage: æ‰¾æ—é‚Šå…©é»æ¯”è‡ªå·±å°, ä¸”å¤§æ–¼Threshold å’Œ maxVal çš„é»
 			for(int i = curPos; i < endPos; i++){
 				float t = (Threshold > maxVal)? Threshold : maxVal;
 				
-				//ÀË¬d¬O§_²Å¦Xªi®p³W«h
+				//æª¢æŸ¥æ˜¯å¦ç¬¦åˆæ³¢å³°è¦å‰‡
 				if( IsPeak(vals, i, t) ){
 
-					//½T»{»P¤W¤@­Óªi®p¬Û¹j¤@­ÓPeak Window¥H¤W
+					//ç¢ºèªèˆ‡ä¸Šä¸€å€‹æ³¢å³°ç›¸éš”ä¸€å€‹Peak Windowä»¥ä¸Š
 					if(peakIndex.size() != 0){
 						int prevPeakIndex = peakIndex.get(peakIndex.size()-1);
 						if(Math.abs(attrs[i]-attrs[prevPeakIndex]) <= PEAKWINDOWSIZE_IN_MILLISECOND )
@@ -98,7 +98,7 @@ public class PeakDetector {
 					
 			}
 			
-			//Second Stage: ¸ÓWINDOW¤º¦³§ä¨ìªi®p, ½T»{peak window¤º¬O§_ÁÙ¦³¨ä¥L§ó°ªªºªi®p(¦³¥i¯à¸óWindowªº±¡§Î)
+			//Second Stage: è©²WINDOWå…§æœ‰æ‰¾åˆ°æ³¢å³°, ç¢ºèªpeak windowå…§æ˜¯å¦é‚„æœ‰å…¶ä»–æ›´é«˜çš„æ³¢å³°(æœ‰å¯èƒ½è·¨Windowçš„æƒ…å½¢)
 			if(curPeakIndex != -1){
 				int temp = CheckNeighborPeak(attrs,vals,curPeakIndex);
 				if(temp != -1)

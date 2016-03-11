@@ -169,11 +169,11 @@ public class FrequencyBandModel {
 				}
 			}
 			
-			if(maxIndex == -1) //�䤣�����y�n�����D�n�W�a�F
+			if(maxIndex == -1) //找不到擊球聲音的主要頻帶了
 				break;
 			else{
 				result.add(maxIndex);
-				//�N�̤j�Ȫ����W�a�k�s, �U�@���j�M�̤j�Ȯɥi�H���Q���U�@���W�a
+				//將最大值附近的頻帶歸零, 下一次搜尋最大值時可以順利找到下一個頻帶
 				for(int j = maxIndex-PEAKFREQ_DELETENEIGHBOR_NUM; j <= maxIndex+PEAKFREQ_DELETENEIGHBOR_NUM; j++){
 					if(j < 0 || j >= s.size()) 
 						continue;
