@@ -1,0 +1,143 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="nctu.nol.badmintonlogprogram.MainActivity" >
+
+    <!-- Headset Connect Check -->
+	<LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+        
+        <TextView 
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text = "Headset: "
+	    	android:textSize="20sp">
+	    </TextView>
+	    
+	    <TextView 
+	        android:id="@+id/tv_headset"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text = "disconnected"
+	    	android:textSize="14sp" >
+		</TextView>
+	</LinearLayout>
+    
+	<!-- Bonded Device Selection (Spinner) -->
+	<LinearLayout
+    	android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10sp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical" >
+        
+        <TextView 
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text = "Paired Device: "
+	    	android:textSize="20sp">
+	    </TextView>
+	    
+	    <Spinner
+	        android:id="@+id/sp_bondeddevice"
+    		android:layout_width="match_parent"
+        	android:layout_height="wrap_content"
+        	android:textSize = "20sp" >
+	    </Spinner>
+	</LinearLayout>
+	
+
+	<!-- Samplling Rate Selection (Spinner) -->
+    <!--  <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10sp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical" >
+        
+        <TextView 
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text = "Sampling Rate: "
+	    	android:textSize="20sp">
+	    </TextView>
+	    
+	    <Spinner
+	        android:id="@+id/sp_samplingrate"
+    		android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"
+        	android:textSize = "20sp" >
+	    </Spinner>
+	</LinearLayout>-->
+	
+	<!-- Duration -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10sp"
+        android:orientation="horizontal" >
+        
+        <TextView 
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text = "Duration: "
+	    	android:textSize="20sp">
+	    </TextView>
+	    
+	    <TextView 
+	        android:id="@+id/tv_duration"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text = "0"
+	    	android:textSize="20sp" >
+		</TextView>
+	</LinearLayout>
+	
+
+    
+     <!-- Button Control  -->
+     <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10sp"
+        android:orientation="vertical" >
+	    <Button
+	        android:id="@+id/bt_scan"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_marginTop="30sp"
+	        android:layout_marginLeft="50sp"
+	        android:layout_marginRight="50sp"
+	        android:text="Scan" >
+	    </Button>
+	   
+	    <Button
+	        android:id="@+id/bt_trainingstart"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_marginLeft="50sp"
+	        android:layout_marginRight="50sp"
+	        android:enabled="false"
+	        android:text="Start Training" >
+	    </Button>
+	    
+	    <Button
+	        android:id="@+id/bt_testingstart"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_marginLeft="50sp"
+	        android:layout_marginRight="50sp"
+	        android:enabled="false"
+	        android:text="Start Testing" >
+	    </Button>
+     </LinearLayout>
+    
+</LinearLayout>
