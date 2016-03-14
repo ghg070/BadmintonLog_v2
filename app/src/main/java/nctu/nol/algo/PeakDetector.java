@@ -38,7 +38,7 @@ public class PeakDetector {
 		int newPeak = -1;
 		float maxVal = vals[curPeakIndex];
 		//向左找
-		for(int i = curPeakIndex-1; attrs[curPeakIndex]-attrs[i] <= PEAKWINDOWSIZE_IN_MILLISECOND && i > 0; i--){
+		for(int i = curPeakIndex-1; attrs[curPeakIndex]-attrs[i] < PEAKWINDOWSIZE_IN_MILLISECOND && i > 0; i--){
 			if( IsPeak(vals, i, maxVal) ){
 				newPeak = i;
 				maxVal = vals[newPeak];
@@ -46,7 +46,7 @@ public class PeakDetector {
 		}
 		
 		//向右找
-		for(int i = curPeakIndex+1; attrs[i]-attrs[curPeakIndex] <= PEAKWINDOWSIZE_IN_MILLISECOND && i < vals.length-1; i++){
+		for(int i = curPeakIndex+1; attrs[i]-attrs[curPeakIndex] < PEAKWINDOWSIZE_IN_MILLISECOND && i < vals.length-1; i++){
 			if( IsPeak(vals, i, maxVal) ){
 				newPeak = i;
 				maxVal = vals[newPeak];
@@ -73,9 +73,9 @@ public class PeakDetector {
 		
 		while(endPos < attrs.length){
 			//指定此次Window的右端位置
-			while( endPos < attrs.length && attrs[endPos]-attrs[curPos] <= WINDOWSIZE_IN_MILLISECOND )
+			while( endPos < attrs.length && attrs[endPos]-attrs[curPos] < WINDOWSIZE_IN_MILLISECOND )
 				endPos++;
-			
+
 			float maxVal = Float.NEGATIVE_INFINITY;
 			int curPeakIndex = -1;
 			
@@ -89,7 +89,7 @@ public class PeakDetector {
 					//確認與上一個波峰相隔一個Peak Window以上
 					if(peakIndex.size() != 0){
 						int prevPeakIndex = peakIndex.get(peakIndex.size()-1);
-						if(Math.abs(attrs[i]-attrs[prevPeakIndex]) <= PEAKWINDOWSIZE_IN_MILLISECOND )
+						if(Math.abs(attrs[i]-attrs[prevPeakIndex]) < PEAKWINDOWSIZE_IN_MILLISECOND )
 							continue;
 					}
 					maxVal = vals[i];
@@ -103,7 +103,7 @@ public class PeakDetector {
 				int temp = CheckNeighborPeak(attrs,vals,curPeakIndex);
 				if(temp != -1)
 					curPeakIndex = temp;
-				
+
 				peakIndex.add(curPeakIndex);
 			}
 			
