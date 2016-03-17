@@ -18,16 +18,17 @@
         <TextView 
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
-	        android:text = "Headset: "
-	    	android:textSize="20sp">
+	        android:text = "Headset : "
+	    	android:textSize="25sp">
 	    </TextView>
 	    
 	    <TextView 
 	        android:id="@+id/tv_headset"
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
+			android:layout_marginLeft="5sp"
 	        android:text = "disconnected"
-	    	android:textSize="14sp" >
+	    	android:textSize="25sp" >
 		</TextView>
 	</LinearLayout>
     
@@ -42,15 +43,15 @@
         <TextView 
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
-	        android:text = "Paired Device: "
-	    	android:textSize="20sp">
+	        android:text = "Paired Device : "
+	    	android:textSize="25sp">
 	    </TextView>
 	    
 	    <Spinner
 	        android:id="@+id/sp_bondeddevice"
     		android:layout_width="match_parent"
         	android:layout_height="wrap_content"
-        	android:textSize = "20sp" >
+        	android:textSize = "25sp" >
 	    </Spinner>
 	</LinearLayout>
 	
@@ -88,16 +89,17 @@
         <TextView 
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
-	        android:text = "Duration: "
-	    	android:textSize="20sp">
+	        android:text = "Duration : "
+	    	android:textSize="25sp">
 	    </TextView>
 	    
 	    <TextView 
 	        android:id="@+id/tv_duration"
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
+			android:layout_marginLeft="5sp"
 	        android:text = "0"
-	    	android:textSize="20sp" >
+	    	android:textSize="25sp" >
 		</TextView>
 	</LinearLayout>
 	
@@ -111,33 +113,42 @@
         android:orientation="vertical" >
 	    <Button
 	        android:id="@+id/bt_scan"
-	        android:layout_width="match_parent"
+	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
 	        android:layout_marginTop="30sp"
-	        android:layout_marginLeft="50sp"
-	        android:layout_marginRight="50sp"
-	        android:text="Scan" >
+	        android:text="Connect"
+			android:textSize="25sp">
 	    </Button>
 	   
 	    <Button
 	        android:id="@+id/bt_trainingstart"
-	        android:layout_width="match_parent"
+	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
-	        android:layout_marginLeft="50sp"
-	        android:layout_marginRight="50sp"
 	        android:enabled="false"
-	        android:text="Start Training" >
+	        android:text="Start Training"
+			android:textSize="25sp">
 	    </Button>
 	    
 	    <Button
 	        android:id="@+id/bt_testingstart"
-	        android:layout_width="match_parent"
+	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
-	        android:layout_marginLeft="50sp"
-	        android:layout_marginRight="50sp"
 	        android:enabled="false"
-	        android:text="Start Testing" >
+	        android:text="Start Testing"
+			android:textSize="25sp">
 	    </Button>
      </LinearLayout>
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="10sp"
+		android:orientation="vertical" >
+		<ImageView
+			android:id="@+id/img_ball"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:src="@drawable/ball">
+		</ImageView>
+	</LinearLayout>
     
 </LinearLayout>
