@@ -21,71 +21,71 @@ public class FrequencyBandModel {
 	
 	//Find Spectrum Peak
 	private static final int PEAKFREQ_NUM = 5;
-	private static final float PPEAKFREQ_POWERTHRESHOLD = 10;
 	private static final int PEAKFREQ_DELETENEIGHBOR_NUM = 5;
 	
 	//Training Setting
 	private static final int WINDOW_NUM = 5;
 	private static final int MAINFREQ_NUM = 5;
-	private List<HashMap.Entry<Float, Float>> TopNMainFreqBandTable = null;
+	private List<HashMap.Entry<Float, Float>> TopKMainFreqBandTable = null;
 	private float FreqPowerMin = 0, FreqPowerMax = 0;
-	public boolean ModelHasTrained = false; 
+	private boolean ModelHasTrained = false;
 	
 	
-	public void SetMainFreqBandTableWithTrainingDataset(final List<Integer> pos, final float[] dataset, int fft_length, int SamplingFreq){
+	public final Vector<MainFreqInOneWindow> FindSpectrumMainFreqs(final List<Integer> pos, final float[] dataset, int fft_length, int SamplingFreq) {
 		//fft_length need to be 2's power
 		CountSpectrum fft_algo = new CountSpectrum(fft_length);
-		
-		//Vector<Vector<FreqBand>> AllSpectrums = new Vector<Vector<FreqBand>>();
+
+		//所有頻譜的主頻皆會存在AllSpectrumMainFreqs
 		Vector<MainFreqInOneWindow> AllSpectrumMainFreqs = new Vector<MainFreqInOneWindow>();
-		
-		
-		for(int i = 0; i < pos.size(); i++){
+
+		//Trace all peak position
+		for (int i = 0; i < pos.size(); i++) {
 			int peak = pos.get(i);
-			
+
 			//check if the window exceed the dataset size 
-			if( dataset.length < peak + WINDOW_NUM*fft_length )
+			if (dataset.length < peak + WINDOW_NUM * fft_length)
 				break;
-			
-			for(int j = 0; j < WINDOW_NUM; j++){
+
+			//每個波峰往後取WINDOW_NUM個window進行傅利葉分析
+			for (int j = 0; j < WINDOW_NUM; j++) {
 				double x[] = new double[fft_length]; //real
 				double y[] = new double[fft_length]; //imag
-				
-				//get window data
-				int curPos = peak + j*fft_length;
-				for(int k = 0; k < fft_length; k++){
-					x[k] = dataset[curPos+k];
-					//x[k] = Math.sin(2*Math.PI*50*(1/(double)SamplingFreq)*j)+Math.sin(2*Math.PI*120*(1/(double)SamplingFreq)*j);
+
+				//Get window data
+				int curPos = peak + j * fft_length;
+				for (int k = 0; k < fft_length; k++) {
+					x[k] = dataset[curPos + k];
 					y[k] = 0;
 				}
-				
-				//use fft
+
+				//Use fft
 				fft_algo.fft(x, y);
-				
-				//store spectrum
+
+				//Store spectrum
 				Vector<FreqBand> Spectrum = new Vector<FreqBand>();
-				for(int k = 0; k < (int)(fft_length/2); k++){
-					float freq = (SamplingFreq/(float)fft_length)*k;
-					float power = (float)Math.sqrt(Math.pow(x[k], 2)+Math.pow(y[k], 2));
-					FreqBand fb = new FreqBand(freq,power);
+				for (int k = 0; k < (int) (fft_length / 2); k++) {
+					float freq = (SamplingFreq / (float) fft_length) * k;
+					float power = (float) Math.sqrt(Math.pow(x[k], 2) + Math.pow(y[k], 2));
+					FreqBand fb = new FreqBand(freq, power);
 					Spectrum.add(fb);
 				}
-				
-				//peak detection(Freq Band)
-				List<Integer> peaks = FindSpectrumPeakIndex(Spectrum, PEAKFREQ_NUM, PPEAKFREQ_POWERTHRESHOLD);
-				if( !peaks.isEmpty() ){
-					MainFreqInOneWindow mf = new MainFreqInOneWindow(i,j, peaks.size());
-					for(int k = 0; k < peaks.size(); k++){
-						mf.freqbands[k].Freq = Spectrum.get(peaks.get(k)).Freq;
-						mf.freqbands[k].Power = Spectrum.get(peaks.get(k)).Power;
+
+				//Find 5-max frequency band in a spectrum, store in AllSpectrumMainFreqs
+				List<Integer> mainfreqs = FindSpectrumPeakIndex(Spectrum, PEAKFREQ_NUM);
+				if (!mainfreqs.isEmpty()) {
+					MainFreqInOneWindow mf = new MainFreqInOneWindow(i+1, j+1, mainfreqs.size()); //i and j start from 0
+					for (int k = 0; k < mainfreqs.size(); k++) {
+						mf.freqbands[k].Freq = Spectrum.get(mainfreqs.get(k)).Freq;
+						mf.freqbands[k].Power = Spectrum.get(mainfreqs.get(k)).Power;
 					}
 					AllSpectrumMainFreqs.add(mf);
 				}
 			}
-
 		}
-		
-		//LogFileWriter MainFreqTestWriter = new LogFileWriter("MainFreqTable.txt", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
+		return AllSpectrumMainFreqs;
+	}
+
+	public void setTopKFreqBandTable(final Vector<MainFreqInOneWindow> AllSpectrumMainFreqs, int peak_num){
 		HashMap<Float, Float> MainFreqMap = new HashMap<Float, Float>();
 		for(int i = 0 ; i < AllSpectrumMainFreqs.size(); i++){
 			MainFreqInOneWindow mf = AllSpectrumMainFreqs.get(i);
@@ -101,74 +101,56 @@ public class FrequencyBandModel {
 				//Sum power with same freq bands
 				MainFreqMap.put(FreqBand, MainFreqMap.get(FreqBand) + mf.freqbands[j].Power);
 			}
-			
-			//Print Log File
-			/*float [] sortedFreq = new float[mf.freqbands.length];
-			for(int j = 0; j < mf.freqbands.length; j++)
-				sortedFreq[j] = mf.freqbands[j].Freq;
-			
-			try {
-				MainFreqTestWriter.writeFreqPeakIndexFile(mf.peak_num+1, mf.window_num+1, sortedFreq);
-			} catch (IOException e) {
-				Log.e(TAG,e.getMessage());
-			}*/
 		}
-		//MainFreqTestWriter.closefile();
-		
-		//Find Top N Max Freq Band(Key)
-		TopNMainFreqBandTable = FindNGreatest(MainFreqMap, MAINFREQ_NUM);
+
+		//Find Top K Max Freq Band(Key)
+		TopKMainFreqBandTable = FindNGreatest(MainFreqMap, MAINFREQ_NUM);
 		
 		//Average Value
-		for(int i = 0; i < TopNMainFreqBandTable.size(); i++){
-			HashMap.Entry<Float, Float> entry = TopNMainFreqBandTable.get(i);
-		    entry.setValue(entry.getValue()/(pos.size()*WINDOW_NUM));
+		for(int i = 0; i < TopKMainFreqBandTable.size(); i++){
+			HashMap.Entry<Float, Float> entry = TopKMainFreqBandTable.get(i);
+		    entry.setValue(entry.getValue()/(peak_num*WINDOW_NUM));
 		    
 		    Log.d(TAG,"key:"+entry.getKey()+" val:"+entry.getValue());
-		    
+
 		}
-			
+
 		//Record Min and Max Power for Top N Freq
-		if( TopNMainFreqBandTable.size() != 0 ){
-			FreqPowerMin = TopNMainFreqBandTable.get(0).getValue();
-			FreqPowerMax = TopNMainFreqBandTable.get(TopNMainFreqBandTable.size()-1).getValue();
+		if( TopKMainFreqBandTable.size() != 0 ){
+			FreqPowerMin = TopKMainFreqBandTable.get(0).getValue();
+			FreqPowerMax = TopKMainFreqBandTable.get(TopKMainFreqBandTable.size()-1).getValue();
 			ModelHasTrained = true;
-			
-			//Print Log File
-			LogFileWriter MainFreqPowerWriter = new LogFileWriter("MainFreqPower.txt", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
-			for(int i = 0; i < TopNMainFreqBandTable.size(); i++){
-				HashMap.Entry<Float, Float> entry = TopNMainFreqBandTable.get(i);
-				float freq = entry.getKey();
-			    float val = entry.getValue();
-			    try {
-			    	MainFreqPowerWriter.writeMainFreqPower(freq, val);
-				} catch (IOException e) {
-					Log.e(TAG,e.getMessage());
-				}
-			}
-			MainFreqPowerWriter.closefile();
 		}
 	}
-	
-	private List<Integer> FindSpectrumPeakIndex(final Vector<FreqBand> spectrum, final int PeakNum, final float Threshold){
+
+	public final List<HashMap.Entry<Float, Float>> getTopKMainFreqBandTable(){
+		return TopKMainFreqBandTable;
+	}
+
+	public boolean CheckModelHasTrained(){
+		return ModelHasTrained;
+	}
+
+	private List<Integer> FindSpectrumPeakIndex(final Vector<FreqBand> spectrum, final int PeakNum){
 		List<Integer> result = new ArrayList<Integer>();
 		Vector<FreqBand> s = new Vector<FreqBand>();
 		for(int i = 0; i < spectrum.size(); i++){//copy
 			FreqBand fb = new FreqBand(spectrum.get(i).Freq, spectrum.get(i).Power);
 			s.add(fb);
 		}
-		
+
 		for(int i = 0; i < PeakNum; i++){
 			float max = Float.MIN_VALUE;
 			int maxIndex = -1;
 			//find max
 			for(int j = 0; j < s.size(); j++){
 				final FreqBand fb = s.get(j);
-				if(fb.Power > max && fb.Power > Threshold){
+				if(fb.Power > max){
 					max = fb.Power;
 					maxIndex = j;
 				}
 			}
-			
+
 			if(maxIndex == -1) //找不到擊球聲音的主要頻帶了
 				break;
 			else{
@@ -184,7 +166,6 @@ public class FrequencyBandModel {
 		}
 		return result;
 	}
-	
 	
 	private final <K, V extends Comparable<? super V>> List<Entry<K, V>> FindNGreatest(HashMap<K, V> map, int n){
 		Comparator<? super Entry<K, V>> comparator = new Comparator<Entry<K, V>>(){
@@ -234,7 +215,3 @@ public class FrequencyBandModel {
 	};
 
 };
-
-
-
-

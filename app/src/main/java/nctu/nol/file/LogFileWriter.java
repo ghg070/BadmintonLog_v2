@@ -82,11 +82,15 @@ public class LogFileWriter {
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}
-	public void writeFreqPeakIndexFile(final int peak_num, final int window_num, final float[] sortedFreq) throws IOException{
+	public void writeFreqPeakIndexFile(final int peak_num, final int window_num, final float[] sortedFreq, final float[] sortedPower) throws IOException{
 		StringBuilder outputString = new StringBuilder( String.format("%d,%d",peak_num,window_num) );
 		for(int i = 0 ; i < sortedFreq.length; i++){
-			double data = sortedFreq[i];
-			outputString.append(String.format(",%.3f",data));
+			double f = sortedFreq[i];
+			outputString.append(String.format(",%.3f",f));
+		}
+		for(int i = 0 ; i < sortedPower.length; i++){
+			double p = sortedPower[i];
+			outputString.append(String.format(",%.3f",p));
 		}
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
