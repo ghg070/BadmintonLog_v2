@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Queue;
+import java.util.Vector;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import nctu.nol.algo.FrequencyBandModel;
@@ -394,7 +396,7 @@ public class MainActivity extends Activity {
 	private Button.OnClickListener TestingStartClickListener = new Button.OnClickListener() {
 		@Override
 		public void onClick(View arg0) {
-			if(fbm.ModelHasTrained){
+			if(fbm.CheckModelHasTrained()){
 				if(curState == BUTTON_READYSTATE){				
 					ControlButtons(BUTTON_TESTINGSTATE);	
 					
@@ -403,7 +405,7 @@ public class MainActivity extends Activity {
 					
 					//Initial Log File
 					ReadmeWriter = new LogFileWriter("Readme.txt", LogFileWriter.README_TYPE, LogFileWriter.TESTING_TYPE);
-					
+
 					new Thread(){
 			            public void run() {
 			            	try {
@@ -554,24 +556,61 @@ public class MainActivity extends Activity {
 		//Find all peak
 		PeakDetector pd = new PeakDetector(700, 350);
 		List<Integer> peaks = pd.findPeakIndex(times, vals, (float)0.5);
-		
-		//Test File
-		/*LogFileWriter PeakTestWriter = new LogFileWriter("PeakIndex.txt", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
-		for(int i = 0 ; i < peaks.size(); i++){
-			int index = peaks.get(i);
-			Log.d(TAG,"peak index = "+index+", time = "+times[index]+", val = "+vals[index]);
-			
+		// Test File for Peak Detection
+		/*
+			LogFileWriter PeakTestWriter = new LogFileWriter("PeakIndex.txt", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
+			for(int i = 0 ; i < peaks.size(); i++){
+				int index = peaks.get(i);
+				Log.d(TAG,"peak index = "+index+", time = "+times[index]+", val = "+vals[index]);
+
+				try {
+					PeakTestWriter.writePeakIndexFile(index);
+				} catch (IOException e) {
+					Log.e(TAG,e.getMessage());
+				}
+			}
+			PeakTestWriter.closefile();
+		*/
+
+		// Find top K freq band
+		Vector<FrequencyBandModel.MainFreqInOneWindow> AllMainFreqBands = fbm.FindSpectrumMainFreqs(peaks, vals, 512, SoundWaveHandler.SAMPLE_RATE);
+		fbm.setTopKFreqBandTable(AllMainFreqBands, peaks.size());
+		List<HashMap.Entry<Float, Float>> TopKMainFreqs = fbm.getTopKMainFreqBandTable();
+
+
+		// Test File for All Spectrum Main Freq Bands
+		LogFileWriter AllSpectrumMainFreqsTestWriter = new LogFileWriter("AllSpectrumMainFreqs.txt", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
+		for(int i = 0; i < AllMainFreqBands.size(); i++){
+			FrequencyBandModel.MainFreqInOneWindow mf = AllMainFreqBands.get(i);
+
+			float [] sortedFreq = new float[mf.freqbands.length];
+			float [] sortedPower = new float[mf.freqbands.length];
+			for(int j = 0; j < mf.freqbands.length; j++){
+				sortedFreq[j] = mf.freqbands[j].Freq;
+				sortedPower[j] = mf.freqbands[j].Power;
+			}
 			try {
-				PeakTestWriter.writePeakIndexFile(index);
+				AllSpectrumMainFreqsTestWriter.writeFreqPeakIndexFile(mf.peak_num, mf.window_num, sortedFreq, sortedPower);
 			} catch (IOException e) {
 				Log.e(TAG,e.getMessage());
 			}
 		}
-		PeakTestWriter.closefile();*/
-		
-		
-		//Set important frequency band
-		fbm.SetMainFreqBandTableWithTrainingDataset(peaks, vals, 512, SoundWaveHandler.SAMPLE_RATE);
+		AllSpectrumMainFreqsTestWriter.closefile();
+
+		//Test File for Top K Freq Band Table
+		LogFileWriter TopKMainFreqTableWriter = new LogFileWriter("TopKMainFreqTable.txt", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
+		for(int i = 0; i < TopKMainFreqs.size(); i++){
+			HashMap.Entry<Float, Float> entry = TopKMainFreqs.get(i);
+			float freq = entry.getKey();
+			float val = entry.getValue();
+			try {
+				TopKMainFreqTableWriter.writeMainFreqPower(freq, val);
+			} catch (IOException e) {
+				Log.e(TAG,e.getMessage());
+			}
+		}
+		TopKMainFreqTableWriter.closefile();
+
     }
     
     private void StartTestingAlgo(){
