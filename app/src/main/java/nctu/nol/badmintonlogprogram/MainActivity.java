@@ -579,7 +579,7 @@ public class MainActivity extends Activity {
 
 
 		// Test File for All Spectrum Main Freq Bands
-		LogFileWriter AllSpectrumMainFreqsTestWriter = new LogFileWriter("AllSpectrumMainFreqs.txt", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
+		LogFileWriter AllSpectrumMainFreqsTestWriter = new LogFileWriter("AllSpectrumMainFreqs.csv", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
 		for(int i = 0; i < AllMainFreqBands.size(); i++){
 			FrequencyBandModel.MainFreqInOneWindow mf = AllMainFreqBands.get(i);
 
@@ -598,7 +598,7 @@ public class MainActivity extends Activity {
 		AllSpectrumMainFreqsTestWriter.closefile();
 
 		//Test File for Top K Freq Band Table
-		LogFileWriter TopKMainFreqTableWriter = new LogFileWriter("TopKMainFreqTable.txt", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
+		LogFileWriter TopKMainFreqTableWriter = new LogFileWriter("TopKMainFreqTable.csv", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
 		for(int i = 0; i < TopKMainFreqs.size(); i++){
 			HashMap.Entry<Float, Float> entry = TopKMainFreqs.get(i);
 			float freq = entry.getKey();
