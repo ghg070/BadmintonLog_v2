@@ -41,7 +41,7 @@ public class SoundWaveHandler {
     private int mBufferSize;
 	private boolean mIsRecording = false;
 	private Vector<AudioDataBuffer> AudioDataBuffer = new Vector<AudioDataBuffer>();
-	private Queue<AudioData> AudioDataset = new LinkedBlockingQueue<AudioData>();
+	private Vector<AudioData> AudioDataset = new Vector<AudioData>();
 	
 	//RealTime Get Data
 	private int CurPointer = 0;
@@ -204,7 +204,7 @@ public class SoundWaveHandler {
 		}
 	}
 	
-	public final Queue<AudioData> getSampleData(){
+	public final Vector<AudioData> getSampleData(){
 		return AudioDataset;
 	}
 	
