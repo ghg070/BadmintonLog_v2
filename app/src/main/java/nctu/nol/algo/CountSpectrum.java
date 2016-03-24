@@ -30,8 +30,15 @@ public class CountSpectrum {
 
     }
 
-    public double dft_specific_idx(int idx, double[] x, double [] y){
-        //https://www.nayuki.io/res/how-to-implement-the-discrete-fourier-transform/Dft.java
+    public double dft_specific_idx(int idx, final double[] signal){
+        /*
+        *   idx: 第幾個頻帶(要觀察哪一個頻帶的能量)
+        *   signal: 原始資料, final型別代表不可以更動signal內的值, 要改必須copy一份
+        *   可參考的java code, 此code是計算每個頻帶的能量值(也就是完整的dft), 請改成只針對某一頻帶的能量進行計算
+        *   code: https://www.nayuki.io/res/how-to-implement-the-discrete-fourier-transform/Dft.java
+        * */
+
+
         return 0;
     }
 

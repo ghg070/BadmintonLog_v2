@@ -6,9 +6,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Queue;
 import java.util.Vector;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
@@ -17,7 +15,6 @@ import nctu.nol.bt.devices.SoundWaveHandler;
 import nctu.nol.bt.devices.SoundWaveHandler.AudioData;
 import nctu.nol.file.SystemParameters;
 import nctu.nol.file.LogFileWriter;
-import nctu.nol.badmintonlogprogram.R;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -63,7 +60,7 @@ public class MainActivity extends Activity {
 	/* Button State Related */
 	private static final int BUTTON_ALLCLOSE = -1; 
 	private static final int BUTTON_INITIALSTATE = 0; 
-	private static final int BUTTON_SCANINGSTATE = 1; 
+	private static final int BUTTON_MICCONNECTINGSTATE = 1;
 	private static final int BUTTON_READYSTATE = 2; 
 	private static final int BUTTON_TRAININGSTATE = 3; 
 	private static final int BUTTON_TESTINGSTATE = 4; 
@@ -71,7 +68,7 @@ public class MainActivity extends Activity {
 	
     /* Log Related */ 
   	private static LogFileWriter ReadmeWriter;
-  	private Button btScan;
+  	private Button btMicConnect;
   	private Button btTraining;
   	private Button btTesting;
     
@@ -167,10 +164,10 @@ public class MainActivity extends Activity {
 		tv_HeadsetConnected = (TextView) findViewById(R.id.tv_headset);
 
 		//Button
-		btScan = (Button) findViewById(R.id.bt_scan);
+		btMicConnect = (Button) findViewById(R.id.bt_micconnect);
 		btTraining = (Button) findViewById(R.id.bt_trainingstart);
 		btTesting = (Button) findViewById(R.id.bt_testingstart);
-		btScan.setOnClickListener(scanListener);
+		btMicConnect.setOnClickListener(MicConnectListener);
 		btTraining.setOnClickListener(TrainingStartClickListener);
 		btTesting.setOnClickListener(TestingStartClickListener);
 		
@@ -297,11 +294,11 @@ public class MainActivity extends Activity {
     /********************/
     /** Logging Event **/
 	/********************/
-    private Button.OnClickListener scanListener = new Button.OnClickListener() {
+    private Button.OnClickListener MicConnectListener = new Button.OnClickListener() {
 		public void onClick(View v) {
 			
 			if(curState == BUTTON_INITIALSTATE){
-				ControlButtons(BUTTON_SCANINGSTATE);
+				ControlButtons(BUTTON_MICCONNECTINGSTATE);
 				mBluetoothService.ConnectScoBTHeadset(CurHeadsetDevice);
 			}
 			else{
@@ -541,16 +538,14 @@ public class MainActivity extends Activity {
     /***********************/
     private void StartTrainingAlgo(final SoundWaveHandler sw){
     	//split time array and data array
-    	Queue<AudioData> ads = new LinkedBlockingQueue<AudioData>(sw.getSampleData());
+    	final Vector<AudioData> ads = sw.getSampleData();
 		float times[] = new float[ads.size()],
 			  vals[] = new float[ads.size()];
-		
-		int count = 0;
-		while(ads.size() != 0){
-			AudioData ad = ads.poll();
-			times[count] = (float)ad.time;
-			vals[count] = ad.data;
-			count++;
+
+		for(int i = 0; i < ads.size(); i++){
+			AudioData ad = ads.get(i);
+			times[i] = (float)ad.time;
+			vals[i] = ad.data;
 		}
 		
 		//Find all peak
@@ -626,52 +621,52 @@ public class MainActivity extends Activity {
 		//Log.d(TAG,"State: "+curState);
     	switch(state){
     		case BUTTON_INITIALSTATE:
-    			btScan.setText("Scan");
+    			btMicConnect.setText("Connect BT Mic");
     			btTraining.setText("Start Training");
     			btTesting.setText("Start Testing");
-    			btScan.setEnabled(true);
+    			btMicConnect.setEnabled(true);
     			btTraining.setEnabled(false);
     			btTesting.setEnabled(false);
     			spBondedDeviceSpinner.setEnabled(true);
     			break;
-    		case BUTTON_SCANINGSTATE:
-                btScan.setText("Reset");
+    		case BUTTON_MICCONNECTINGSTATE:
+                btMicConnect.setText("Reset");
                 btTraining.setText("Start Training");
                 btTesting.setText("Start Testing");
-    			btScan.setEnabled(true);
+    			btMicConnect.setEnabled(true);
     			btTraining.setEnabled(false);
     			btTesting.setEnabled(false);
     			spBondedDeviceSpinner.setEnabled(false);
     			break;
     		case BUTTON_READYSTATE:
-    			btScan.setText("Reset");
+    			btMicConnect.setText("Reset");
     			btTraining.setText("Start Training");
     			btTesting.setText("Start Testing");
-    			btScan.setEnabled(true);
+    			btMicConnect.setEnabled(true);
     			btTraining.setEnabled(true);
     			btTesting.setEnabled(true);
     			spBondedDeviceSpinner.setEnabled(false);
     			break;
     		case BUTTON_TRAININGSTATE:
-    			btScan.setText("Reset");
+    			btMicConnect.setText("Reset");
     			btTraining.setText("Finish");
     			btTesting.setText("Start Testing");
-    			btScan.setEnabled(false);
+    			btMicConnect.setEnabled(false);
     			btTraining.setEnabled(true);
     			btTesting.setEnabled(false);
     			spBondedDeviceSpinner.setEnabled(false);
     			break;
     		case BUTTON_TESTINGSTATE:
-    			btScan.setText("Reset");
+    			btMicConnect.setText("Reset");
     			btTraining.setText("Start Training");
     			btTesting.setText("Finish");
-    			btScan.setEnabled(false);
+    			btMicConnect.setEnabled(false);
     			btTraining.setEnabled(false);
     			btTesting.setEnabled(true);
     			spBondedDeviceSpinner.setEnabled(false);
     			break;
     		case BUTTON_ALLCLOSE:
-    			btScan.setEnabled(false);
+    			btMicConnect.setEnabled(false);
     			btTraining.setEnabled(false);
     			btTesting.setEnabled(false);
     			spBondedDeviceSpinner.setEnabled(false);
