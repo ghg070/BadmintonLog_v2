@@ -10,9 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Vector;
 
-import nctu.nol.bt.BTCommunicationService;
 
 import android.os.Environment;
 import android.text.format.Time;

@@ -1,4 +1,4 @@
-package nctu.nol.bt;
+package nctu.nol.bt.devices;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -28,9 +28,9 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
-public class BTCommunicationService extends Service {
-	private final static String TAG = BTCommunicationService.class.getName();
-    public final static String ACTION_DETECT_CONNECTION_STATE = "BTCommunicationService.ACTION_DETECT_CONNECTION_STATE";
+public class SoundWaveService extends Service {
+	private final static String TAG = SoundWaveService.class.getName();
+    public final static String ACTION_DETECT_CONNECTION_STATE = "SoundWaveService.ACTION_DETECT_CONNECTION_STATE";
 	
 	
 	private final IBinder mBinder = new LocalBinder();
@@ -49,8 +49,8 @@ public class BTCommunicationService extends Service {
 	}
 	
 	public class LocalBinder extends Binder {
-        public BTCommunicationService getService() {
-            return BTCommunicationService.this;
+        public SoundWaveService getService() {
+            return SoundWaveService.this;
         }
     }	
 
