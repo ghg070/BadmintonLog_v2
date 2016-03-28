@@ -3,13 +3,16 @@ package nctu.nol.bt.devices;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.Context;
 import android.os.Build;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,11 +35,16 @@ public class BeaconHandler implements SensorEventListener {
     private boolean startScan = false;
     private KoalaServiceManager mServiceManager;
     private BluetoothAdapter mBluetoothAdapter;
+    /******** for SDK version > 21 **********/
     private BluetoothLeScanner mBLEScanner;
+    private ScanSettings settings;
+    private List<ScanFilter> filters;
     public static ArrayList<KoalaDevice> mDevices = new ArrayList<KoalaDevice>();  // Manage the devices
     public static ArrayList<AtomicBoolean> mFlags = new ArrayList<AtomicBoolean>();
     private static final long SCAN_PERIOD = 2000;
 
+    // Broadcast Related
+    public final static String ACTION_BEACON_SERVICE_INITIAL_STATE = "BEACONHANDLER.ACTION_SOUND_SERVICE_CONNECT_STATE";
 
     public BeaconHandler(Activity activity){
         this.mActivity = activity;
@@ -44,10 +52,20 @@ public class BeaconHandler implements SensorEventListener {
     }
 
     public void initBLEService(){
+        final BluetoothManager mBluetoothManager = (BluetoothManager) mActivity.getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = mBluetoothManager.getAdapter();
+        if (mBluetoothAdapter == null) {
+            Toast.makeText(mActivity, "BLE not supported", Toast.LENGTH_SHORT).show();
+            mActivity.finish();
+            return;
+        }
         mServiceManager = new KoalaServiceManager(mActivity);
-        mServiceManager.registerSensorEventListener(this, SensorEvent.TYPE_ACCELEROMETER, KoalaService.MOTION_WRITE_RATE_20, KoalaService.MOTION_ACCEL_SCALE_16G, KoalaService.MOTION_GYRO_SCALE_500);
-        mServiceManager.registerSensorEventListener(this, SensorEvent.TYPE_GYROSCOPE);
+        mServiceManager.registerSensorEventListener(BeaconHandler.this, SensorEvent.TYPE_ACCELEROMETER, KoalaService.MOTION_WRITE_RATE_5, KoalaService.MOTION_ACCEL_SCALE_16G, KoalaService.MOTION_GYRO_SCALE_500);
+        mServiceManager.registerSensorEventListener(BeaconHandler.this, SensorEvent.TYPE_GYROSCOPE);
 
+        if (Build.VERSION.SDK_INT >= 21) {
+            mBLEScanner = mBluetoothAdapter.getBluetoothLeScanner();
+        }
     }
 
     private int findKoalaDevice(String macAddr) {
@@ -61,12 +79,11 @@ public class BeaconHandler implements SensorEventListener {
         return -1;
     }
 
-    private void scanLeDevice() {
+    public void scanLeDevice() {
         new Thread() {
 
             @Override
             public void run() {
-
                 if (Build.VERSION.SDK_INT < 21) {
                     mBluetoothAdapter.startLeScan(mLeScanCallback);
 
