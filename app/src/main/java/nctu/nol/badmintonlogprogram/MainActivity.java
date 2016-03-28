@@ -10,6 +10,7 @@ import java.util.Vector;
 
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
+import nctu.nol.bt.devices.BeaconHandler;
 import nctu.nol.bt.devices.SoundWaveHandler;
 import nctu.nol.bt.devices.SoundWaveHandler.AudioData;
 import nctu.nol.file.SystemParameters;
@@ -71,19 +72,16 @@ public class MainActivity extends Activity {
 	/* Sound Wave Related */
 	private SoundWaveHandler sw;
 	public TextView tv_HeadsetConnected;
+
+	/* Beacon Related */
+	private BeaconHandler bh;
      
     /* Bonded Device Related */
 	private Spinner spBondedDeviceSpinner;
 	private CustomArrayAdapter BondedDeviceNameList;
 	private List<BluetoothDevice> BondedDevices = new ArrayList<BluetoothDevice>();
 	private BluetoothDevice CurHeadsetDevice;
-	
-    /* Sampling Rate Control */
-    /*private Spinner spSamplingRateSelection;
-    private ArrayAdapter<Integer> SamplingRateList;  
-    private Integer[] SamplingRate = { 100, 150, 200, 250 };*/
- 
-   
+
     /* Timer Related */
   	private Handler timerHandler = new Handler();
     private TextView tv_durationTime;
@@ -185,6 +183,9 @@ public class MainActivity extends Activity {
 		//Initial SoundWave Handler
 		sw = new SoundWaveHandler(MainActivity.this);
 		registerReceiver(mSoundWaveHandlerStateUpdateReceiver, makeSoundWaveHandlerStateUpdateIntentFilter());
+
+		//Initial Beacon Handler
+		bh = new BeaconHandler(MainActivity.this);
 	}
 
     public void updatedBondedDeviceSpinner() {
