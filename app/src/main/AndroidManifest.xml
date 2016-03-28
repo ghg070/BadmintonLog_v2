@@ -19,7 +19,7 @@
     
     
     <uses-sdk
-        android:minSdkVersion="14"
+        android:minSdkVersion="21"
         android:targetSdkVersion="21" />
 
     <application
@@ -37,7 +37,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name="nctu.nol.bt.BTCommunicationService" android:enabled="true"/>
+        <service android:name="nctu.nol.bt.devices.SoundWaveService" android:enabled="true"/>
     </application>
 
 </manifest>

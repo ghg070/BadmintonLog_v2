@@ -10,7 +10,6 @@ import java.util.Vector;
 
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
-import nctu.nol.bt.BTCommunicationService;
 import nctu.nol.bt.devices.SoundWaveHandler;
 import nctu.nol.bt.devices.SoundWaveHandler.AudioData;
 import nctu.nol.file.SystemParameters;
@@ -27,10 +26,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -52,7 +49,6 @@ public class MainActivity extends Activity {
 	private final static String TAG = "MainActivity";
 	
 	/* BT related */
-	private BTCommunicationService mBluetoothService =null;
 	private BluetoothAdapter mBluetoothAdapter = null;	
 	private static final int REQUEST_ENABLE_BT = 1;
 	private static final int REQUEST_OPEN_BTSETTING = 2;
@@ -129,13 +125,8 @@ public class MainActivity extends Activity {
 			sw.deleteObject();
 			sw = null;
 		}
-		
-		if (mServiceConnection != null){
-			mBluetoothService.close();
-            unbindService(mServiceConnection);
-            unregisterReceiver(mSoundWaveHandlerStateUpdateReceiver);
-		}
-		
+
+		unregisterReceiver(mSoundWaveHandlerStateUpdateReceiver);
 		return;
 	}
 	
@@ -170,19 +161,13 @@ public class MainActivity extends Activity {
 		btMicConnect.setOnClickListener(MicConnectListener);
 		btTraining.setOnClickListener(TrainingStartClickListener);
 		btTesting.setOnClickListener(TestingStartClickListener);
-		
-		
+
 		//Spinner
 		spBondedDeviceSpinner = (Spinner) findViewById(R.id.sp_bondeddevice);
 		BondedDeviceNameList = new CustomArrayAdapter(MainActivity.this, android.R.layout.simple_spinner_item, BondedDevices);                                     
 		spBondedDeviceSpinner.setAdapter(BondedDeviceNameList);
 		spBondedDeviceSpinner.setOnItemSelectedListener(BondedDeviceSelectedListener);
-		
-		/*spSamplingRateSelection = (Spinner)findViewById(R.id.sp_samplingrate); 
-		SamplingRateList = new ArrayAdapter<Integer>(MainActivity.this, android.R.layout.simple_spinner_item, SamplingRate);                                     
-		spSamplingRateSelection.setAdapter(SamplingRateList);
-		spSamplingRateSelection.setOnItemSelectedListener(SamplingRateSelectedListener);*/
-		
+
 		curState = BUTTON_INITIALSTATE;
 		
 	}
@@ -196,46 +181,16 @@ public class MainActivity extends Activity {
 	    }
 		
 		Log.d(TAG, "Bind BT Service");
-		//啟動BT service
-        Intent bluetoothSerialPortServiceIntent = new Intent(MainActivity.this, BTCommunicationService.class);
-        bindService(bluetoothSerialPortServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
+		//Initial SoundWave Handler
+		sw = new SoundWaveHandler(MainActivity.this);
+		registerReceiver(mSoundWaveHandlerStateUpdateReceiver, makeSoundWaveHandlerStateUpdateIntentFilter());
 	}
 
-	
-	/***************************/
-    /** BT Service Connection **/
-	/***************************/
-    private final ServiceConnection mServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName,
-                                       IBinder service) {
-        	mBluetoothService = ((BTCommunicationService.LocalBinder) service)
-                    .getService();
-            Log.i(TAG, "Initializing Bluetooth.....");
-            if (!mBluetoothService.initialize()) {
-                Log.e(TAG, "Unable to initialize Bluetooth");
-                finish();
-            }
-            Log.i(TAG, "Success!");
-            
-            //Get Bonded Devices
-            updatedBondedDeviceSpinner();
-            
-            //SoundWaveHandler Initial
-            sw = new SoundWaveHandler(MainActivity.this);
-            registerReceiver(mSoundWaveHandlerStateUpdateReceiver, makeSoundWaveHandlerStateUpdateIntentFilter());
-            
-        }
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-        	mBluetoothService = null;
-        }
-    };
-    
     public void updatedBondedDeviceSpinner() {
-    	if(mBluetoothService != null){
-	    	BondedDevices = mBluetoothService.getBondedBTDevice(Device.AUDIO_VIDEO_WEARABLE_HEADSET); 
+    	if(sw.getService() != null){
+			Log.d(TAG, "UpdatedBondedDeviceSpinner");
+	    	BondedDevices = sw.getService().getBondedBTDevice(Device.AUDIO_VIDEO_WEARABLE_HEADSET);
 	    	BondedDeviceNameList.clear(); 
 	        if (BondedDevices != null){
 	        	//Sort Boned Device
@@ -249,11 +204,9 @@ public class MainActivity extends Activity {
 	            for (BluetoothDevice d : BondedDevices) {
 	            	BondedDeviceNameList.insert(d, BondedDeviceNameList.getCount());
 	            }
-	           
 	        }
 	        BondedDeviceNameList.notifyDataSetChanged();
     	}
-
     }
     
     /**********************/
@@ -263,8 +216,10 @@ public class MainActivity extends Activity {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
-			
-			if( SoundWaveHandler.ACTION_SOUND_NOT_PREPARE_STATE.equals(action) ){
+			if( SoundWaveHandler.ACTION_SOUND_SERVICE_CONNECT_STATE.equals(action) )
+				updatedBondedDeviceSpinner();
+
+			else if( SoundWaveHandler.ACTION_SOUND_NOT_PREPARE_STATE.equals(action) ){
             	tv_HeadsetConnected.setText("disconnected");               	
             	if(curState == BUTTON_TRAININGSTATE)//if Logging is running
             		btTraining.performClick();     
@@ -282,7 +237,8 @@ public class MainActivity extends Activity {
 	};
 	private static IntentFilter makeSoundWaveHandlerStateUpdateIntentFilter() {
 		final IntentFilter intentFilter = new IntentFilter();
-		
+
+		intentFilter.addAction(SoundWaveHandler.ACTION_SOUND_SERVICE_CONNECT_STATE);
 		intentFilter.addAction(SoundWaveHandler.ACTION_SOUND_NOT_PREPARE_STATE);
 		intentFilter.addAction(SoundWaveHandler.ACTION_SOUND_PREPARING_STATE);
 		intentFilter.addAction(SoundWaveHandler.ACTION_SOUND_PREPARED_STATE);
@@ -299,10 +255,10 @@ public class MainActivity extends Activity {
 			
 			if(curState == BUTTON_INITIALSTATE){
 				ControlButtons(BUTTON_MICCONNECTINGSTATE);
-				mBluetoothService.ConnectScoBTHeadset(CurHeadsetDevice);
+				sw.getService().ConnectScoBTHeadset(CurHeadsetDevice);
 			}
 			else{
-				mBluetoothService.DisconnectAllScoBTHeadset();
+				sw.getService().DisconnectAllScoBTHeadset();
 				ControlButtons(BUTTON_INITIALSTATE);
 			}
 		}

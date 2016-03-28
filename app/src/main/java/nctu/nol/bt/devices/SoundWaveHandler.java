@@ -1,26 +1,26 @@
 package nctu.nol.bt.devices;
 
 import java.io.IOException;
-import java.util.Queue;
 import java.util.Vector;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHeadset;
 import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder.AudioSource;
+import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 import nctu.nol.badmintonlogprogram.MainActivity;
-import nctu.nol.bt.BTCommunicationService;
 import nctu.nol.file.LogFileWriter;
 import nctu.nol.file.SystemParameters;
 
@@ -30,7 +30,10 @@ public class SoundWaveHandler {
     
     //Context
     private MainActivity mContext;
-    
+
+	//Service Relate
+	private SoundWaveService mSoundWaveService =null;
+
     //Audio related
 	public static final int SAMPLE_RATE = 11025;
 	private AudioManager am;
@@ -48,7 +51,6 @@ public class SoundWaveHandler {
 	public final static int Active_BufferNumThreshold = 50;
 	public final static int Remind_BufferNumThreshold = 20;
 	
-	
 	//FileWrite for Logging
 	private LogFileWriter SoundDataWriter;
 	private LogFileWriter SoundRawWriter;
@@ -56,6 +58,7 @@ public class SoundWaveHandler {
 	public AtomicBoolean isWrittingAudioDataLog = new AtomicBoolean(false);
 	
 	//Broadcast Related
+	public final static String ACTION_SOUND_SERVICE_CONNECT_STATE = "SOUNDWAVEHANDLER.ACTION_SOUND_SERVICE_CONNECT_STATE";
 	public final static String ACTION_SOUND_NOT_PREPARE_STATE = "SOUNDWAVEHANDLER.ACTION_SOUND_NOT_PREPARE_STATE";
 	public final static String ACTION_SOUND_PREPARING_STATE = "SOUNDWAVEHANDLER.ACTION_ACTION_SOUND_PREPARING_STATE";
 	public final static String ACTION_SOUND_PREPARED_STATE = "SOUNDWAVEHANDLER.ACTION_ACTION_SOUND_PREPARED_STATE";
@@ -64,10 +67,47 @@ public class SoundWaveHandler {
 
 		
 	public SoundWaveHandler(MainActivity context) {
-		this.mContext = context; 
-		mContext.registerReceiver(mHeadsetStateUpdateReceiver, makeBTHeadsetUpdateIntentFilter());
+		this.mContext = context;
+
+		//啟動BT service
+		Intent SoundWaveServiceIntent = new Intent(mContext, SoundWaveService.class);
+		mContext.bindService(SoundWaveServiceIntent, mServiceConnection, mContext.BIND_AUTO_CREATE);
     }
 
+
+	/****************************/
+	/**  SoundWave Service Related **/
+	/***************************/
+	private final ServiceConnection mServiceConnection = new ServiceConnection() {
+		@Override
+		public void onServiceConnected(ComponentName componentName,
+									   IBinder service) {
+			mSoundWaveService = ((SoundWaveService.LocalBinder) service)
+					.getService();
+			Log.i(TAG, "Initializing Bluetooth.....");
+			if (!mSoundWaveService.initialize()) {
+				Log.e(TAG, "Unable to initialize Bluetooth");
+				mContext.finish();
+			}
+			Log.i(TAG, "Success!");
+
+			Intent intent = new Intent(ACTION_SOUND_SERVICE_CONNECT_STATE);
+			mContext.sendBroadcast(intent);
+
+			mContext.registerReceiver(mHeadsetStateUpdateReceiver, makeBTHeadsetUpdateIntentFilter());
+		}
+		@Override
+		public void onServiceDisconnected(ComponentName componentName) {
+			mSoundWaveService = null;
+		}
+	};
+	public final SoundWaveService getService(){
+		return mSoundWaveService;
+	}
+
+	/**********************************/
+	/**  SoundWaveHandler Initial Function **/
+	/**********************************/
 	public void initAudioManager() {	
 	    am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE); 	
 	    try{
@@ -98,7 +138,10 @@ public class SoundWaveHandler {
 		AudioDataBuffer.clear();
 		AudioDataset.clear();
 	}
-	
+
+	/******************************************/
+	/**  SoundWaveHandler  Data Recording Function **/
+	/******************************************/
 	public void startRecording(int uType){
 		if(SystemParameters.IsBtHeadsetReady){
 			
@@ -231,6 +274,12 @@ public class SoundWaveHandler {
 			mContext.unregisterReceiver(mSCOStateUpdateReceiver);
 			SCOActionRegistedFlag = false;
 		}
+
+		if (mServiceConnection != null) {
+			mSoundWaveService.close();
+			mContext.unbindService(mServiceConnection);
+		}
+
 		mContext.unregisterReceiver(mHeadsetStateUpdateReceiver);
 	}
 
@@ -267,7 +316,7 @@ public class SoundWaveHandler {
 			String action = intent.getAction();
 	
 			if (BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED.equals(action) ||
-				BTCommunicationService.ACTION_DETECT_CONNECTION_STATE.equals(action)) {
+					SoundWaveService.ACTION_DETECT_CONNECTION_STATE.equals(action)) {
 				
 				int state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE,0);
 				
@@ -339,7 +388,7 @@ public class SoundWaveHandler {
 	
 	    intentFilter.addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED);
 	    intentFilter.addAction(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED);
-	    intentFilter.addAction(BTCommunicationService.ACTION_DETECT_CONNECTION_STATE);
+	    intentFilter.addAction(SoundWaveService.ACTION_DETECT_CONNECTION_STATE);
 	
 	    return intentFilter;
 	}
