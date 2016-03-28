@@ -21,4 +21,6 @@ android {
 dependencies {
     compile 'com.android.support:support-v4:21.0.3'
     compile files('src/main/res/lib/KoalaLib.jar')
+    compile files('src/main/res/libs/KoalaLib.jar')
+    compile files('libs/KoalaLib.jar')
 }
