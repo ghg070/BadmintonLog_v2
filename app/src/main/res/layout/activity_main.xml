@@ -99,7 +99,7 @@
 	 		android:id="@+id/bt_koalaconnect"
 		 	android:layout_width="fill_parent"
 		 	android:layout_height="wrap_content"
-		 	android:text="Scan Koala"
+		 	android:text="Connect Koala"
 		 	android:textSize="25sp">
 	 	</Button>
 
