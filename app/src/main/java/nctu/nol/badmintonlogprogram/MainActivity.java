@@ -282,82 +282,10 @@ public class MainActivity extends Activity {
     private Button.OnClickListener TrainingStartClickListener = new Button.OnClickListener() {
 		@Override
 		public void onClick(View arg0) {
-			if(curState == BUTTON_READYSTATE){				
-				ControlButtons(BUTTON_TRAININGSTATE);	
-				
-				//SystemParameters Initial
-		        SystemParameters.initializeSystemParameters();				
-				
-				//Initial Log File
-				ReadmeWriter = new LogFileWriter("Readme.txt", LogFileWriter.README_TYPE, LogFileWriter.TRAINING_TYPE);
-				
-				new Thread(){
-		            public void run() {
-		            	try {
-		            		// AudioRecord Ready
-		    				sw.startRecording(LogFileWriter.TRAINING_TYPE);	
-		    				
-		    				//等待1sec後開始
-							sleep(1000);
-							
-							//設定開始時間
-					        SetMeasureStartTime();
-					      
-					        //設定定時要執行的方法
-							timerHandler.removeCallbacks(updateTimer);
-							timerHandler.postDelayed(updateTimer, 1000);//設定Delay的時間
-							
-							//Service Start
-							SystemParameters.isServiceRunning.set(true);
-							
-							runOnUiThread(new Runnable() {     
-								public void run(){     
-									Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
-						        }     
-						    }); 
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							Log.e(TAG,e.getMessage());
-						}
-		            	
-		            }
-				}.start();
-			}
-			else{
-				Toast.makeText(getBaseContext(), "Log Service is Stop", Toast.LENGTH_SHORT).show();
-				SystemParameters.isServiceRunning.set(false);
-				SystemParameters.Duration = (System.currentTimeMillis() - SystemParameters.StartTime)/1000.0;
-				sw.stopRecording();
-				timerHandler.removeCallbacks(updateTimer);
-				
-				final ProgressDialog dialog = ProgressDialog.show(MainActivity.this,
-	                    "寫檔中", "處理檔案中，請稍後",true);
-				
-				new Thread(){
-					public void run(){
-						//Wait log file write done
-						while(sw.isWrittingAudioDataLog.get());
-			
-						//Training
-						StartTrainingAlgo(sw);
-						
-						//Show UI
-						runOnUiThread(new Runnable() {     
-							public void run(){
-								showLogInformationDialog();
-								
-								//Control Button
-								if(SystemParameters.IsBtHeadsetReady)
-									ControlButtons(BUTTON_READYSTATE);
-								else
-									ControlButtons(BUTTON_INITIALSTATE);
-						    
-								dialog.dismiss();
-							}
-						});
-					}
-				}.start();
-			}
+			if(curState == BUTTON_READYSTATE)
+				ActiveLogging(LogFileWriter.TRAINING_TYPE);
+			else
+				StopLogging(LogFileWriter.TRAINING_TYPE);
 		}
 	};
 	
@@ -365,85 +293,97 @@ public class MainActivity extends Activity {
 		@Override
 		public void onClick(View arg0) {
 			if(fbm.CheckModelHasTrained()){
-				if(curState == BUTTON_READYSTATE){				
-					ControlButtons(BUTTON_TESTINGSTATE);	
-					
-					//SystemParameters Initial
-			        SystemParameters.initializeSystemParameters();				
-					
-					//Initial Log File
-					ReadmeWriter = new LogFileWriter("Readme.txt", LogFileWriter.README_TYPE, LogFileWriter.TESTING_TYPE);
-
-					new Thread(){
-			            public void run() {
-			            	try {
-			            		// AudioRecord Ready
-			    				sw.startRecording(LogFileWriter.TESTING_TYPE);	
-			    				
-			    				//等待1sec後開始
-								sleep(1000);
-								
-								//設定開始時間
-						        SetMeasureStartTime();
-						      
-						        //設定定時要執行的方法
-								timerHandler.removeCallbacks(updateTimer);
-								timerHandler.postDelayed(updateTimer, 1000);//設定Delay的時間
-								
-								//Service Start
-								SystemParameters.isServiceRunning.set(true);
-								
-								runOnUiThread(new Runnable() {     
-									public void run(){     
-										Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
-							        }     
-							    }); 
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								Log.e(TAG,e.getMessage());
-							}
-			            	
-			            }
-					}.start();
-				}
-				else{
-					Toast.makeText(getBaseContext(), "Log Service is Stop", Toast.LENGTH_SHORT).show();
-					SystemParameters.isServiceRunning.set(false);
-					SystemParameters.Duration = (System.currentTimeMillis() - SystemParameters.StartTime)/1000.0;
-					sw.stopRecording();
-					timerHandler.removeCallbacks(updateTimer);
-					
-					final ProgressDialog dialog = ProgressDialog.show(MainActivity.this,
-		                    "寫檔中", "處理檔案中，請稍後",true);
-					
-					new Thread(){
-						public void run(){
-							//Wait log file write done
-							while(sw.isWrittingAudioDataLog.get());
-				
-							//Show UI
-							runOnUiThread(new Runnable() {     
-								public void run(){
-									showLogInformationDialog();
-									
-									//Control Button
-									if(SystemParameters.IsBtHeadsetReady)
-										ControlButtons(BUTTON_READYSTATE);
-									else
-										ControlButtons(BUTTON_INITIALSTATE);
-							    
-									dialog.dismiss();
-								}
-							});
-						}
-					}.start();
-				}
+				if(curState == BUTTON_READYSTATE)
+					ActiveLogging(LogFileWriter.TESTING_TYPE);
+				else
+					StopLogging(LogFileWriter.TESTING_TYPE);
 			}else{
 				Toast.makeText(getBaseContext(), "You must train your racket first.", Toast.LENGTH_SHORT).show();
 			}
 		}
 	};
-	
+
+	private void ActiveLogging(final int LogType){
+		//SystemParameters Initial
+		SystemParameters.initializeSystemParameters();
+
+		//UI Button Control
+		if(LogType == LogFileWriter.TESTING_TYPE)
+			ControlButtons(BUTTON_TESTINGSTATE);
+		else
+			ControlButtons(BUTTON_TRAININGSTATE);
+
+		//Initial Log File
+		ReadmeWriter = new LogFileWriter("Readme.txt", LogFileWriter.README_TYPE, LogType);
+
+		new Thread(){
+			public void run() {
+				try {
+					// AudioRecord Ready
+					sw.startRecording(LogType);
+
+					//等待1sec後開始
+					sleep(1000);
+
+					//設定開始時間
+					SetMeasureStartTime();
+
+					//設定定時要執行的方法
+					timerHandler.removeCallbacks(updateTimer);
+					timerHandler.postDelayed(updateTimer, 1000);//設定Delay的時間
+
+					//Service Start
+					SystemParameters.isServiceRunning.set(true);
+
+					runOnUiThread(new Runnable() {
+						public void run(){
+							Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
+						}
+					});
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					Log.e(TAG,e.getMessage());
+				}
+			}
+		}.start();
+	}
+
+	private void StopLogging(final int LogType){
+		Toast.makeText(getBaseContext(), "Log Service is Stop", Toast.LENGTH_SHORT).show();
+		SystemParameters.isServiceRunning.set(false);
+		SystemParameters.Duration = (System.currentTimeMillis() - SystemParameters.StartTime)/1000.0;
+		sw.stopRecording();
+		timerHandler.removeCallbacks(updateTimer);
+
+		final ProgressDialog dialog = ProgressDialog.show(MainActivity.this,
+				"寫檔中", "處理檔案中，請稍後",true);
+
+		new Thread(){
+			public void run(){
+				//Wait log file write done
+				while(sw.isWrittingAudioDataLog.get());
+
+				//Training
+				if(LogType == LogFileWriter.TRAINING_TYPE)
+					StartTrainingAlgo(sw);
+
+				//Show UI
+				runOnUiThread(new Runnable() {
+					public void run(){
+						showLogInformationDialog();
+
+						//Control Button
+						if(SystemParameters.IsBtHeadsetReady)
+							ControlButtons(BUTTON_READYSTATE);
+						else
+							ControlButtons(BUTTON_INITIALSTATE);
+
+						dialog.dismiss();
+					}
+				});
+			}
+		}.start();
+	}
 	
 	private void SetMeasureStartTime(){
 		//Set time

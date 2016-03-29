@@ -18,6 +18,7 @@ import android.bluetooth.BluetoothClass.Device;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothHeadset;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
@@ -55,7 +56,8 @@ public class SoundWaveService extends Service {
     }	
 
 	public boolean initialize() {
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+		final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = mBluetoothManager.getAdapter();
         if (mBluetoothAdapter == null) {
             Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
             return false;

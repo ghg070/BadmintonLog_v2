@@ -37,11 +37,14 @@ public class LogFileWriter {
 	//Attribute
 	//private static final String attributeAcc  = "Timestamp,Gx,Gy,Gz,Gv\n";
 	private static final String attributeAudioDataBuffer  = "Timestamp,BufferSize,VoiceEnergy";
+	private static final String attributeAccData = "Timestamp,Gx,Gy,Gz";
+	private static final String attributeGyroData = "Timestamp,Wx,Wy,Wz";
 	
 	//Type Number
 	public static final int SOUNDWAVE_RAW_TYPE = 0;
-	public static final int SOUNDWAVE_TIMESTAMP_TYPE = 1;
-	public static final int SOUNDWAVE_DATA_TYPE = 2;
+	public static final int SOUNDWAVE_DATA_TYPE = 1;
+	public static final int ACCELEROMETER_DATA_TYPE = 2;
+	public static final int GYROSCOPE_DATA_TYPE = 3;
 	public static final int README_TYPE = 10;
 	public static final int OTHER_TYPE = 11;
 	
@@ -73,6 +76,13 @@ public class LogFileWriter {
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}
+
+	public void writeInertialDataFile(final long timestamp, final float x, final float y, final float z ) throws IOException{
+		StringBuilder outputString =  new StringBuilder(timestamp + "," + x + "," + y + "," + z);
+		outputString.append("\n");
+		outputStream.write(outputString.toString().getBytes());
+	}
+
 	
 	//TEST FUNCTION
 	public void writePeakIndexFile(final int index) throws IOException{
@@ -103,9 +113,9 @@ public class LogFileWriter {
 	public void writeReadMeFile() throws IOException{
 		Log.d(TAG, "SystemParameters.totalSecond:"+SystemParameters.Duration);
 		if(SystemParameters.Duration > 0){
-	
-		
+
 			long AudioRate = (long)( SystemParameters.AudioCount/((double)(SystemParameters.SoundEndTime-SystemParameters.SoundStartTime)/1000.0) );
+			long SensorRate = (long)( SystemParameters.SensorCount/((double)(SystemParameters.SensorEndTime-SystemParameters.SensorStartTime)/1000.0) );
 			
 			String outputString = 
 				"File Format Version: 1.0\r\n"
@@ -115,13 +125,20 @@ public class LogFileWriter {
 				+"\tAudioDataBuffer.csv Audio Buffer file ("+SystemParameters.AudioCount+" records @ "+AudioRate+"Hz)\r\n"
 				+"\tAudioDataBuffer.csv Record Format\r\n"
 				+"\t\t"+ attributeAudioDataBuffer + "\r\n"
-				+"Start Logging Date/Time: "+SystemParameters.StartDate	+"\r\n"	
+				+"\tAccData.csv Accelerometer Data file ("+SystemParameters.SensorCount+" records @ "+SensorRate+"Hz)\r\n"
+				+"\tAccData.csv Record Format\r\n"
+				+"\t\t"+ attributeAccData + "\r\n"
+				+"\tGyroData.csv Gyroscope Data file ("+SystemParameters.SensorCount+" records @ "+SensorRate+"Hz)\r\n"
+				+"\tGyroData.csv Record Format\r\n"
+				+"\t\t"+ attributeGyroData + "\r\n"
+				+"Start Logging Date/Time: "+SystemParameters.StartDate	+"\r\n"
 				+"Duration: "+SystemParameters.Duration	+" sec\r\n"
 				+"////////////// Audio Buffer Information //////////////"+ "\r\n"
 				+"First Buffer Start Timestamp: "+SystemParameters.SoundStartTime + "\r\n"
-				+"Final Buffer End Timestamp: "+SystemParameters.SoundEndTime + "\r\n";
-				
-		
+				+"Final Buffer End Timestamp: "+SystemParameters.SoundEndTime + "\r\n"
+				+"////////////// Sensor Information //////////////"+ "\r\n"
+				+"First Data Start Timestamp: "+SystemParameters.SensorStartTime + "\r\n"
+				+"Final Data End Timestamp: "+SystemParameters.SensorEndTime + "\r\n";
 			outputStream.write(outputString.getBytes());
 		
 		}
