@@ -65,16 +65,17 @@ public class MainActivity extends Activity {
 	
     /* Log Related */ 
   	private static LogFileWriter ReadmeWriter;
-  	private Button btMicConnect;
   	private Button btTraining;
   	private Button btTesting;
     
 	/* Sound Wave Related */
-	private SoundWaveHandler sw;
-	public TextView tv_HeadsetConnected;
+	private SoundWaveHandler sw = null;
+	private TextView tv_HeadsetConnected;
+	private Button btMicConnect;
 
 	/* Beacon Related */
-	private BeaconHandler bh;
+	private BeaconHandler bh = null;
+	private Button btKoalaConnect;
      
     /* Bonded Device Related */
 	private Spinner spBondedDeviceSpinner;
@@ -154,9 +155,11 @@ public class MainActivity extends Activity {
 
 		//Button
 		btMicConnect = (Button) findViewById(R.id.bt_micconnect);
+		btKoalaConnect = (Button) findViewById(R.id.bt_koalaconnect);
 		btTraining = (Button) findViewById(R.id.bt_trainingstart);
 		btTesting = (Button) findViewById(R.id.bt_testingstart);
 		btMicConnect.setOnClickListener(MicConnectListener);
+		btKoalaConnect.setOnClickListener(KoalaConnectListener);
 		btTraining.setOnClickListener(TrainingStartClickListener);
 		btTesting.setOnClickListener(TestingStartClickListener);
 
@@ -186,6 +189,7 @@ public class MainActivity extends Activity {
 
 		//Initial Beacon Handler
 		bh = new BeaconHandler(MainActivity.this);
+
 	}
 
     public void updatedBondedDeviceSpinner() {
@@ -246,14 +250,14 @@ public class MainActivity extends Activity {
 		    
 		return intentFilter;
 	}
-    
-    
-    /********************/
-    /** Logging Event **/
+
+
 	/********************/
-    private Button.OnClickListener MicConnectListener = new Button.OnClickListener() {
+	/** Connecting Event **/
+	/********************/
+	private Button.OnClickListener MicConnectListener = new Button.OnClickListener() {
 		public void onClick(View v) {
-			
+
 			if(curState == BUTTON_INITIALSTATE){
 				ControlButtons(BUTTON_MICCONNECTINGSTATE);
 				sw.getService().ConnectScoBTHeadset(CurHeadsetDevice);
@@ -263,8 +267,18 @@ public class MainActivity extends Activity {
 				ControlButtons(BUTTON_INITIALSTATE);
 			}
 		}
-    };
+	};
 
+	private Button.OnClickListener KoalaConnectListener = new Button.OnClickListener() {
+		public void onClick(View v) {
+			Intent i = new Intent(MainActivity.this, KoalaScan.class);
+			startActivity(i);
+		}
+	};
+
+    /********************/
+    /** Logging Event **/
+	/********************/
     private Button.OnClickListener TrainingStartClickListener = new Button.OnClickListener() {
 		@Override
 		public void onClick(View arg0) {

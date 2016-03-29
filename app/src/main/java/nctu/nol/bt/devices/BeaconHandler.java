@@ -10,6 +10,7 @@ import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.util.Log;
 import android.widget.Toast;
@@ -44,7 +45,11 @@ public class BeaconHandler implements SensorEventListener {
     private static final long SCAN_PERIOD = 2000;
 
     // Broadcast Related
-    public final static String ACTION_BEACON_SERVICE_INITIAL_STATE = "BEACONHANDLER.ACTION_SOUND_SERVICE_CONNECT_STATE";
+    public final static String ACTION_BEACON_FOUND_STATE = "BEACONHANDLER.ACTION_BEACON_FOUND_STATE";
+    public final static String ACTION_BEACON_DISCONNECT_STATE = "BEACONHANDLER.ACTION_BEACON_DISCONNECT_STATE";
+    public final static String ACTION_BEACON_CONNECT_STATE = "BEACONHANDLER.ACTION_BEACON_CONNECT_STATE";
+    public final static String KOALA_NAME = "BEACONHANDLER.NAME";
+    public final static String KOALA_ADDRESS = "BEACONHANDLER.ADDRESS";
 
     public BeaconHandler(Activity activity){
         this.mActivity = activity;
@@ -65,6 +70,10 @@ public class BeaconHandler implements SensorEventListener {
 
         if (Build.VERSION.SDK_INT >= 21) {
             mBLEScanner = mBluetoothAdapter.getBluetoothLeScanner();
+            settings = new ScanSettings.Builder()
+                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                    .build();
+            filters = new ArrayList<ScanFilter>();
         }
     }
 
@@ -79,12 +88,16 @@ public class BeaconHandler implements SensorEventListener {
         return -1;
     }
 
+    /******************************/
+    /**  BeaconHandler  Scan  Function **/
+    /******************************/
     public void scanLeDevice() {
         new Thread() {
 
             @Override
             public void run() {
                 if (Build.VERSION.SDK_INT < 21) {
+                    mBluetoothAdapter.stopLeScan(mLeScanCallback);
                     mBluetoothAdapter.startLeScan(mLeScanCallback);
 
                     try {
@@ -95,8 +108,8 @@ public class BeaconHandler implements SensorEventListener {
 
                     mBluetoothAdapter.stopLeScan(mLeScanCallback);
                 } else {
+                    mBLEScanner.stopScan(mScanCallback);
                     mBLEScanner.startScan(mScanCallback);
-
                     try {
                         Thread.sleep(SCAN_PERIOD);
                     } catch (InterruptedException e) {
@@ -105,20 +118,9 @@ public class BeaconHandler implements SensorEventListener {
 
                     mBLEScanner.stopScan(mScanCallback);
                 }
-
-                /*
-                runOnUiThread(new Runnable() {
-		            @Override
-		            public void run() {
-		                // This code will always run on the UI thread, therefore is safe to modify UI elements.
-		            	setupListView();
-		            }
-		        });
-		        */
             }
         }.start();
     }
-
 
     /**
      * The event callback to handle the found of near le devices
@@ -141,14 +143,12 @@ public class BeaconHandler implements SensorEventListener {
                             AtomicBoolean flag = new AtomicBoolean(false);
                             mDevices.add(p);
                             mFlags.add(flag);
-                            Log.i(TAG, "Find device:"+p.getDevice().getAddress());
-                            /*runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    // This code will always run on the UI thread, therefore is safe to modify UI elements.
-                                    setupListView();
-                                }
-                            });*/
+                            Log.i(TAG, "Find device:" + p.getDevice().getAddress());
+
+                            Intent broadcast = new Intent(ACTION_BEACON_FOUND_STATE);
+                            broadcast.putExtra(KOALA_NAME, p.getDevice().getName());
+                            broadcast.putExtra(KOALA_ADDRESS, p.getDevice().getAddress());
+                            mActivity.sendBroadcast(broadcast);
                         }
                     }
                 }
@@ -163,8 +163,8 @@ public class BeaconHandler implements SensorEventListener {
     private ScanCallback mScanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
-            Log.i(TAG, "callbackType"+String.valueOf(callbackType));
-            Log.i(TAG, "result"+result.toString());
+            //Log.i(TAG, "callbackType"+String.valueOf(callbackType));
+            //Log.i(TAG, "result"+result.toString());
             final ScanResult scanResult = result;
             final BluetoothDevice device = scanResult.getDevice();
 
@@ -172,20 +172,18 @@ public class BeaconHandler implements SensorEventListener {
                 @Override
                 public void run() {
                     if (device != null) {
-                        KoalaDevice p = new KoalaDevice(device, scanResult.getRssi(), scanResult.getScanRecord().getBytes());
+                        final KoalaDevice p = new KoalaDevice(device, scanResult.getRssi(), scanResult.getScanRecord().getBytes());
                         int position = findKoalaDevice(device.getAddress());
                         if (position == -1) {
                             AtomicBoolean flag = new AtomicBoolean(false);
                             mDevices.add(p);
                             mFlags.add(flag);
                             Log.i(TAG, "Find device:"+p.getDevice().getAddress());
-                            /*runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    // This code will always run on the UI thread, therefore is safe to modify UI elements.
-                                    setupListView();
-                                }
-                            });*/
+
+                            Intent broadcast = new Intent(ACTION_BEACON_FOUND_STATE);
+                            broadcast.putExtra(KOALA_NAME, p.getDevice().getName());
+                            broadcast.putExtra(KOALA_ADDRESS, p.getDevice().getAddress());
+                            mActivity.sendBroadcast(broadcast);
                         }
                     }
                 }
@@ -205,6 +203,27 @@ public class BeaconHandler implements SensorEventListener {
         }
     };
 
+    /************************************/
+    /**  BeaconHandler  Connection  Function  **/
+    /************************************/
+    public void ConnectToKoala(final String macAddress){
+        int index = findKoalaDevice(macAddress);
+        mDevices.get(index).resetSamplingRate();
+        mDevices.get(index).setConnectedTime();
+        mFlags.get(index).set(true);
+        mServiceManager.connect(macAddress);
+    }
+
+    public void DisconnectToKoala(){
+        mServiceManager.disconnect();
+        mServiceManager.close();
+        mDevices.clear();
+        mFlags.clear();
+    }
+
+    /**************************************/
+    /**  BeaconHandler  Data Recording Function **/
+    /**************************************/
     @Override
     public void onSensorChange(final SensorEvent e) {
         final int eventType = e.type;
@@ -214,42 +233,23 @@ public class BeaconHandler implements SensorEventListener {
                 final int acc_position = findKoalaDevice(e.device.getAddress());
                 if (acc_position != -1) {
                     final KoalaDevice d = mDevices.get(acc_position);
-                    mActivity.runOnUiThread(new Runnable() {
-                        public void run() {
-                            try {
-                                d.addRecvItem();
-                                values[0] = e.values[0];
-                                values[1] = e.values[1];
-                                values[2] = e.values[2];
-                                Log.d(TAG, "time=" + System.currentTimeMillis() + "gX:" + values[0] + "gY:" + values[1] + "gZ:" + values[2] + "\n");
-                                //updateSamplingRate(acc_position, d.getCurrentSamplingRate());
-                                //displayAccData(acc_position, values);
-                            } catch (Exception e) {
-                                Log.e(TAG, e.toString());
-                            }
-                        }
-                    });
+                    d.addRecvItem();
+                    values[0] = e.values[0];
+                    values[1] = e.values[1];
+                    values[2] = e.values[2];
+                    Log.d(TAG, "time=" + System.currentTimeMillis() + "gX:" + values[0] + "gY:" + values[1] + "gZ:" + values[2] + "\n");
+                    //updateSamplingRate(acc_position, d.getCurrentSamplingRate());
                 }
                 break;
             case SensorEvent.TYPE_GYROSCOPE:
                 final int gyro_position = findKoalaDevice(e.device.getAddress());
                 if (gyro_position != -1) {
                     final KoalaDevice d = mDevices.get(gyro_position);
-                    mActivity.runOnUiThread(new Runnable() {
-                        public void run() {
-                            try {
-                                //d.addRecvItem();
-                                values[0] = e.values[0];
-                                values[1] = e.values[1];
-                                values[2] = e.values[2];
-                                Log.d(TAG, "time=" + System.currentTimeMillis() + "aX:" + values[0] + "aY:" + values[1] + "aZ:" + values[2] + "\n");
-                                //updateSamplingRate(gyro_position, d.getCurrentSamplingRate());
-                                //displayAccData(gyro_position, values);
-                            } catch (Exception e) {
-                                Log.e(TAG, e.toString());
-                            }
-                        }
-                    });
+                    //d.addRecvItem();
+                    values[0] = e.values[0];
+                    values[1] = e.values[1];
+                    values[2] = e.values[2];
+                    Log.d(TAG, "time=" + System.currentTimeMillis() + "wX:" + values[0] + "wY:" + values[1] + "wZ:" + values[2] + "\n");
                 }
                 break;
         }
@@ -257,7 +257,13 @@ public class BeaconHandler implements SensorEventListener {
 
     @Override
     public void onConnectionStatusChange(boolean status) {
-
+        if( status ) {
+            Intent broadcast = new Intent(ACTION_BEACON_CONNECT_STATE);
+            mActivity.sendBroadcast(broadcast);
+        } else {
+            Intent broadcast = new Intent(ACTION_BEACON_DISCONNECT_STATE);
+            mActivity.sendBroadcast(broadcast);
+        }
     }
 
     @Override
@@ -267,8 +273,5 @@ public class BeaconHandler implements SensorEventListener {
             Log.d(TAG, "mac Address:" + addr + " rssi:" + rssi);
         }
     }
-
-
-
 
 }
