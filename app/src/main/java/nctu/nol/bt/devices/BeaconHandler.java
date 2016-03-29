@@ -24,6 +24,7 @@ import cc.nctu1210.api.koala6x.KoalaService;
 import cc.nctu1210.api.koala6x.KoalaServiceManager;
 import cc.nctu1210.api.koala6x.SensorEvent;
 import cc.nctu1210.api.koala6x.SensorEventListener;
+import nctu.nol.file.SystemParameters;
 
 
 public class BeaconHandler implements SensorEventListener {
@@ -207,18 +208,12 @@ public class BeaconHandler implements SensorEventListener {
     /**  BeaconHandler  Connection  Function  **/
     /************************************/
     public void ConnectToKoala(final String macAddress){
-        int index = findKoalaDevice(macAddress);
-        mDevices.get(index).resetSamplingRate();
-        mDevices.get(index).setConnectedTime();
-        mFlags.get(index).set(true);
         mServiceManager.connect(macAddress);
     }
 
     public void DisconnectToKoala(){
         mServiceManager.disconnect();
         mServiceManager.close();
-        mDevices.clear();
-        mFlags.clear();
     }
 
     /**************************************/
@@ -234,6 +229,7 @@ public class BeaconHandler implements SensorEventListener {
                 if (acc_position != -1) {
                     final KoalaDevice d = mDevices.get(acc_position);
                     d.addRecvItem();
+                    SystemParameters.SensorCount++;
                     values[0] = e.values[0];
                     values[1] = e.values[1];
                     values[2] = e.values[2];
@@ -245,7 +241,6 @@ public class BeaconHandler implements SensorEventListener {
                 final int gyro_position = findKoalaDevice(e.device.getAddress());
                 if (gyro_position != -1) {
                     final KoalaDevice d = mDevices.get(gyro_position);
-                    //d.addRecvItem();
                     values[0] = e.values[0];
                     values[1] = e.values[1];
                     values[2] = e.values[2];
@@ -257,13 +252,15 @@ public class BeaconHandler implements SensorEventListener {
 
     @Override
     public void onConnectionStatusChange(boolean status) {
+        // Library may occur error when status change to false.
+        /* Log.e(TAG,"Connect State: "+status);
         if( status ) {
             Intent broadcast = new Intent(ACTION_BEACON_CONNECT_STATE);
             mActivity.sendBroadcast(broadcast);
         } else {
             Intent broadcast = new Intent(ACTION_BEACON_DISCONNECT_STATE);
             mActivity.sendBroadcast(broadcast);
-        }
+        }  */
     }
 
     @Override

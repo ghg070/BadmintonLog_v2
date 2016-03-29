@@ -20,6 +20,12 @@ public class SystemParameters {
 	public static long SoundStartTime = 0;
 	public static long SoundEndTime = 0;
 	public static int SoundBufferCount = 0;
+
+	//for sensor
+	public static boolean IsKoalaReady = false;
+	public static long SensorStartTime = 0;
+	public static long SensorEndTime = 0;
+	public static int SensorCount = 0;
 	
 	//for Log File
 	public static String filePath = "";
@@ -38,6 +44,12 @@ public class SystemParameters {
 		SoundStartTime = 0;
 		SoundEndTime = 0;
 		SoundBufferCount = 0;
+
+		//for sensor
+		IsKoalaReady = false;
+		SensorStartTime = 0;
+		SensorEndTime = 0;
+		SensorCount = 0;
 		
 		//for log file
 		filePath = "";
