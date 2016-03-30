@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import cc.nctu1210.api.koala6x.KoalaService;
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
 import nctu.nol.bt.devices.BeaconHandler;
@@ -127,6 +128,7 @@ public class MainActivity extends Activity {
 		}
 
 		unregisterReceiver(mSoundWaveHandlerStateUpdateReceiver);
+		unregisterReceiver(mKoalaStateUpdateReceiver);
 		return;
 	}
 	
@@ -197,6 +199,7 @@ public class MainActivity extends Activity {
 
 		//Initial Beacon Handler
 		bh = new BeaconHandler(MainActivity.this);
+		registerReceiver(mKoalaStateUpdateReceiver,makeKoalaStateUpdateIntentFilter());
 
 	}
 
@@ -223,8 +226,29 @@ public class MainActivity extends Activity {
     }
     
     /**********************/
-    /** Broadcast Event	 **/
+    /**    Broadcast Event	 **/
 	/**********************/
+	private final BroadcastReceiver mKoalaStateUpdateReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if( KoalaService.ACTION_GATT_CONNECTED.equals(action) ){
+				SystemParameters.IsKoalaReady = true;
+				Log.d(TAG,"test OK");
+			}else if( KoalaService.ACTION_GATT_DISCONNECTED.equals(action) ){
+				SystemParameters.IsKoalaReady = false;
+			}
+		}
+	};
+	private static IntentFilter makeKoalaStateUpdateIntentFilter() {
+		final IntentFilter intentFilter = new IntentFilter();
+
+		intentFilter.addAction(KoalaService.ACTION_GATT_CONNECTED);
+		intentFilter.addAction(KoalaService.ACTION_GATT_DISCONNECTED);
+
+		return intentFilter;
+	}
+
 	private final BroadcastReceiver mSoundWaveHandlerStateUpdateReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
