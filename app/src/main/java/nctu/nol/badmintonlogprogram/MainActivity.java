@@ -55,42 +55,37 @@ public class MainActivity extends Activity {
 	private BluetoothAdapter mBluetoothAdapter = null;	
 	private static final int REQUEST_ENABLE_BT = 1;
 	private static final int REQUEST_OPEN_BTSETTING = 2;
-    
-	/* Button State Related */
-	private static final int BUTTON_ALLCLOSE = -1; 
-	private static final int BUTTON_INITIALSTATE = 0; 
-	private static final int BUTTON_MICCONNECTINGSTATE = 1;
-	private static final int BUTTON_READYSTATE = 2; 
-	private static final int BUTTON_TRAININGSTATE = 3; 
-	private static final int BUTTON_TESTINGSTATE = 4; 
-	private static int curState;
 	
     /* Log Related */ 
   	private static LogFileWriter ReadmeWriter;
   	private Button btTraining;
   	private Button btTesting;
+	private Boolean isTraining = false;
+	private Boolean isTesting = false;
     
 	/* Sound Wave Related */
 	private SoundWaveHandler sw = null;
 	private TextView tv_HeadsetConnected;
 	private Button btMicConnect;
+	private BluetoothDevice CurHeadsetDevice;
 
 	/* Beacon Related */
 	private BeaconHandler bh = null;
+	private TextView tv_KoalaConnected;
 	private Button btKoalaConnect;
+	private String CurKoalaDevice;
      
     /* Bonded Device Related */
 	private Spinner spBondedDeviceSpinner;
 	private CustomArrayAdapter BondedDeviceNameList;
 	private List<BluetoothDevice> BondedDevices = new ArrayList<BluetoothDevice>();
-	private BluetoothDevice CurHeadsetDevice;
 
     /* Timer Related */
   	private Handler timerHandler = new Handler();
     private TextView tv_durationTime;
     
     /* Algorithm Related */
-    private FrequencyBandModel fbm = new FrequencyBandModel();
+    private FrequencyBandModel fbm = null;
     
 
     @Override
@@ -127,6 +122,11 @@ public class MainActivity extends Activity {
 			sw = null;
 		}
 
+		if(bh != null){
+			bh.deleteObject();
+			bh = null;
+		}
+
 		unregisterReceiver(mSoundWaveHandlerStateUpdateReceiver);
 		unregisterReceiver(mKoalaStateUpdateReceiver);
 		return;
@@ -151,7 +151,8 @@ public class MainActivity extends Activity {
         }else if(requestCode == KOALA_SCAN_PAGE_RESULT){
 			if(resultCode == Activity.RESULT_OK && bh != null){
 				final String clickedMacAddress = data.getExtras().getString(KoalaScan.macAddress);
-				Log.d(TAG, "User choose the device: " + clickedMacAddress);
+				final String clickedDeviceName = data.getExtras().getString(KoalaScan.deviceName);
+				CurKoalaDevice = clickedDeviceName + "-" +clickedMacAddress;
 				bh.ConnectToKoala(clickedMacAddress);
 			}
 		}
@@ -162,6 +163,7 @@ public class MainActivity extends Activity {
 		//TextView
 		tv_durationTime = (TextView) findViewById(R.id.tv_duration);	
 		tv_HeadsetConnected = (TextView) findViewById(R.id.tv_headset);
+		tv_KoalaConnected = (TextView) findViewById(R.id.tv_koala);
 
 		//Button
 		btMicConnect = (Button) findViewById(R.id.bt_micconnect);
@@ -178,8 +180,6 @@ public class MainActivity extends Activity {
 		BondedDeviceNameList = new CustomArrayAdapter(MainActivity.this, android.R.layout.simple_spinner_item, BondedDevices);                                     
 		spBondedDeviceSpinner.setAdapter(BondedDeviceNameList);
 		spBondedDeviceSpinner.setOnItemSelectedListener(BondedDeviceSelectedListener);
-
-		curState = BUTTON_INITIALSTATE;
 		
 	}
 	private void initialBTManager() {
@@ -232,19 +232,20 @@ public class MainActivity extends Activity {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
-			if( KoalaService.ACTION_GATT_CONNECTED.equals(action) ){
-				SystemParameters.IsKoalaReady = true;
-				Log.d(TAG,"test OK");
-			}else if( KoalaService.ACTION_GATT_DISCONNECTED.equals(action) ){
-				SystemParameters.IsKoalaReady = false;
+			if( BeaconHandler.ACTION_BEACON_CONNECT_STATE.equals(action) ){
+				tv_KoalaConnected.setText(CurKoalaDevice);
+				btKoalaConnect.setText(R.string.Koala_Connected_State);
+			}else if( BeaconHandler.ACTION_BEACON_DISCONNECT_STATE.equals(action) ){
+				tv_KoalaConnected.setText("disconnected");
+				btKoalaConnect.setText(R.string.Koala_Disconnected_State);
 			}
 		}
 	};
 	private static IntentFilter makeKoalaStateUpdateIntentFilter() {
 		final IntentFilter intentFilter = new IntentFilter();
 
-		intentFilter.addAction(KoalaService.ACTION_GATT_CONNECTED);
-		intentFilter.addAction(KoalaService.ACTION_GATT_DISCONNECTED);
+		intentFilter.addAction(BeaconHandler.ACTION_BEACON_CONNECT_STATE);
+		intentFilter.addAction(BeaconHandler.ACTION_BEACON_DISCONNECT_STATE);
 
 		return intentFilter;
 	}
@@ -257,18 +258,26 @@ public class MainActivity extends Activity {
 				updatedBondedDeviceSpinner();
 
 			else if( SoundWaveHandler.ACTION_SOUND_NOT_PREPARE_STATE.equals(action) ){
-            	tv_HeadsetConnected.setText("disconnected");               	
-            	if(curState == BUTTON_TRAININGSTATE)//if Logging is running
-            		btTraining.performClick();     
-            	else
-            		ControlButtons(BUTTON_INITIALSTATE);
+            	tv_HeadsetConnected.setText("disconnected");
+				btMicConnect.setText(R.string.BT_Mic_Disconnected_State);
+				btMicConnect.setEnabled(true);
+				btKoalaConnect.setEnabled(true);
+
+            	if( SystemParameters.isServiceRunning.get() && isTraining )//if Logging is running
+            		btTraining.performClick();
+				else if( SystemParameters.isServiceRunning.get() && isTesting)
+					btTesting.performClick();
+
 			}else if( SoundWaveHandler.ACTION_SOUND_PREPARING_STATE.equals(action) ){			
 				CurHeadsetDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-				ControlButtons(BUTTON_ALLCLOSE);
+				btMicConnect.setEnabled(false);
+				btKoalaConnect.setEnabled(false);
+
 			}else if( SoundWaveHandler.ACTION_SOUND_PREPARED_STATE.equals(action) ){
-				//UI Control
             	tv_HeadsetConnected.setText(CurHeadsetDevice.getName()+"-"+CurHeadsetDevice.getAddress());
-            	ControlButtons(BUTTON_READYSTATE);
+				btMicConnect.setText(R.string.BT_Mic_Connected_State);
+				btMicConnect.setEnabled(true);
+				btKoalaConnect.setEnabled(true);
 			}
 		}
 	};
@@ -289,22 +298,21 @@ public class MainActivity extends Activity {
 	/********************/
 	private Button.OnClickListener MicConnectListener = new Button.OnClickListener() {
 		public void onClick(View v) {
-
-			if(curState == BUTTON_INITIALSTATE){
-				ControlButtons(BUTTON_MICCONNECTINGSTATE);
+			if( !SystemParameters.IsBtHeadsetReady )
 				sw.getService().ConnectScoBTHeadset(CurHeadsetDevice);
-			}
-			else{
+			else
 				sw.getService().DisconnectAllScoBTHeadset();
-				ControlButtons(BUTTON_INITIALSTATE);
-			}
 		}
 	};
 
 	private Button.OnClickListener KoalaConnectListener = new Button.OnClickListener() {
 		public void onClick(View v) {
-			Intent i = new Intent(MainActivity.this, KoalaScan.class);
-			startActivityForResult(i, KOALA_SCAN_PAGE_RESULT);
+			if(SystemParameters.IsKoalaReady)
+				bh.DisconnectToKoala();
+			else{
+				Intent i = new Intent(MainActivity.this, KoalaScan.class);
+				startActivityForResult(i, KOALA_SCAN_PAGE_RESULT);
+			}
 		}
 	};
 
@@ -314,21 +322,25 @@ public class MainActivity extends Activity {
     private Button.OnClickListener TrainingStartClickListener = new Button.OnClickListener() {
 		@Override
 		public void onClick(View arg0) {
-			if(curState == BUTTON_READYSTATE)
+			if(SystemParameters.IsBtHeadsetReady && !isTraining)
 				ActiveLogging(LogFileWriter.TRAINING_TYPE);
-			else
+			else if(isTraining)
 				StopLogging(LogFileWriter.TRAINING_TYPE);
+			else
+				Toast.makeText(MainActivity.this,"You have to connect bt headset.",Toast.LENGTH_SHORT).show();
 		}
 	};
 	
 	private Button.OnClickListener TestingStartClickListener = new Button.OnClickListener() {
 		@Override
 		public void onClick(View arg0) {
-			if(fbm.CheckModelHasTrained()){
-				if(curState == BUTTON_READYSTATE)
+			if(fbm != null && fbm.CheckModelHasTrained()){
+				if(SystemParameters.IsBtHeadsetReady && SystemParameters.IsKoalaReady && !isTesting)
 					ActiveLogging(LogFileWriter.TESTING_TYPE);
-				else
+				else if(isTesting)
 					StopLogging(LogFileWriter.TESTING_TYPE);
+				else
+					Toast.makeText(MainActivity.this,"You have to connect bt headset and koala.",Toast.LENGTH_SHORT).show();
 			}else{
 				Toast.makeText(getBaseContext(), "You must train your racket first.", Toast.LENGTH_SHORT).show();
 			}
@@ -340,10 +352,17 @@ public class MainActivity extends Activity {
 		SystemParameters.initializeSystemParameters();
 
 		//UI Button Control
-		if(LogType == LogFileWriter.TESTING_TYPE)
-			ControlButtons(BUTTON_TESTINGSTATE);
-		else
-			ControlButtons(BUTTON_TRAININGSTATE);
+		if(LogType == LogFileWriter.TESTING_TYPE) {
+			btTesting.setText(R.string.Testing_State);
+			btTraining.setEnabled(false);
+			isTesting = true;
+		}
+		else{
+			btTraining.setText(R.string.Training_State);
+			btTesting.setEnabled(false);
+			isTraining = true;
+		}
+
 
 		//Initial Log File
 		ReadmeWriter = new LogFileWriter("Readme.txt", LogFileWriter.README_TYPE, LogType);
@@ -354,8 +373,8 @@ public class MainActivity extends Activity {
 					// AudioRecord Ready
 					sw.startRecording(LogType);
 
-					//等待1sec後開始
-					sleep(1000);
+					//等待2sec後開始
+					sleep(2000);
 
 					//設定開始時間
 					SetMeasureStartTime();
@@ -404,11 +423,17 @@ public class MainActivity extends Activity {
 					public void run(){
 						showLogInformationDialog();
 
-						//Control Button
-						if(SystemParameters.IsBtHeadsetReady)
-							ControlButtons(BUTTON_READYSTATE);
-						else
-							ControlButtons(BUTTON_INITIALSTATE);
+						//UI Button Control
+						if(LogType == LogFileWriter.TESTING_TYPE) {
+							btTesting.setText(R.string.Not_Testing_State);
+							btTraining.setEnabled(true);
+							isTesting = false;
+						}
+						else{
+							btTraining.setText(R.string.Not_Training_State);
+							btTesting.setEnabled(true);
+							isTraining = false;
+						}
 
 						dialog.dismiss();
 					}
@@ -511,6 +536,7 @@ public class MainActivity extends Activity {
 		*/
 
 		// Find top K freq band
+		fbm = new FrequencyBandModel();
 		Vector<FrequencyBandModel.MainFreqInOneWindow> AllMainFreqBands = fbm.FindSpectrumMainFreqs(peaks, vals, 512, SoundWaveHandler.SAMPLE_RATE);
 		fbm.setTopKFreqBandTable(AllMainFreqBands, peaks.size());
 		List<HashMap.Entry<Float, Float>> TopKMainFreqs = fbm.getTopKMainFreqBandTable();
@@ -553,70 +579,6 @@ public class MainActivity extends Activity {
     
     private void StartTestingAlgo(){
     	
-    }
-    
-    
-    /**********************/
-    /** Control Elements **/
-    /**********************/
-    private void ControlButtons(int state){
-		curState = state;
-		//Log.d(TAG,"State: "+curState);
-    	switch(state){
-    		case BUTTON_INITIALSTATE:
-    			btMicConnect.setText("Connect BT Mic");
-    			btTraining.setText("Start Training");
-    			btTesting.setText("Start Testing");
-    			btMicConnect.setEnabled(true);
-    			btTraining.setEnabled(false);
-    			btTesting.setEnabled(false);
-    			spBondedDeviceSpinner.setEnabled(true);
-    			break;
-    		case BUTTON_MICCONNECTINGSTATE:
-                btMicConnect.setText("Reset");
-                btTraining.setText("Start Training");
-                btTesting.setText("Start Testing");
-    			btMicConnect.setEnabled(true);
-    			btTraining.setEnabled(false);
-    			btTesting.setEnabled(false);
-    			spBondedDeviceSpinner.setEnabled(false);
-    			break;
-    		case BUTTON_READYSTATE:
-    			btMicConnect.setText("Reset");
-    			btTraining.setText("Start Training");
-    			btTesting.setText("Start Testing");
-    			btMicConnect.setEnabled(true);
-    			btTraining.setEnabled(true);
-    			btTesting.setEnabled(true);
-    			spBondedDeviceSpinner.setEnabled(false);
-    			break;
-    		case BUTTON_TRAININGSTATE:
-    			btMicConnect.setText("Reset");
-    			btTraining.setText("Finish");
-    			btTesting.setText("Start Testing");
-    			btMicConnect.setEnabled(false);
-    			btTraining.setEnabled(true);
-    			btTesting.setEnabled(false);
-    			spBondedDeviceSpinner.setEnabled(false);
-    			break;
-    		case BUTTON_TESTINGSTATE:
-    			btMicConnect.setText("Reset");
-    			btTraining.setText("Start Training");
-    			btTesting.setText("Finish");
-    			btMicConnect.setEnabled(false);
-    			btTraining.setEnabled(false);
-    			btTesting.setEnabled(true);
-    			spBondedDeviceSpinner.setEnabled(false);
-    			break;
-    		case BUTTON_ALLCLOSE:
-    			btMicConnect.setEnabled(false);
-    			btTraining.setEnabled(false);
-    			btTesting.setEnabled(false);
-    			spBondedDeviceSpinner.setEnabled(false);
-    			break;
-    		default:
-    			break;
-    	}
     }
     
     

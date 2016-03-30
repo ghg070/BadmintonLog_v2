@@ -2,7 +2,14 @@
 <resources>
 
     <string name="app_name">BadmintonLog</string>
-    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="BT_Mic_Connected_State">Disconnect BT Mic</string>
+    <string name="BT_Mic_Disconnected_State">Connect BT Mic</string>
+    <string name="Koala_Connected_State">Disconnect Koala</string>
+    <string name="Koala_Disconnected_State">Connect Koala</string>
+    <string name="Training_State">Finish Training</string>
+    <string name="Not_Training_State">Start Training</string>
+    <string name="Testing_State">Finish Testing</string>
+    <string name="Not_Testing_State">Start Testing</string>
 
 </resources>

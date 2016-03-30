@@ -46,9 +46,8 @@ public class BeaconHandler implements SensorEventListener {
     public static final long SCAN_PERIOD = 2000;
 
     // Broadcast Related
-    // public final static String ACTION_BEACON_FOUND_STATE = "BEACONHANDLER.ACTION_BEACON_FOUND_STATE";
-    // public final static String KOALA_NAME = "BEACONHANDLER.NAME";
-    // public final static String KOALA_ADDRESS = "BEACONHANDLER.ADDRESS";
+    public final static String ACTION_BEACON_CONNECT_STATE = "BEACONHANDLER.ACTION_BEACON_CONNECT_STATE";
+    public final static String ACTION_BEACON_DISCONNECT_STATE = "BEACONHANDLER.ACTION_BEACON_DISCONNECT_STATE";
 
     public BeaconHandler(Activity activity){
         this.mActivity = activity;
@@ -74,6 +73,10 @@ public class BeaconHandler implements SensorEventListener {
                     .build();
             filters = new ArrayList<ScanFilter>();
         }
+    }
+
+    public void deleteObject(){
+        mServiceManager.close();
     }
 
     private int findKoalaDevice(String macAddr) {
@@ -178,11 +181,6 @@ public class BeaconHandler implements SensorEventListener {
                             mDevices.add(p);
                             mFlags.add(flag);
                             Log.i(TAG, "Find device:"+p.getDevice().getAddress());
-
-                            //Intent broadcast = new Intent(ACTION_BEACON_FOUND_STATE);
-                            //broadcast.putExtra(KOALA_NAME, p.getDevice().getName());
-                            //broadcast.putExtra(KOALA_ADDRESS, p.getDevice().getAddress());
-                            //mActivity.sendBroadcast(broadcast);
                         }
                     }
                 }
@@ -215,7 +213,7 @@ public class BeaconHandler implements SensorEventListener {
 
     public void DisconnectToKoala(){
         mServiceManager.disconnect();
-        mServiceManager.close();
+       // mServiceManager.close();
     }
 
     /**************************************/
@@ -254,15 +252,16 @@ public class BeaconHandler implements SensorEventListener {
 
     @Override
     public void onConnectionStatusChange(boolean status) {
-        // Library may occur error when status change to false.
-        /* Log.e(TAG,"Connect State: "+status);
+         Log.e(TAG,"Connect State: "+status);
         if( status ) {
+            SystemParameters.IsKoalaReady = true;
             Intent broadcast = new Intent(ACTION_BEACON_CONNECT_STATE);
             mActivity.sendBroadcast(broadcast);
         } else {
+            SystemParameters.IsKoalaReady = false;
             Intent broadcast = new Intent(ACTION_BEACON_DISCONNECT_STATE);
             mActivity.sendBroadcast(broadcast);
-        }  */
+        }
     }
 
     @Override

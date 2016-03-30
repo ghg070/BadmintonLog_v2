@@ -28,6 +28,7 @@ public class KoalaScan extends Activity{
     private ArrayList<String> koala= new ArrayList<String>();
     // Pass Result Related
     public static final String macAddress = "KoalaScan.MacAddress";
+    public static final String deviceName = "KoalaScan.DeviceName";
     //ProgressDialog
     private ProgressDialog dialog;
 
@@ -58,7 +59,7 @@ public class KoalaScan extends Activity{
             public void onClick(View arg0) {
                 koala.clear();
                 bh.scanLeDevice();
-                dialog = ProgressDialog.show(KoalaScan.this, "讀取中", "請等待", true);
+                dialog = ProgressDialog.show(KoalaScan.this, "請稍後", "藍芽設備搜尋中", true);
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -91,23 +92,12 @@ public class KoalaScan extends Activity{
             String sel =arg0.getItemAtPosition(arg2).toString();
             Intent intent = new Intent();
             Bundle b = new Bundle();
+            b.putString(deviceName, sel.split(" ")[0]);
             b.putString(macAddress, sel.split(" ")[1]);
             intent.putExtras(b);
             KoalaScan.this.setResult(RESULT_OK, intent);
             finish();
         }
     };
-
-    /*
-    @Override
-    public void onBackPressed() {
-        Intent intent = new Intent();
-        Bundle b = new Bundle();
-        b.putString(macAddress, "Koala Result");
-        intent.putExtras(b);
-        this.setResult(RESULT_OK, intent);
-
-        finish();
-    }*/
 
 }
