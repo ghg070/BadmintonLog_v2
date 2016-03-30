@@ -19,7 +19,7 @@
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
 	        android:text = "Headset : "
-	    	android:textSize="25sp">
+	    	android:textSize="22sp">
 	    </TextView>
 
 	    <TextView
@@ -28,7 +28,31 @@
 	        android:layout_height="wrap_content"
 			android:layout_marginLeft="5sp"
 	        android:text = "disconnected"
-	    	android:textSize="25sp" >
+	    	android:textSize="22sp" >
+		</TextView>
+	</LinearLayout>
+
+	<!-- Koala Connect Check -->
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="10sp"
+		android:orientation="horizontal" >
+
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text = "Koala : "
+			android:textSize="22sp">
+		</TextView>
+
+		<TextView
+			android:id="@+id/tv_koala"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginLeft="5sp"
+			android:text = "disconnected"
+			android:textSize="22sp" >
 		</TextView>
 	</LinearLayout>
 
@@ -43,15 +67,15 @@
         <TextView
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
-	        android:text = "Paired Device : "
-	    	android:textSize="25sp">
+	        android:text = "Paired Headset : "
+	    	android:textSize="22sp">
 	    </TextView>
 
 	    <Spinner
 	        android:id="@+id/sp_bondeddevice"
     		android:layout_width="match_parent"
         	android:layout_height="wrap_content"
-        	android:textSize = "25sp" >
+        	android:textSize = "22sp" >
 	    </Spinner>
 	</LinearLayout>
 
@@ -66,7 +90,7 @@
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
 	        android:text = "Duration : "
-	    	android:textSize="25sp">
+	    	android:textSize="22sp">
 	    </TextView>
 
 	    <TextView
@@ -75,7 +99,7 @@
 	        android:layout_height="wrap_content"
 			android:layout_marginLeft="5sp"
 	        android:text = "0"
-	    	android:textSize="25sp" >
+	    	android:textSize="22sp" >
 		</TextView>
 	</LinearLayout>
 
@@ -92,14 +116,14 @@
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
 	        android:layout_marginTop="5sp"
-	        android:text="Connect BT Mic"
+	        android:text="@string/BT_Mic_Disconnected_State"
 			android:textSize="25sp">
 	    </Button>
  		<Button
 	 		android:id="@+id/bt_koalaconnect"
 		 	android:layout_width="fill_parent"
 		 	android:layout_height="wrap_content"
-		 	android:text="Connect Koala"
+			android:text="@string/Koala_Disconnected_State"
 		 	android:textSize="25sp">
 	 	</Button>
 
@@ -107,8 +131,7 @@
 	        android:id="@+id/bt_trainingstart"
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
-	        android:enabled="false"
-	        android:text="Start Training"
+	        android:text="@string/Not_Training_State"
 			android:textSize="25sp">
 	    </Button>
 
@@ -116,8 +139,7 @@
 	        android:id="@+id/bt_testingstart"
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
-	        android:enabled="false"
-	        android:text="Start Testing"
+	        android:text="@string/Not_Testing_State"
 			android:textSize="25sp">
 	    </Button>
      </LinearLayout>

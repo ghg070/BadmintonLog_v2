@@ -373,7 +373,7 @@ public class SoundWaveHandler {
                 	SystemParameters.IsBtHeadsetReady = true;
                 	Intent broadcast = new Intent(ACTION_SOUND_PREPARED_STATE);    
 	                mContext.sendBroadcast(broadcast);
-                }else if( AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state ){
+                }else if( AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state && SystemParameters.IsBtHeadsetReady ){
                 	SystemParameters.IsBtHeadsetReady = false;
                 	Intent broadcast = new Intent(ACTION_SOUND_NOT_PREPARE_STATE);    
 	                mContext.sendBroadcast(broadcast);
