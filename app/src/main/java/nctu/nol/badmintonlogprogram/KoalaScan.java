@@ -11,7 +11,12 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+
+import cc.nctu1210.api.koala6x.KoalaDevice;
 import nctu.nol.bt.devices.BeaconHandler;
+
 
 public class KoalaScan extends Activity{
 
@@ -19,7 +24,8 @@ public class KoalaScan extends Activity{
     private BeaconHandler bh = null;
     private Button btScan;
     private ListView listkoala;
-    private ArrayAdapter adapter;
+    private ArrayAdapter<String> Adapter;
+    private ArrayList<String> koala= new ArrayList<String>();
     // Pass Result Related
     public static final String macAddress = "KoalaScan.MacAddress";
     //ProgressDialog
@@ -37,47 +43,60 @@ public class KoalaScan extends Activity{
         //ListView
         listkoala = (ListView) findViewById(R.id.list_device);
         listkoala.setOnItemClickListener(ListClickListener);
+        Adapter = new ArrayAdapter<String>(KoalaScan.this, android.R.layout.simple_list_item_1, koala);
+        listkoala.setAdapter(Adapter);
 
         //Button
         btScan = (Button) findViewById(R.id.bt_scan);
         btScan.setOnClickListener(KoalaScanListener);
     }
-    private Button.OnClickListener KoalaScanListener = new Button.OnClickListener() {
-        @Override
-        public void onClick(View arg0) {
-            bh.scanLeDevice();
-            dialog = ProgressDialog.show(KoalaScan.this, "讀取中", "請等待", true);
-            new Thread(new Runnable(){
-                @Override
-                public void run() {
-                    try{
-                        // DO something
-                        Thread.sleep(3000);
+    private Button.OnClickListener KoalaScanListener;
+
+    {
+        KoalaScanListener = new Button.OnClickListener() {
+            @Override
+            public void onClick(View arg0) {
+                koala.clear();
+                bh.scanLeDevice();
+                dialog = ProgressDialog.show(KoalaScan.this, "讀取中", "請等待", true);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(bh.SCAN_PERIOD);
+                            for (int i = 0, size = bh.getScanedDevices().size(); i < size; i++) {
+                                KoalaDevice d = bh.getScanedDevices().get(i);
+                                koala.add(d.getDevice().getName() + " " + d.getDevice().getAddress());
+                            }
+                            runOnUiThread(new Runnable() {
+                                public void run() {
+                                    Adapter.notifyDataSetChanged();
+                                }
+                            });
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            dialog.dismiss();
+                        }
                     }
-                    catch(Exception e){
-                        e.printStackTrace();
-                    }
-                    finally{
-                        dialog.dismiss();
-                    }
-                }
-            }).start();
-        }
-    };
+                }).start();
+
+            }
+        };
+    }
+
     private ListView.OnItemClickListener ListClickListener = new ListView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
             String sel =arg0.getItemAtPosition(arg2).toString();
-            Log.i("LAG",sel);
-            /*Intent intent = new Intent();
+            Intent intent = new Intent();
             Bundle b = new Bundle();
-            b.putString(macAddress, "Koala Result");
+            b.putString(macAddress, sel.split(" ")[1]);
             intent.putExtras(b);
-            this.setResult(RESULT_OK, intent);
-            finish();*/
+            KoalaScan.this.setResult(RESULT_OK, intent);
+            finish();
         }
     };
-
 
     /*
     @Override
