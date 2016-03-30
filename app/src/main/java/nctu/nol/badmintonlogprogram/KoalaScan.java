@@ -1,6 +1,7 @@
 package nctu.nol.badmintonlogprogram;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -10,10 +11,13 @@ import nctu.nol.bt.devices.BeaconHandler;
 
 public class KoalaScan extends Activity {
 
+    // Scan Related
+    private BeaconHandler bh = null;
     private Button btScan;
     private ListView listkoala;
 
-    private BeaconHandler bh = null;
+    // Pass Result Related
+    public static final String macAddress = "KoalaScan.MacAddress";
 
 
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,5 +42,17 @@ public class KoalaScan extends Activity {
             bh.scanLeDevice();
         }
     };
+
+    /*
+    @Override
+    public void onBackPressed() {
+        Intent intent = new Intent();
+        Bundle b = new Bundle();
+        b.putString(macAddress, "Koala Result");
+        intent.putExtras(b);
+        this.setResult(RESULT_OK, intent);
+
+        finish();
+    }*/
 
 }

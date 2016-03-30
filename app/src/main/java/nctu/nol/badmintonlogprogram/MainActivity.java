@@ -48,6 +48,7 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
 
 	private final static String TAG = "MainActivity";
+	public final static int KOALA_SCAN_PAGE_RESULT = 11;
 	
 	/* BT related */
 	private BluetoothAdapter mBluetoothAdapter = null;	
@@ -144,7 +145,14 @@ public class MainActivity extends Activity {
         }else if(requestCode == REQUEST_OPEN_BTSETTING){
         	//Get Bonded Devices
             updatedBondedDeviceSpinner();
-        }
+
+        }else if(requestCode == KOALA_SCAN_PAGE_RESULT){
+			if(resultCode == Activity.RESULT_OK && bh != null){
+				final String clickedMacAddress = data.getExtras().getString(KoalaScan.macAddress);
+				Log.d(TAG, "User choose the device: " + clickedMacAddress);
+				bh.ConnectToKoala(clickedMacAddress);
+			}
+		}
         super.onActivityResult(requestCode, resultCode, data);
     }
     
@@ -272,7 +280,7 @@ public class MainActivity extends Activity {
 	private Button.OnClickListener KoalaConnectListener = new Button.OnClickListener() {
 		public void onClick(View v) {
 			Intent i = new Intent(MainActivity.this, KoalaScan.class);
-			startActivity(i);
+			startActivityForResult(i, KOALA_SCAN_PAGE_RESULT);
 		}
 	};
 

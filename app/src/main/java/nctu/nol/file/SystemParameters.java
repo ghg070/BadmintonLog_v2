@@ -46,7 +46,6 @@ public class SystemParameters {
 		SoundBufferCount = 0;
 
 		//for sensor
-		IsKoalaReady = false;
 		SensorStartTime = 0;
 		SensorEndTime = 0;
 		SensorCount = 0;
