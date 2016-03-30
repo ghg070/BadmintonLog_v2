@@ -43,14 +43,12 @@ public class BeaconHandler implements SensorEventListener {
     private List<ScanFilter> filters;
     public static ArrayList<KoalaDevice> mDevices = new ArrayList<KoalaDevice>();  // Manage the devices
     public static ArrayList<AtomicBoolean> mFlags = new ArrayList<AtomicBoolean>();
-    private static final long SCAN_PERIOD = 2000;
+    public static final long SCAN_PERIOD = 2000;
 
     // Broadcast Related
-    public final static String ACTION_BEACON_FOUND_STATE = "BEACONHANDLER.ACTION_BEACON_FOUND_STATE";
-    public final static String ACTION_BEACON_DISCONNECT_STATE = "BEACONHANDLER.ACTION_BEACON_DISCONNECT_STATE";
-    public final static String ACTION_BEACON_CONNECT_STATE = "BEACONHANDLER.ACTION_BEACON_CONNECT_STATE";
-    public final static String KOALA_NAME = "BEACONHANDLER.NAME";
-    public final static String KOALA_ADDRESS = "BEACONHANDLER.ADDRESS";
+    // public final static String ACTION_BEACON_FOUND_STATE = "BEACONHANDLER.ACTION_BEACON_FOUND_STATE";
+    // public final static String KOALA_NAME = "BEACONHANDLER.NAME";
+    // public final static String KOALA_ADDRESS = "BEACONHANDLER.ADDRESS";
 
     public BeaconHandler(Activity activity){
         this.mActivity = activity;
@@ -146,10 +144,10 @@ public class BeaconHandler implements SensorEventListener {
                             mFlags.add(flag);
                             Log.i(TAG, "Find device:" + p.getDevice().getAddress());
 
-                            Intent broadcast = new Intent(ACTION_BEACON_FOUND_STATE);
-                            broadcast.putExtra(KOALA_NAME, p.getDevice().getName());
-                            broadcast.putExtra(KOALA_ADDRESS, p.getDevice().getAddress());
-                            mActivity.sendBroadcast(broadcast);
+                            //Intent broadcast = new Intent(ACTION_BEACON_FOUND_STATE);
+                            //broadcast.putExtra(KOALA_NAME, p.getDevice().getName());
+                            //broadcast.putExtra(KOALA_ADDRESS, p.getDevice().getAddress());
+                            //mActivity.sendBroadcast(broadcast);
                         }
                     }
                 }
@@ -181,10 +179,10 @@ public class BeaconHandler implements SensorEventListener {
                             mFlags.add(flag);
                             Log.i(TAG, "Find device:"+p.getDevice().getAddress());
 
-                            Intent broadcast = new Intent(ACTION_BEACON_FOUND_STATE);
-                            broadcast.putExtra(KOALA_NAME, p.getDevice().getName());
-                            broadcast.putExtra(KOALA_ADDRESS, p.getDevice().getAddress());
-                            mActivity.sendBroadcast(broadcast);
+                            //Intent broadcast = new Intent(ACTION_BEACON_FOUND_STATE);
+                            //broadcast.putExtra(KOALA_NAME, p.getDevice().getName());
+                            //broadcast.putExtra(KOALA_ADDRESS, p.getDevice().getAddress());
+                            //mActivity.sendBroadcast(broadcast);
                         }
                     }
                 }
@@ -203,6 +201,10 @@ public class BeaconHandler implements SensorEventListener {
             Log.e(TAG, "Scan Failed, Error Code: " + errorCode);
         }
     };
+
+    public final ArrayList<KoalaDevice> getScanedDevices(){
+        return mDevices;
+    }
 
     /************************************/
     /**  BeaconHandler  Connection  Function  **/
