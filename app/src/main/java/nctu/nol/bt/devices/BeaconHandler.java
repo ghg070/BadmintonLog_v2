@@ -15,8 +15,10 @@ import android.os.Build;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cc.nctu1210.api.koala6x.KoalaDevice;
@@ -24,6 +26,7 @@ import cc.nctu1210.api.koala6x.KoalaService;
 import cc.nctu1210.api.koala6x.KoalaServiceManager;
 import cc.nctu1210.api.koala6x.SensorEvent;
 import cc.nctu1210.api.koala6x.SensorEventListener;
+import nctu.nol.file.LogFileWriter;
 import nctu.nol.file.SystemParameters;
 
 
@@ -43,7 +46,16 @@ public class BeaconHandler implements SensorEventListener {
     private List<ScanFilter> filters;
     public static ArrayList<KoalaDevice> mDevices = new ArrayList<KoalaDevice>();  // Manage the devices
     public static ArrayList<AtomicBoolean> mFlags = new ArrayList<AtomicBoolean>();
-    public static final long SCAN_PERIOD = 2000;
+    public static final long SCAN_PERIOD = 3000;
+
+    // Data Store
+    private Vector<SensorData> AccDataset = new Vector<SensorData>();
+    private Vector<SensorData> GyroDataset = new Vector<SensorData>();;
+
+    // FileWrite for Logging
+    private LogFileWriter AccDataWriter;
+    private LogFileWriter GyroDataWriter;
+    public boolean mIsRecording = false;
 
     // Broadcast Related
     public final static String ACTION_BEACON_CONNECT_STATE = "BEACONHANDLER.ACTION_BEACON_CONNECT_STATE";
@@ -75,19 +87,13 @@ public class BeaconHandler implements SensorEventListener {
         }
     }
 
-    public void deleteObject(){
-        mServiceManager.close();
+    private void initParameters(){
+        AccDataset.clear();
+        GyroDataset.clear();
     }
 
-    private int findKoalaDevice(String macAddr) {
-        if (mDevices.size() == 0)
-            return -1;
-        for (int i=0; i<mDevices.size(); i++) {
-            KoalaDevice tmpDevice = mDevices.get(i);
-            if (macAddr.matches(tmpDevice.getDevice().getAddress()))
-                return i;
-        }
-        return -1;
+    public void deleteObject(){
+        mServiceManager.close();
     }
 
     /******************************/
@@ -200,6 +206,17 @@ public class BeaconHandler implements SensorEventListener {
         }
     };
 
+    private int findKoalaDevice(String macAddr) {
+        if (mDevices.size() == 0)
+            return -1;
+        for (int i=0; i<mDevices.size(); i++) {
+            KoalaDevice tmpDevice = mDevices.get(i);
+            if (macAddr.matches(tmpDevice.getDevice().getAddress()))
+                return i;
+        }
+        return -1;
+    }
+
     public final ArrayList<KoalaDevice> getScanedDevices(){
         return mDevices;
     }
@@ -213,46 +230,11 @@ public class BeaconHandler implements SensorEventListener {
 
     public void DisconnectToKoala(){
         mServiceManager.disconnect();
-       // mServiceManager.close();
-    }
-
-    /**************************************/
-    /**  BeaconHandler  Data Recording Function **/
-    /**************************************/
-    @Override
-    public void onSensorChange(final SensorEvent e) {
-        final int eventType = e.type;
-        final double values [] = new double[3];
-        switch (eventType) {
-            case SensorEvent.TYPE_ACCELEROMETER:
-                final int acc_position = findKoalaDevice(e.device.getAddress());
-                if (acc_position != -1) {
-                    final KoalaDevice d = mDevices.get(acc_position);
-                    d.addRecvItem();
-                    SystemParameters.SensorCount++;
-                    values[0] = e.values[0];
-                    values[1] = e.values[1];
-                    values[2] = e.values[2];
-                    Log.d(TAG, "time=" + System.currentTimeMillis() + "gX:" + values[0] + "gY:" + values[1] + "gZ:" + values[2] + "\n");
-                    //updateSamplingRate(acc_position, d.getCurrentSamplingRate());
-                }
-                break;
-            case SensorEvent.TYPE_GYROSCOPE:
-                final int gyro_position = findKoalaDevice(e.device.getAddress());
-                if (gyro_position != -1) {
-                    final KoalaDevice d = mDevices.get(gyro_position);
-                    values[0] = e.values[0];
-                    values[1] = e.values[1];
-                    values[2] = e.values[2];
-                    Log.d(TAG, "time=" + System.currentTimeMillis() + "wX:" + values[0] + "wY:" + values[1] + "wZ:" + values[2] + "\n");
-                }
-                break;
-        }
     }
 
     @Override
     public void onConnectionStatusChange(boolean status) {
-         Log.e(TAG,"Connect State: "+status);
+        Log.e(TAG, "Connect State: " + status);
         if( status ) {
             SystemParameters.IsKoalaReady = true;
             Intent broadcast = new Intent(ACTION_BEACON_CONNECT_STATE);
@@ -264,11 +246,97 @@ public class BeaconHandler implements SensorEventListener {
         }
     }
 
+    /***************************************/
+    /**  BeaconHandler  Data Recording Function **/
+    /***************************************/
+    public void startRecording(){
+        initParameters();
+        initLogFile();
+        mIsRecording = true;
+    }
+
+    public void stopRecording(){
+        mIsRecording = false;
+        closeLogFile();
+    }
+
+    private void initLogFile(){
+        AccDataWriter = new LogFileWriter("AccData.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        GyroDataWriter = new LogFileWriter("GyroData.csv", LogFileWriter.GYROSCOPE_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+    }
+
+    private void closeLogFile(){
+        if(AccDataWriter != null)
+            AccDataWriter.closefile();
+        if(GyroDataWriter != null)
+            GyroDataWriter.closefile();
+    }
+
+    @Override
+    public void onSensorChange(final SensorEvent e) {
+        if( mIsRecording ) {
+            final int eventType = e.type;
+            final double values[] = new double[3];
+
+            // Set Time
+            long curTime = System.currentTimeMillis();
+            long passTime = curTime - SystemParameters.StartTime;
+            if (SystemParameters.SensorStartTime == 0)
+                SystemParameters.SensorStartTime = curTime;
+            SystemParameters.SensorEndTime = curTime;
+
+            switch (eventType) {
+                case SensorEvent.TYPE_ACCELEROMETER:
+                    SystemParameters.SensorCount++;
+                    values[0] = e.values[0];
+                    values[1] = e.values[1];
+                    values[2] = e.values[2];
+                    Log.d(TAG, "time=" + System.currentTimeMillis() + "gX:" + values[0] + "gY:" + values[1] + "gZ:" + values[2] + "\n");
+                    if (SystemParameters.isServiceRunning.get()) {
+                        SensorData sd = new SensorData(passTime, values);
+                        /*try {
+                            AccDataWriter.writeInertialDataFile(passTime, (float)values[0], (float)values[1], (float)values[2]);
+                        } catch (IOException e1) {
+                            Log.e(TAG,e1.getMessage());
+                        }*/
+                        AccDataset.add(sd);
+                    }
+                    break;
+                case SensorEvent.TYPE_GYROSCOPE:
+                    values[0] = e.values[0];
+                    values[1] = e.values[1];
+                    values[2] = e.values[2];
+                    Log.d(TAG, "time=" + System.currentTimeMillis() + "wX:" + values[0] + "wY:" + values[1] + "wZ:" + values[2] + "\n");
+                    if (SystemParameters.isServiceRunning.get()) {
+                        SensorData sd = new SensorData(passTime, values);
+                        /*try {
+                            GyroDataWriter.writeInertialDataFile(passTime, (float)values[0], (float)values[1], (float)values[2]);
+                        } catch (IOException e2) {
+                            Log.e(TAG,e2.getMessage());
+                        }*/
+                        GyroDataset.add(sd);
+                    }
+                    break;
+            }
+        }
+    }
+
     @Override
     public void onRSSIChange(String addr, float rssi) {
         final int position = findKoalaDevice(addr);
         if (position != -1) {
             Log.d(TAG, "mac Address:" + addr + " rssi:" + rssi);
+        }
+    }
+
+    public class SensorData{
+        long time;
+        double values[];
+        public SensorData(long time, double[] vals){
+            this.time = time;
+            this.values = new double[3];
+            for(int i = 0; i < 3; i++)
+                this.values[i] = vals[i];
         }
     }
 
