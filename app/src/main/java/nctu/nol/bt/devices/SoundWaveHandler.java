@@ -46,11 +46,6 @@ public class SoundWaveHandler {
 	private Vector<AudioDataBuffer> AudioDataBuffer = new Vector<AudioDataBuffer>();
 	private Vector<AudioData> AudioDataset = new Vector<AudioData>();
 	
-	//RealTime Get Data
-	private int CurPointer = 0;
-	public final static int Active_BufferNumThreshold = 50;
-	public final static int Remind_BufferNumThreshold = 20;
-	
 	//FileWrite for Logging
 	private LogFileWriter SoundDataWriter;
 	private LogFileWriter SoundRawWriter;

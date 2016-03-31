@@ -204,7 +204,7 @@ public class MainActivity extends Activity {
 	}
 
     public void updatedBondedDeviceSpinner() {
-    	if(sw.getService() != null){
+    	if(sw != null && sw.getService() != null){
 			Log.d(TAG, "UpdatedBondedDeviceSpinner");
 	    	BondedDevices = sw.getService().getBondedBTDevice(Device.AUDIO_VIDEO_WEARABLE_HEADSET);
 	    	BondedDeviceNameList.clear(); 
@@ -334,6 +334,7 @@ public class MainActivity extends Activity {
 	private Button.OnClickListener TestingStartClickListener = new Button.OnClickListener() {
 		@Override
 		public void onClick(View arg0) {
+
 			if(fbm != null && fbm.CheckModelHasTrained()){
 				if(SystemParameters.IsBtHeadsetReady && SystemParameters.IsKoalaReady && !isTesting)
 					ActiveLogging(LogFileWriter.TESTING_TYPE);
@@ -373,6 +374,10 @@ public class MainActivity extends Activity {
 					// AudioRecord Ready
 					sw.startRecording(LogType);
 
+					// Sensor Record Ready
+					if( LogType == LogFileWriter.TESTING_TYPE )
+						bh.startRecording();
+
 					//等待2sec後開始
 					sleep(2000);
 
@@ -404,6 +409,8 @@ public class MainActivity extends Activity {
 		SystemParameters.isServiceRunning.set(false);
 		SystemParameters.Duration = (System.currentTimeMillis() - SystemParameters.StartTime)/1000.0;
 		sw.stopRecording();
+		if( LogType == LogFileWriter.TESTING_TYPE )
+			bh.stopRecording();
 		timerHandler.removeCallbacks(updateTimer);
 
 		final ProgressDialog dialog = ProgressDialog.show(MainActivity.this,
@@ -492,6 +499,7 @@ public class MainActivity extends Activity {
 		alertDialogBuilder.setTitle("Log Information")
 						.setMessage("Duration: " + SystemParameters.Duration + "sec\n"
 								+ 	"SoundFile: "+SystemParameters.AudioCount+" records\n"
+								+	"InertialFile: "+SystemParameters.SensorCount+" records\n"
 						).setPositiveButton("OK",new DialogInterface.OnClickListener() {
 							@Override
 							public void onClick(DialogInterface dialog,int id) {
