@@ -334,15 +334,6 @@ public class MainActivity extends Activity {
 	private Button.OnClickListener TestingStartClickListener = new Button.OnClickListener() {
 		@Override
 		public void onClick(View arg0) {
-			/*
-			if (SystemParameters.isServiceRunning.get()){
-				bh.stopRecording();
-				SystemParameters.isServiceRunning.set(false);
-			}else {
-				bh.startRecording();
-				SystemParameters.isServiceRunning.set(true);
-				SystemParameters.StartTime = System.currentTimeMillis();
-			}*/
 
 			if(fbm != null && fbm.CheckModelHasTrained()){
 				if(SystemParameters.IsBtHeadsetReady && SystemParameters.IsKoalaReady && !isTesting)

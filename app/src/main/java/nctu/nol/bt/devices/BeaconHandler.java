@@ -75,7 +75,7 @@ public class BeaconHandler implements SensorEventListener {
             return;
         }
         mServiceManager = new KoalaServiceManager(mActivity);
-        mServiceManager.registerSensorEventListener(BeaconHandler.this, SensorEvent.TYPE_ACCELEROMETER, KoalaService.MOTION_WRITE_RATE_5, KoalaService.MOTION_ACCEL_SCALE_16G, KoalaService.MOTION_GYRO_SCALE_500);
+        mServiceManager.registerSensorEventListener(BeaconHandler.this, SensorEvent.TYPE_ACCELEROMETER, KoalaService.MOTION_WRITE_RATE_10, KoalaService.MOTION_ACCEL_SCALE_16G, KoalaService.MOTION_GYRO_SCALE_500);
         mServiceManager.registerSensorEventListener(BeaconHandler.this, SensorEvent.TYPE_GYROSCOPE);
 
         if (Build.VERSION.SDK_INT >= 21) {
@@ -225,6 +225,7 @@ public class BeaconHandler implements SensorEventListener {
     /**  BeaconHandler  Connection  Function  **/
     /************************************/
     public void ConnectToKoala(final String macAddress){
+        mServiceManager.disconnect();
         mServiceManager.connect(macAddress);
     }
 
@@ -291,7 +292,7 @@ public class BeaconHandler implements SensorEventListener {
                     values[0] = e.values[0];
                     values[1] = e.values[1];
                     values[2] = e.values[2];
-                    Log.d(TAG, "time=" + System.currentTimeMillis() + "gX:" + values[0] + "gY:" + values[1] + "gZ:" + values[2] + "\n");
+                    //Log.d(TAG, "time=" + System.currentTimeMillis() + "gX:" + values[0] + "gY:" + values[1] + "gZ:" + values[2] + "\n");
                     if (SystemParameters.isServiceRunning.get()) {
                         SensorData sd = new SensorData(passTime, values);
                         /*try {
@@ -306,7 +307,7 @@ public class BeaconHandler implements SensorEventListener {
                     values[0] = e.values[0];
                     values[1] = e.values[1];
                     values[2] = e.values[2];
-                    Log.d(TAG, "time=" + System.currentTimeMillis() + "wX:" + values[0] + "wY:" + values[1] + "wZ:" + values[2] + "\n");
+                    //Log.d(TAG, "time=" + System.currentTimeMillis() + "wX:" + values[0] + "wY:" + values[1] + "wZ:" + values[2] + "\n");
                     if (SystemParameters.isServiceRunning.get()) {
                         SensorData sd = new SensorData(passTime, values);
                         /*try {
