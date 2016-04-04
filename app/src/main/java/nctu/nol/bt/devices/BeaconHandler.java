@@ -94,6 +94,7 @@ public class BeaconHandler implements SensorEventListener {
 
     public void deleteObject(){
         mServiceManager.close();
+        mServiceManager.customFinalize();
     }
 
     /******************************/
@@ -225,7 +226,6 @@ public class BeaconHandler implements SensorEventListener {
     /**  BeaconHandler  Connection  Function  **/
     /************************************/
     public void ConnectToKoala(final String macAddress){
-        mServiceManager.disconnect();
         mServiceManager.connect(macAddress);
     }
 

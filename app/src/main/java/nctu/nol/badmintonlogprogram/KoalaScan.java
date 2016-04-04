@@ -32,6 +32,7 @@ public class KoalaScan extends Activity{
     //ProgressDialog
     private ProgressDialog dialog;
 
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.koalascan);
@@ -40,6 +41,7 @@ public class KoalaScan extends Activity{
 
         initialViewandEvent();
     }
+
     private void initialViewandEvent(){
         //ListView
         listkoala = (ListView) findViewById(R.id.list_device);

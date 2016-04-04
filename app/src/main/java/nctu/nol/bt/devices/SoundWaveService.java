@@ -103,15 +103,15 @@ public class SoundWaveService extends Service {
 	
 	public void ConnectScoBTHeadset(final BluetoothDevice d){
 		DisconnectAllScoBTHeadset();
-		try {			
+		try {
 			Method connect = BluetoothHeadset.class.getDeclaredMethod("connect", BluetoothDevice.class);
 			connect.setAccessible(true);
             connect.invoke(mBluetoothHeadset, d);
-            
+
             connect = BluetoothA2dp.class.getDeclaredMethod("connect", BluetoothDevice.class);
 			connect.setAccessible(true);
             connect.invoke(mBluetoothA2DP, d);
-            
+
         }catch (Exception e){
         	Log.e(TAG,"ConnectScoBTHeadset: "+e.getMessage());
         }
@@ -126,7 +126,7 @@ public class SoundWaveService extends Service {
 					disconnect.invoke(mBluetoothHeadset, d);
 				}
 			}
-			
+
 			if(mBluetoothA2DP != null){
 				for(BluetoothDevice d:mBluetoothA2DP.getConnectedDevices()){
 					Method disconnect = BluetoothA2dp.class.getDeclaredMethod("disconnect", BluetoothDevice.class);
@@ -179,18 +179,18 @@ public class SoundWaveService extends Service {
 	            mBluetoothHeadset = (BluetoothHeadset) bluetoothProfile;
 	           
 	            for(BluetoothDevice d:mBluetoothHeadset.getConnectedDevices()){
-	            	
-	            	Intent intent = new Intent(ACTION_DETECT_CONNECTION_STATE);    
-	                intent.putExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_CONNECTED); 
+
+	            	Intent intent = new Intent(ACTION_DETECT_CONNECTION_STATE);
+	                intent.putExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_CONNECTED);
 	                intent.putExtra(BluetoothProfile.EXTRA_PREVIOUS_STATE, BluetoothProfile.STATE_CONNECTED);
-	                intent.putExtra(BluetoothDevice.EXTRA_DEVICE, d); 
+	                intent.putExtra(BluetoothDevice.EXTRA_DEVICE, d);
 	                sendBroadcast(intent);
 	            }
-	            
+
 	        }else if(i == BluetoothProfile.A2DP){
 	        	mBluetoothA2DP = (BluetoothA2dp) bluetoothProfile;
 	        }
-	        
+
 	        //DisconnectAllScoBTHeadset();
 	    }
 	    @Override
