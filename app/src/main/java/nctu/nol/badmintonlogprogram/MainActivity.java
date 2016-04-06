@@ -11,6 +11,7 @@ import java.util.Vector;
 import cc.nctu1210.api.koala6x.KoalaService;
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
+import nctu.nol.algo.ScoreComputing;
 import nctu.nol.bt.devices.BeaconHandler;
 import nctu.nol.bt.devices.SoundWaveHandler;
 import nctu.nol.bt.devices.SoundWaveHandler.AudioData;
@@ -86,6 +87,7 @@ public class MainActivity extends Activity {
     
     /* Algorithm Related */
     private FrequencyBandModel fbm = null;
+	private ScoreComputing SC = null;
     
 
     @Override
@@ -391,6 +393,10 @@ public class MainActivity extends Activity {
 					//Service Start
 					SystemParameters.isServiceRunning.set(true);
 
+					// if isTest == true, Testing Start
+					if(isTesting)
+						StartTestingAlgo();
+
 					runOnUiThread(new Runnable() {
 						public void run(){
 							Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
@@ -419,7 +425,8 @@ public class MainActivity extends Activity {
 		new Thread(){
 			public void run(){
 				//Wait log file write done
-				while(sw.isWrittingAudioDataLog.get());
+				if( sw != null ) while(sw.isWrittingAudioDataLog.get());
+				if( SC != null ) while(SC.isWrittingWindowScore.get());
 
 				//Training
 				if(LogType == LogFileWriter.TRAINING_TYPE)
@@ -542,7 +549,7 @@ public class MainActivity extends Activity {
 
 		// Find top K freq band
 		fbm = new FrequencyBandModel();
-		Vector<FrequencyBandModel.MainFreqInOneWindow> AllMainFreqBands = fbm.FindSpectrumMainFreqs(peaks, vals, 512, SoundWaveHandler.SAMPLE_RATE);
+		Vector<FrequencyBandModel.MainFreqInOneWindow> AllMainFreqBands = fbm.FindSpectrumMainFreqs(peaks, vals, FrequencyBandModel.FFT_LENGTH, SoundWaveHandler.SAMPLE_RATE);
 		fbm.setTopKFreqBandTable(AllMainFreqBands, peaks.size());
 		List<HashMap.Entry<Float, Float>> TopKMainFreqs = fbm.getTopKMainFreqBandTable();
 
@@ -583,7 +590,13 @@ public class MainActivity extends Activity {
     }
     
     private void StartTestingAlgo(){
-    	
+		/* 用來計算Window分數的模組 */
+		SC = new ScoreComputing(sw);
+		SC.StartComputingScore(fbm.getTopKMainFreqBandTable(), SoundWaveHandler.SAMPLE_RATE, FrequencyBandModel.FFT_LENGTH);
+		SC.StartLogging();
+
+		/* 用來偵測擊球的模組 */
+		// do something....
     }
     
     

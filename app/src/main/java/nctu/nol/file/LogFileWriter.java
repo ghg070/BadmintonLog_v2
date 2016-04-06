@@ -37,6 +37,7 @@ public class LogFileWriter {
 	//Attribute
 	//private static final String attributeAcc  = "Timestamp,Gx,Gy,Gz,Gv\n";
 	private static final String attributeAudioDataBuffer  = "Timestamp,BufferSize,VoiceEnergy";
+	private static final String attributeWindowScore = "Timestamp,Score";
 	private static final String attributeAccData = "Timestamp,Gx,Gy,Gz";
 	private static final String attributeGyroData = "Timestamp,Wx,Wy,Wz";
 	
@@ -45,6 +46,7 @@ public class LogFileWriter {
 	public static final int SOUNDWAVE_DATA_TYPE = 1;
 	public static final int ACCELEROMETER_DATA_TYPE = 2;
 	public static final int GYROSCOPE_DATA_TYPE = 3;
+	public static final int WINDOW_SCORE_TYPE = 4;
 	public static final int README_TYPE = 10;
 	public static final int OTHER_TYPE = 11;
 	
@@ -53,10 +55,10 @@ public class LogFileWriter {
 	public static final int TESTING_TYPE = 1;
 	
 	
-	public LogFileWriter(String filename,int type, int utype){
+	public LogFileWriter(String filename,int file_type, int used_type){
 		this.fileName=filename;
-		this.fileType=type;
-		initialize(type,utype);
+		this.fileType=file_type;
+		initialize(file_type,used_type);
 		
 	}
 	
@@ -108,6 +110,11 @@ public class LogFileWriter {
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}
+	public void writeWindowScore(final long time, final float score) throws IOException{
+		StringBuilder outputString = new StringBuilder( String.format("%d,%.3f", time,score) );
+		outputString.append("\n");
+		outputStream.write(outputString.toString().getBytes());
+	}
 	
 	
 	public void writeReadMeFile() throws IOException{
@@ -125,6 +132,8 @@ public class LogFileWriter {
 				+"\tAudioDataBuffer.csv Audio Buffer file ("+SystemParameters.AudioCount+" records @ "+AudioRate+"Hz)\r\n"
 				+"\tAudioDataBuffer.csv Record Format\r\n"
 				+"\t\t"+ attributeAudioDataBuffer + "\r\n"
+				+"\tWindowScore.csv Window Score file\r\n"
+				+"\t\t"+ attributeWindowScore + "\r\n"
 				/*+"\tAccData.csv Accelerometer Data file ("+SystemParameters.SensorCount+" records @ "+SensorRate+"Hz)\r\n"
 				+"\tAccData.csv Record Format\r\n"
 				+"\t\t"+ attributeAccData + "\r\n"
@@ -136,8 +145,8 @@ public class LogFileWriter {
 				+"////////////// Audio Buffer Information //////////////"+ "\r\n"
 				+"First Buffer Start Timestamp: "+SystemParameters.SoundStartTime + "\r\n"
 				+"Final Buffer End Timestamp: "+SystemParameters.SoundEndTime + "\r\n"
-				+"////////////// Sensor Information //////////////"+ "\r\n"
-				/*+"First Data Start Timestamp: "+SystemParameters.SensorStartTime + "\r\n"
+				/*+"////////////// Sensor Information //////////////"+ "\r\n"
+				+"First Data Start Timestamp: "+SystemParameters.SensorStartTime + "\r\n"
 				+"Final Data End Timestamp: "+SystemParameters.SensorEndTime + "\r\n"*/;
 			outputStream.write(outputString.getBytes());
 		
