@@ -45,7 +45,7 @@ public class CountSpectrum {
             sumreal +=  signal[t] * Math.cos(angle);
             sumimag += -signal[t] * Math.sin(angle);
         }
-        return Math.pow(sumreal,2)+Math.pow(sumimag,2);
+        return Math.sqrt(Math.pow(sumreal,2)+Math.pow(sumimag,2));
     }
 
     public void fft(double[] x, double[] y){
