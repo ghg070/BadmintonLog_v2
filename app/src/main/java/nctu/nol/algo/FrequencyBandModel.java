@@ -18,6 +18,7 @@ import android.util.Log;
 
 public class FrequencyBandModel {
 	private static final String TAG = FrequencyBandModel.class.getName();
+	public static final int FFT_LENGTH = 512;
 	
 	//Find Spectrum Peak
 	private static final int PEAKFREQ_NUM = 5;

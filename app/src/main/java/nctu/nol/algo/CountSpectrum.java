@@ -11,6 +11,10 @@ public class CountSpectrum {
     double[] cos;
     double[] sin;
 
+    public CountSpectrum(){
+        // if only use dft_specific_idx function, use this constructor for speed.
+    }
+
     public CountSpectrum(int n) {
         this.n = n;
         this.m = (int) (Math.log(n) / Math.log(2));
@@ -27,10 +31,9 @@ public class CountSpectrum {
             cos[i] = Math.cos(-2 * Math.PI * i / n);
             sin[i] = Math.sin(-2 * Math.PI * i / n);
         }
-
     }
 
-    public double dft_specific_idx(int idx, final double[] signal){
+    public float dft_specific_idx(int idx, final float[] signal){
         /*
         *   idx: 第幾個頻帶(要觀察哪一個頻帶的能量)
         *   signal: 原始資料, final型別代表不可以更動signal內的值, 要改必須copy一份
@@ -45,7 +48,7 @@ public class CountSpectrum {
             sumreal +=  signal[t] * Math.cos(angle);
             sumimag += -signal[t] * Math.sin(angle);
         }
-        return Math.sqrt(Math.pow(sumreal,2)+Math.pow(sumimag,2));
+        return (float)Math.sqrt(Math.pow(sumreal,2)+Math.pow(sumimag,2));
     }
 
     public void fft(double[] x, double[] y){
