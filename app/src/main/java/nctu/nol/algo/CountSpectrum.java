@@ -37,9 +37,15 @@ public class CountSpectrum {
         *   可參考的java code, 此code是計算每個頻帶的能量值(也就是完整的dft), 請改成只針對某一頻帶的能量進行計算
         *   code: https://www.nayuki.io/res/how-to-implement-the-discrete-fourier-transform/Dft.java
         * */
-
-
-        return 0;
+        int n=signal.length;
+        double sumreal = 0;
+        double sumimag = 0;
+        for (int t = 0; t < n; t++) {  // For each input element
+            double angle = 2 * Math.PI * t * idx / n;
+            sumreal +=  signal[t] * Math.cos(angle);
+            sumimag += -signal[t] * Math.sin(angle);
+        }
+        return Math.pow(sumreal,2)+Math.pow(sumimag,2);
     }
 
     public void fft(double[] x, double[] y){
