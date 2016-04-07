@@ -119,13 +119,13 @@
 	        android:text="@string/BT_Mic_Disconnected_State"
 			android:textSize="25sp">
 	    </Button>
- 		<!--<Button
+ 		<Button
 	 		android:id="@+id/bt_koalaconnect"
 		 	android:layout_width="fill_parent"
 		 	android:layout_height="wrap_content"
 			android:text="@string/Koala_Disconnected_State"
 		 	android:textSize="25sp">
-	 	</Button>-->
+	 	</Button>
 
 	    <Button
 	        android:id="@+id/bt_trainingstart"

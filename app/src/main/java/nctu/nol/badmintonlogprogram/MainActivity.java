@@ -50,7 +50,7 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
 
 	private final static String TAG = "MainActivity";
-	//public final static int KOALA_SCAN_PAGE_RESULT = 11;
+	public final static int KOALA_SCAN_PAGE_RESULT = 11;
 	
 	/* BT related */
 	private BluetoothAdapter mBluetoothAdapter = null;	
@@ -71,10 +71,10 @@ public class MainActivity extends Activity {
 	private BluetoothDevice CurHeadsetDevice;
 
 	/* Beacon Related */
-	//private BeaconHandler bh = null;
-	//private TextView tv_KoalaConnected;
-	//private Button btKoalaConnect;
-	//private String CurKoalaDevice;
+	private BeaconHandler bh = null;
+	private TextView tv_KoalaConnected;
+	private Button btKoalaConnect;
+	private String CurKoalaDevice;
      
     /* Bonded Device Related */
 	private Spinner spBondedDeviceSpinner;
@@ -124,13 +124,13 @@ public class MainActivity extends Activity {
 			sw = null;
 		}
 
-		/*if(bh != null){
+		if(bh != null){
 			bh.deleteObject();
 			bh = null;
-		}*/
+		}
 
 		unregisterReceiver(mSoundWaveHandlerStateUpdateReceiver);
-		//unregisterReceiver(mKoalaStateUpdateReceiver);
+		unregisterReceiver(mKoalaStateUpdateReceiver);
 		return;
 	}
 	
@@ -150,14 +150,14 @@ public class MainActivity extends Activity {
         	//Get Bonded Devices
             updatedBondedDeviceSpinner();
 
-        }/*else if(requestCode == KOALA_SCAN_PAGE_RESULT){
+        }else if(requestCode == KOALA_SCAN_PAGE_RESULT){
 			if(resultCode == Activity.RESULT_OK && bh != null){
 				final String clickedMacAddress = data.getExtras().getString(KoalaScan.macAddress);
 				final String clickedDeviceName = data.getExtras().getString(KoalaScan.deviceName);
 				CurKoalaDevice = clickedDeviceName + "-" +clickedMacAddress;
 				bh.ConnectToKoala(clickedMacAddress);
 			}
-		}*/
+		}
         super.onActivityResult(requestCode, resultCode, data);
     }
     
@@ -165,15 +165,15 @@ public class MainActivity extends Activity {
 		//TextView
 		tv_durationTime = (TextView) findViewById(R.id.tv_duration);	
 		tv_HeadsetConnected = (TextView) findViewById(R.id.tv_headset);
-		//tv_KoalaConnected = (TextView) findViewById(R.id.tv_koala);
+		tv_KoalaConnected = (TextView) findViewById(R.id.tv_koala);
 
 		//Button
 		btMicConnect = (Button) findViewById(R.id.bt_micconnect);
-		//btKoalaConnect = (Button) findViewById(R.id.bt_koalaconnect);
+		btKoalaConnect = (Button) findViewById(R.id.bt_koalaconnect);
 		btTraining = (Button) findViewById(R.id.bt_trainingstart);
 		btTesting = (Button) findViewById(R.id.bt_testingstart);
 		btMicConnect.setOnClickListener(MicConnectListener);
-		//btKoalaConnect.setOnClickListener(KoalaConnectListener);
+		btKoalaConnect.setOnClickListener(KoalaConnectListener);
 		btTraining.setOnClickListener(TrainingStartClickListener);
 		btTesting.setOnClickListener(TestingStartClickListener);
 
@@ -200,8 +200,8 @@ public class MainActivity extends Activity {
 		registerReceiver(mSoundWaveHandlerStateUpdateReceiver, makeSoundWaveHandlerStateUpdateIntentFilter());
 
 		//Initial Beacon Handler
-		//bh = new BeaconHandler(MainActivity.this);
-		//registerReceiver(mKoalaStateUpdateReceiver,makeKoalaStateUpdateIntentFilter());
+		bh = new BeaconHandler(MainActivity.this);
+		registerReceiver(mKoalaStateUpdateReceiver,makeKoalaStateUpdateIntentFilter());
 
 	}
 
@@ -230,7 +230,7 @@ public class MainActivity extends Activity {
     /**********************/
     /**    Broadcast Event	 **/
 	/**********************/
-	/*private final BroadcastReceiver mKoalaStateUpdateReceiver = new BroadcastReceiver() {
+	private final BroadcastReceiver mKoalaStateUpdateReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
@@ -250,7 +250,7 @@ public class MainActivity extends Activity {
 		intentFilter.addAction(BeaconHandler.ACTION_BEACON_DISCONNECT_STATE);
 
 		return intentFilter;
-	}*/
+	}
 
 	private final BroadcastReceiver mSoundWaveHandlerStateUpdateReceiver = new BroadcastReceiver() {
 		@Override
@@ -307,7 +307,7 @@ public class MainActivity extends Activity {
 		}
 	};
 
-	/*private Button.OnClickListener KoalaConnectListener = new Button.OnClickListener() {
+	private Button.OnClickListener KoalaConnectListener = new Button.OnClickListener() {
 		public void onClick(View v) {
 			if(SystemParameters.IsKoalaReady)
 				bh.DisconnectToKoala();
@@ -316,7 +316,7 @@ public class MainActivity extends Activity {
 				startActivityForResult(i, KOALA_SCAN_PAGE_RESULT);
 			}
 		}
-	};*/
+	};
 
     /********************/
     /** Logging Event **/
@@ -338,7 +338,7 @@ public class MainActivity extends Activity {
 		public void onClick(View arg0) {
 
 			if(fbm != null && fbm.CheckModelHasTrained()){
-				if(SystemParameters.IsBtHeadsetReady && !isTesting)
+				if(SystemParameters.IsBtHeadsetReady && SystemParameters.IsKoalaReady && !isTesting)
 					ActiveLogging(LogFileWriter.TESTING_TYPE);
 				else if(isTesting)
 					StopLogging(LogFileWriter.TESTING_TYPE);
@@ -377,8 +377,8 @@ public class MainActivity extends Activity {
 					sw.startRecording(LogType);
 
 					// Sensor Record Ready
-					/*if( LogType == LogFileWriter.TESTING_TYPE )
-						bh.startRecording();*/
+					if( LogType == LogFileWriter.TESTING_TYPE )
+						bh.startRecording();
 
 					//等待2sec後開始
 					sleep(2000);
@@ -415,8 +415,8 @@ public class MainActivity extends Activity {
 		SystemParameters.isServiceRunning.set(false);
 		SystemParameters.Duration = (System.currentTimeMillis() - SystemParameters.StartTime)/1000.0;
 		sw.stopRecording();
-		/*if( LogType == LogFileWriter.TESTING_TYPE )
-			bh.stopRecording();*/
+		if( LogType == LogFileWriter.TESTING_TYPE )
+			bh.stopRecording();
 		timerHandler.removeCallbacks(updateTimer);
 
 		final ProgressDialog dialog = ProgressDialog.show(MainActivity.this,
@@ -506,7 +506,7 @@ public class MainActivity extends Activity {
 		alertDialogBuilder.setTitle("Log Information")
 						.setMessage("Duration: " + SystemParameters.Duration + "sec\n"
 								+ 	"SoundFile: "+SystemParameters.AudioCount+" records\n"
-								//+	"InertialFile: "+SystemParameters.SensorCount+" records\n"
+								+	"InertialFile: "+SystemParameters.SensorCount+" records\n"
 						).setPositiveButton("OK",new DialogInterface.OnClickListener() {
 							@Override
 							public void onClick(DialogInterface dialog,int id) {}
