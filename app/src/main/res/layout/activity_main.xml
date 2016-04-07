@@ -103,6 +103,28 @@
 		</TextView>
 	</LinearLayout>
 
+	<!-- stroke -->
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal" >
+
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text = "Stroke : "
+			android:textSize="22sp">
+		</TextView>
+
+		<TextView
+			android:id="@+id/tv_stroke"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginLeft="5sp"
+			android:text = "0"
+			android:textSize="22sp" >
+		</TextView>
+	</LinearLayout>
 
 
      <!-- Button Control  -->

@@ -12,6 +12,7 @@ import cc.nctu1210.api.koala6x.KoalaService;
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
 import nctu.nol.algo.ScoreComputing;
+import nctu.nol.algo.StrokeDetector;
 import nctu.nol.bt.devices.BeaconHandler;
 import nctu.nol.bt.devices.SoundWaveHandler;
 import nctu.nol.bt.devices.SoundWaveHandler.AudioData;
@@ -89,6 +90,8 @@ public class MainActivity extends Activity {
     private FrequencyBandModel fbm = null;
 	private ScoreComputing SC = null;
     
+	/*stroke*/
+	private  TextView tv_strokeCount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,7 +104,7 @@ public class MainActivity extends Activity {
         
         //Bluetooth Initial
         initialBTManager();
-        
+		
     }
     
     @Override
@@ -131,6 +134,7 @@ public class MainActivity extends Activity {
 
 		unregisterReceiver(mSoundWaveHandlerStateUpdateReceiver);
 		unregisterReceiver(mKoalaStateUpdateReceiver);
+		unregisterReceiver(mStrokeCountUpdateReceiver);
 		return;
 	}
 	
@@ -163,7 +167,8 @@ public class MainActivity extends Activity {
     
 	private void initialViewandEvent(){
 		//TextView
-		tv_durationTime = (TextView) findViewById(R.id.tv_duration);	
+		tv_durationTime = (TextView) findViewById(R.id.tv_duration);
+		tv_strokeCount = (TextView) findViewById(R.id.tv_stroke);
 		tv_HeadsetConnected = (TextView) findViewById(R.id.tv_headset);
 		tv_KoalaConnected = (TextView) findViewById(R.id.tv_koala);
 
@@ -202,6 +207,9 @@ public class MainActivity extends Activity {
 		//Initial Beacon Handler
 		bh = new BeaconHandler(MainActivity.this);
 		registerReceiver(mKoalaStateUpdateReceiver,makeKoalaStateUpdateIntentFilter());
+
+		//Initial StrokeDetector
+		registerReceiver(mStrokeCountUpdateReceiver,makeStrokeCountUpdateIntentFilter());
 
 	}
 
@@ -291,6 +299,23 @@ public class MainActivity extends Activity {
 		intentFilter.addAction(SoundWaveHandler.ACTION_SOUND_PREPARING_STATE);
 		intentFilter.addAction(SoundWaveHandler.ACTION_SOUND_PREPARED_STATE);
 		    
+		return intentFilter;
+	}
+	private final BroadcastReceiver mStrokeCountUpdateReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if( StrokeDetector.ACTION_STROKE_DETECTED_STATE.equals(action) ){
+				SystemParameters.SensorCount++;
+				tv_strokeCount.setText(String.valueOf(SystemParameters.SensorCount));
+			}
+		}
+	};
+	private static IntentFilter makeStrokeCountUpdateIntentFilter() {
+		final IntentFilter intentFilter = new IntentFilter();
+
+		intentFilter.addAction(StrokeDetector.ACTION_STROKE_DETECTED_STATE);
+
 		return intentFilter;
 	}
 
@@ -389,6 +414,9 @@ public class MainActivity extends Activity {
 					//設定定時要執行的方法
 					timerHandler.removeCallbacks(updateTimer);
 					timerHandler.postDelayed(updateTimer, 1000);//設定Delay的時間
+
+					//init stroke count 0
+					SystemParameters.StrokeCount = 0;
 
 					//Service Start
 					SystemParameters.isServiceRunning.set(true);
