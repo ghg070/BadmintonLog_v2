@@ -29,7 +29,9 @@ public class SystemParameters {
 	
 	//for Log File
 	public static String filePath = "";
-	
+
+	//for Stroke count;
+	public static int StrokeCount = 0;
 	
 	 /** Initial Function **/
 	public static void initializeSystemParameters(){
@@ -52,6 +54,9 @@ public class SystemParameters {
 		
 		//for log file
 		filePath = "";
+
+		//for Stroke count;
+		StrokeCount = 0;
 	}
 
 }
