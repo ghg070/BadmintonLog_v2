@@ -2,6 +2,8 @@ package nctu.nol.bt.devices;
 
 import java.io.IOException;
 import java.util.Vector;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.bluetooth.BluetoothDevice;
@@ -43,8 +45,9 @@ public class SoundWaveHandler {
     private short[] mAudioBuffer;
     private int mBufferSize;
 	private boolean mIsRecording = false;
-	private Vector<AudioDataBuffer> AudioDataBuffer = new Vector<AudioDataBuffer>();
-	private Vector<AudioData> AudioDataset = new Vector<AudioData>();
+	private LinkedBlockingQueue<AudioDataBuffer> AudioDataBuffer_for_file = new LinkedBlockingQueue<AudioDataBuffer>();
+	private LinkedBlockingQueue<AudioData> AudioDataset_for_file = new LinkedBlockingQueue<AudioData>();
+	private LinkedBlockingQueue<AudioData> AudioDataset_for_algo = new LinkedBlockingQueue<AudioData>();
 	
 	//FileWrite for Logging
 	private LogFileWriter SoundDataWriter;
@@ -130,8 +133,9 @@ public class SoundWaveHandler {
         record = new AudioRecord(AudioSource.MIC, SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, minBufferSize);
         
-		AudioDataBuffer.clear();
-		AudioDataset.clear();
+		AudioDataBuffer_for_file.clear();
+		AudioDataset_for_file.clear();
+		AudioDataset_for_algo.clear();
 	}
 
 	/******************************************/
@@ -180,12 +184,13 @@ public class SoundWaveHandler {
 						
 						if(readSize > 0){
 							AudioDataBuffer adb = new AudioDataBuffer(passTime, mAudioBuffer);
-							AudioDataBuffer.add(adb);
+							AudioDataBuffer_for_file.add(adb);
 							
 							float deltaT = 1/(float)SAMPLE_RATE;
 							for(int i = 0 ; i < mAudioBuffer.length; i++){
 								AudioData ad = new AudioData( passTime+(long)deltaT*i , (float)mAudioBuffer[i]/32768 );
-								AudioDataset.add(ad);
+								AudioDataset_for_algo.add(ad);
+								AudioDataset_for_file.add(ad);
 							}
 							
 							SystemParameters.AudioCount += readSize;
@@ -204,20 +209,17 @@ public class SoundWaveHandler {
 		new Thread(){
 			@Override
 			public void run() {
-				int CurrentWriteBufferIndex = 0;
 				isWrittingAudioDataLog.set(true);
-				while( mIsRecording || CurrentWriteBufferIndex < AudioDataBuffer.size()){
-					int curSize = AudioDataBuffer.size();
-					for(; CurrentWriteBufferIndex < curSize ;CurrentWriteBufferIndex++){
-						final AudioDataBuffer adb = AudioDataBuffer.get(CurrentWriteBufferIndex);
+				while( mIsRecording ||  AudioDataBuffer_for_file.size() > 0){
+					if( AudioDataBuffer_for_file.size() > 0 ) {
+						final AudioDataBuffer adb = AudioDataBuffer_for_file.poll();
 						try {
 							SoundDataWriter.writeAudioDataBufferFile(adb.timestamp, adb.buffer);
 							SoundRawWriter.writeSoundWaveRawFile(adb.buffer);
 						} catch (IOException e) {
-							Log.e(TAG,e.getMessage());
+							Log.e(TAG, e.getMessage());
 						}
 					}
-				
 				}
 				if(SoundDataWriter != null)
 					SoundDataWriter.closefile();
@@ -242,8 +244,8 @@ public class SoundWaveHandler {
 		}
 	}
 	
-	public final Vector<AudioData> getSampleData(){
-		return AudioDataset;
+	public final LinkedBlockingQueue<AudioData> getSampleData(){
+		return AudioDataset_for_algo;
 	}
 	
 	

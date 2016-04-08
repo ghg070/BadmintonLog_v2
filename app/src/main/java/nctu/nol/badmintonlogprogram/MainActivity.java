@@ -7,8 +7,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.LinkedBlockingQueue;
 
-import cc.nctu1210.api.koala6x.KoalaService;
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
 import nctu.nol.algo.ScoreComputing;
@@ -104,7 +104,7 @@ public class MainActivity extends Activity {
         
         //Bluetooth Initial
         initialBTManager();
-		
+
     }
     
     @Override
@@ -121,7 +121,7 @@ public class MainActivity extends Activity {
     @Override
 	protected void onDestroy(){
 		super.onDestroy();
-		
+
 		if (sw != null){
 			sw.deleteObject();
 			sw = null;
@@ -135,9 +135,11 @@ public class MainActivity extends Activity {
 		unregisterReceiver(mSoundWaveHandlerStateUpdateReceiver);
 		unregisterReceiver(mKoalaStateUpdateReceiver);
 		unregisterReceiver(mStrokeCountUpdateReceiver);
+
+		System.exit(0);
 		return;
 	}
-	
+
 	@Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_ENABLE_BT){
@@ -271,7 +273,7 @@ public class MainActivity extends Activity {
             	tv_HeadsetConnected.setText("disconnected");
 				btMicConnect.setText(R.string.BT_Mic_Disconnected_State);
 				btMicConnect.setEnabled(true);
-				//btKoalaConnect.setEnabled(true);
+				btKoalaConnect.setEnabled(true);
 
             	if( SystemParameters.isServiceRunning.get() && isTraining )//if Logging is running
             		btTraining.performClick();
@@ -281,13 +283,13 @@ public class MainActivity extends Activity {
 			}else if( SoundWaveHandler.ACTION_SOUND_PREPARING_STATE.equals(action) ){			
 				CurHeadsetDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 				btMicConnect.setEnabled(false);
-				//btKoalaConnect.setEnabled(false);
+				btKoalaConnect.setEnabled(false);
 
 			}else if( SoundWaveHandler.ACTION_SOUND_PREPARED_STATE.equals(action) ){
             	tv_HeadsetConnected.setText(CurHeadsetDevice.getName()+"-"+CurHeadsetDevice.getAddress());
 				btMicConnect.setText(R.string.BT_Mic_Connected_State);
 				btMicConnect.setEnabled(true);
-				//btKoalaConnect.setEnabled(true);
+				btKoalaConnect.setEnabled(true);
 			}
 		}
 	};
@@ -325,8 +327,11 @@ public class MainActivity extends Activity {
 	/********************/
 	private Button.OnClickListener MicConnectListener = new Button.OnClickListener() {
 		public void onClick(View v) {
-			if( !SystemParameters.IsBtHeadsetReady )
+			if( !SystemParameters.IsBtHeadsetReady ) {
+				int idx = spBondedDeviceSpinner.getSelectedItemPosition();
+				CurHeadsetDevice = BondedDevices.get(idx);
 				sw.getService().ConnectScoBTHeadset(CurHeadsetDevice);
+			}
 			else
 				sw.getService().DisconnectAllScoBTHeadset();
 		}
@@ -417,7 +422,6 @@ public class MainActivity extends Activity {
 
 					//init stroke count 0
 					SystemParameters.StrokeCount = 0;
-					tv_strokeCount.setText("0");
 
 					//Service Start
 					SystemParameters.isServiceRunning.set(true);
@@ -429,6 +433,9 @@ public class MainActivity extends Activity {
 					runOnUiThread(new Runnable() {
 						public void run(){
 							Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
+
+							//init stroke count 0
+							tv_strokeCount.setText("0");
 						}
 					});
 				} catch (InterruptedException e) {
@@ -547,14 +554,16 @@ public class MainActivity extends Activity {
     /***********************/
     private void StartTrainingAlgo(final SoundWaveHandler sw){
     	//split time array and data array
-    	final Vector<AudioData> ads = sw.getSampleData();
+    	final LinkedBlockingQueue<AudioData> ads = sw.getSampleData();
 		float times[] = new float[ads.size()],
 			  vals[] = new float[ads.size()];
 
-		for(int i = 0; i < ads.size(); i++){
-			AudioData ad = ads.get(i);
-			times[i] = (float)ad.time;
-			vals[i] = ad.data;
+		int count = 0;
+		while(ads.size() > 0){
+			AudioData ad = ads.poll();
+			times[count] = (float)ad.time;
+			vals[count] = ad.data;
+			count++;
 		}
 		
 		//Find all peak
@@ -666,12 +675,7 @@ public class MainActivity extends Activity {
     
     AdapterView.OnItemSelectedListener BondedDeviceSelectedListener = new AdapterView.OnItemSelectedListener(){
         @Override
-        public void onItemSelected(AdapterView<?> arg0, View arg1,int position, long arg3) {
-        	
-        	if(!BondedDevices.isEmpty()){
-        		CurHeadsetDevice = BondedDevices.get(position);
-        	}
-        }
+        public void onItemSelected(AdapterView<?> arg0, View arg1,int position, long arg3) {}
 
 		@Override
 		public void onNothingSelected(AdapterView<?> parent) {
