@@ -113,8 +113,8 @@ public class LogFileWriter {
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}
-	public void writeStrokeTime(final int idx, final long time) throws IOException{
-		StringBuilder outputString = new StringBuilder( String.format("%d,%d", idx,time) );
+	public void writeStrokeTime( final String time) throws IOException{
+		StringBuilder outputString = new StringBuilder(time);
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}

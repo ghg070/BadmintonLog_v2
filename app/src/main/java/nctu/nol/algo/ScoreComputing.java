@@ -54,7 +54,7 @@ public class ScoreComputing {
             public void run() {
                 // Initial Parameter
                 List<Integer> FreqIdxs = new ArrayList<Integer>();
-                float FreqMax = Float.MIN_VALUE;
+                float FreqMax = Float.NEGATIVE_INFINITY;
 
                 for (int i = 0; i < FreqBands.size(); i++) {
                     float freq = FreqBands.get(i).getKey();
@@ -74,13 +74,15 @@ public class ScoreComputing {
                         long w_timestamp = 0;
 
                         // Copy data in specific window, and find timestamp of max value
-                        float max = Float.MIN_VALUE;
+                        float max = Float.NEGATIVE_INFINITY;
                         for (int i = 0; i < w_size; i++) {
                             SoundWaveHandler.AudioData ad = curSample.poll();
                             float w_data = ad.data;
                             w_dataset[i] = w_data;
-                            if (max < w_data)
+                            if (max < w_data) {
                                 w_timestamp = ad.time;
+                                max = w_data;
+                            }
                         }
 
                         // Count score with specific freq bands and dataset

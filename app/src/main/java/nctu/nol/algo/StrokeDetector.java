@@ -2,13 +2,11 @@ package nctu.nol.algo;
 
 
 import android.app.Activity;
-import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.text.format.Time;
 import android.util.Log;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -70,7 +68,7 @@ public class StrokeDetector {
                         Log.e(TAG, "Get Stroke!!!!");
                         StrokeTimes.add(result);
                         try {
-                            StrokeWriter.writeStrokeTime(StrokeTimes.size(), result);
+                            StrokeWriter.writeStrokeTime( MillisecToString(result) );
                         } catch (IOException e) {
                             Log.e(TAG,e.getMessage());
                         }
@@ -118,6 +116,16 @@ public class StrokeDetector {
         }
     }
 
+    private String MillisecToString(long timestamp){
+        Time t=new Time();
+        t.set(timestamp);
+        int minute = t.minute;
+        int second = t.second;
+        int millisecond = (int)(timestamp%1000);
+
+        // MM:SS.mmm
+        return String.format("%02d:%02d.%03d", minute, second, millisecond);
+    }
 
     /**********************/
     /**   Custom Exception    **/
