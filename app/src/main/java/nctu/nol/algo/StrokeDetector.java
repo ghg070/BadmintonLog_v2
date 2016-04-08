@@ -6,8 +6,13 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.util.Log;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.LinkedBlockingQueue;
 
+import nctu.nol.file.LogFileWriter;
 import nctu.nol.file.SystemParameters;
 
 public class StrokeDetector {
@@ -15,7 +20,7 @@ public class StrokeDetector {
     private Activity mContext;
 
     /* Window Related */
-    ScoreComputing curSC;
+    private ScoreComputing curSC;
 
     /* Rule Related */
     private static final double SCORETHRESHOLD = 0.55;
@@ -24,6 +29,12 @@ public class StrokeDetector {
 
     /* Thread Related */
     private Thread detector_t;
+
+    /* Logging Related */
+    private LogFileWriter StrokeWriter;
+
+    /* Stroke Time Related */
+    private Vector<Long> StrokeTimes = new Vector<Long>();
 
     /* Broadcast Related */
     public final static String ACTION_STROKE_DETECTED_STATE = "STROKEDETECTOR.ACTION_STROKE_DETECTED_STATE";
@@ -34,63 +45,77 @@ public class StrokeDetector {
         this.mContext = act;
     }
 
+    private void initParameter(){
+        StrokeTimes.clear();
+        StrokeWriter = new LogFileWriter("StrokeTime.csv", LogFileWriter.STROKE_TIME_TYPE, LogFileWriter.TESTING_TYPE);
+    }
+
     /* 啟動Thread持續偵測Window分數是否連續達標 */
     public void StartStrokeDetector(){
         /*
         *   用Thread持續檢查Window Score的變化情形
         *   連續N個Window Score大於Threshold即稱為有擊球行為
         *   若偵測到擊球必須發送Broadcast出去(在MainActivity.java內另外實作接收端)
-        *   ps. 必須要有變數(curIdx)紀錄下一次迴圈從第幾個Window開始檢查
         * */
+        initParameter();
         detector_t = new Thread() {
             public void run() {
-                int curIdx = 0;
-                while(SystemParameters.isServiceRunning.get()){
-                    final Vector<ScoreComputing.WindowScore> w_scores = curSC.getAllWindowScores();
-                    final int curSize = w_scores.size(); //This is to avoid w_scores size change when for loop is running.
 
+                while(SystemParameters.isServiceRunning.get()){
+                    final LinkedBlockingQueue<ScoreComputing.WindowScore> w_scores = curSC.getAllWindowScores();
                     try{
                         // 偵測是否符合規則, 若符合，改變curIdx並發出broadcast
-                        CheckStroke(w_scores, curIdx);
+                        long result = CheckStroke(w_scores);
+
                         Log.e(TAG, "Get Stroke!!!!");
+                        StrokeTimes.add(result);
+                        try {
+                            StrokeWriter.writeStrokeTime(StrokeTimes.size(), result);
+                        } catch (IOException e) {
+                            Log.e(TAG,e.getMessage());
+                        }
+
                         // if no exception occur, jump curIdx to the window position where the score is lower than threshold
-                        curIdx = GetJumpIndex(w_scores, curIdx);
+                        JumpWindow(w_scores);
 
                         Intent broadcast = new Intent(ACTION_STROKE_DETECTED_STATE);
                         mContext.sendBroadcast(broadcast);
 
-                    } catch (NotMatchRuleException e) {
-                        curIdx++;
-                    } catch (ReservedException e) {}
-
-                    //Log.d(TAG, curIdx + "");
+                    } catch (NotMatchRuleException e) {}
+                    catch (ReservedException e) {}
                 }
+
+                if( StrokeWriter != null)
+                    StrokeWriter.closefile();
             }
         };
         detector_t.start();
     }
 
     // 檢查是否符合規則, 若不符或是access到保留區皆會丟出Exception
-    public void CheckStroke(final Vector<ScoreComputing.WindowScore> AllWindows, int idx) throws NotMatchRuleException, ReservedException{
-        if(AllWindows.size() < idx+RESERVEDWINDOWNUM) // it will access reserved space
+    public long CheckStroke(final LinkedBlockingQueue<ScoreComputing.WindowScore> AllWindows) throws NotMatchRuleException, ReservedException{
+        if(AllWindows.size() < RESERVEDWINDOWNUM) // it will access reserved space
             throw new ReservedException();
 
-        for (int i = idx; i < idx + WINDOWTHRESHOLD; i++) {
-            ScoreComputing.WindowScore ws = AllWindows.get(i);
+        long stroke_t = 0;
+        for (int i = 0; i < WINDOWTHRESHOLD; i++) {
+            ScoreComputing.WindowScore ws = AllWindows.poll();
             if (ws.score < SCORETHRESHOLD)
                 throw new NotMatchRuleException();
+
+            if(i == 0)
+                stroke_t = ws.w_time;
         }
+        return stroke_t;
     }
 
-    // 符合規則後, 需要決定下次從哪個Idx開始
-    public int GetJumpIndex( final Vector<ScoreComputing.WindowScore> AllWindows, int idx ){
-        int result_idx = idx;
-        for(; result_idx < AllWindows.size() ; result_idx++){
-            ScoreComputing.WindowScore ws = AllWindows.get(result_idx);
+    // 符合規則後, 繼續pop到score低於Threshold為止
+    public void JumpWindow( final LinkedBlockingQueue<ScoreComputing.WindowScore> AllWindows ){
+        while(AllWindows.size() > 0){
+            ScoreComputing.WindowScore ws = AllWindows.poll();
             if (ws.score < SCORETHRESHOLD)
                 break;
         }
-        return result_idx;
     }
 
 

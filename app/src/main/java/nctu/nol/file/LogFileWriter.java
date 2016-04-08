@@ -47,6 +47,7 @@ public class LogFileWriter {
 	public static final int ACCELEROMETER_DATA_TYPE = 2;
 	public static final int GYROSCOPE_DATA_TYPE = 3;
 	public static final int WINDOW_SCORE_TYPE = 4;
+	public static final int STROKE_TIME_TYPE = 5;
 	public static final int README_TYPE = 10;
 	public static final int OTHER_TYPE = 11;
 	
@@ -84,9 +85,6 @@ public class LogFileWriter {
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}
-
-	
-	//TEST FUNCTION
 	public void writePeakIndexFile(final int index) throws IOException{
 		StringBuilder outputString = new StringBuilder( String.format("%d", index) );
 		outputString.append("\n");
@@ -112,6 +110,11 @@ public class LogFileWriter {
 	}
 	public void writeWindowScore(final long time, final float score) throws IOException{
 		StringBuilder outputString = new StringBuilder( String.format("%d,%.3f", time,score) );
+		outputString.append("\n");
+		outputStream.write(outputString.toString().getBytes());
+	}
+	public void writeStrokeTime(final int idx, final long time) throws IOException{
+		StringBuilder outputString = new StringBuilder( String.format("%d,%d", idx,time) );
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}
