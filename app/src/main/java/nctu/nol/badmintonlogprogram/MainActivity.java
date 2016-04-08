@@ -306,8 +306,8 @@ public class MainActivity extends Activity {
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
 			if( StrokeDetector.ACTION_STROKE_DETECTED_STATE.equals(action) ){
-				SystemParameters.SensorCount++;
-				tv_strokeCount.setText(String.valueOf(SystemParameters.SensorCount));
+				SystemParameters.StrokeCount++;
+				tv_strokeCount.setText(SystemParameters.StrokeCount+"");
 			}
 		}
 	};
@@ -363,7 +363,7 @@ public class MainActivity extends Activity {
 		public void onClick(View arg0) {
 
 			if(fbm != null && fbm.CheckModelHasTrained()){
-				if(SystemParameters.IsBtHeadsetReady && SystemParameters.IsKoalaReady && !isTesting)
+				if(SystemParameters.IsBtHeadsetReady && /*SystemParameters.IsKoalaReady &&*/ !isTesting)
 					ActiveLogging(LogFileWriter.TESTING_TYPE);
 				else if(isTesting)
 					StopLogging(LogFileWriter.TESTING_TYPE);
@@ -417,6 +417,7 @@ public class MainActivity extends Activity {
 
 					//init stroke count 0
 					SystemParameters.StrokeCount = 0;
+					tv_strokeCount.setText("0");
 
 					//Service Start
 					SystemParameters.isServiceRunning.set(true);
@@ -624,7 +625,8 @@ public class MainActivity extends Activity {
 		SC.StartLogging();
 
 		/* 用來偵測擊球的模組 */
-		// do something....
+		StrokeDetector SD = new StrokeDetector(MainActivity.this, SC);
+		SD.StartStrokeDetector();
     }
     
     
