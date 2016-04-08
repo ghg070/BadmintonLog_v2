@@ -568,7 +568,7 @@ public class MainActivity extends Activity {
 		
 		//Find all peak
 		PeakDetector pd = new PeakDetector(700, 350);
-		List<Integer> peaks = pd.findPeakIndex(times, vals, (float)0.5);
+		List<Integer> peaks = pd.findPeakIndex(times, vals, (float)0.35);
 		// Test File for Peak Detection
 		/*
 			LogFileWriter PeakTestWriter = new LogFileWriter("PeakIndex.txt", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);

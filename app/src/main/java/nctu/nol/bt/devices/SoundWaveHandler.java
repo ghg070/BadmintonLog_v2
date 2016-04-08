@@ -45,9 +45,8 @@ public class SoundWaveHandler {
     private short[] mAudioBuffer;
     private int mBufferSize;
 	private boolean mIsRecording = false;
-	private LinkedBlockingQueue<AudioDataBuffer> AudioDataBuffer_for_file = new LinkedBlockingQueue<AudioDataBuffer>();
-	private LinkedBlockingQueue<AudioData> AudioDataset_for_file = new LinkedBlockingQueue<AudioData>();
-	private LinkedBlockingQueue<AudioData> AudioDataset_for_algo = new LinkedBlockingQueue<AudioData>();
+	private LinkedBlockingQueue<AudioDataBuffer> AudioDataBuffer_for_file = null;
+	private LinkedBlockingQueue<AudioData> AudioDataset_for_algo = null;
 	
 	//FileWrite for Logging
 	private LogFileWriter SoundDataWriter;
@@ -128,14 +127,13 @@ public class SoundWaveHandler {
         mBufferSize = minBufferSize/2; 
         
         mAudioBuffer = new short[mBufferSize];
-        Log.d(TAG,"Set mAudioBuffer Size = " + mBufferSize);
+        Log.d(TAG, "Set mAudioBuffer Size = " + mBufferSize);
         
         record = new AudioRecord(AudioSource.MIC, SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, minBufferSize);
         
-		AudioDataBuffer_for_file.clear();
-		AudioDataset_for_file.clear();
-		AudioDataset_for_algo.clear();
+		AudioDataBuffer_for_file = new LinkedBlockingQueue<AudioDataBuffer>();
+		AudioDataset_for_algo =  new LinkedBlockingQueue<AudioData>();
 	}
 
 	/******************************************/
@@ -190,7 +188,7 @@ public class SoundWaveHandler {
 							for(int i = 0 ; i < mAudioBuffer.length; i++){
 								AudioData ad = new AudioData( passTime+(long)deltaT*i , (float)mAudioBuffer[i]/32768 );
 								AudioDataset_for_algo.add(ad);
-								AudioDataset_for_file.add(ad);
+
 							}
 							
 							SystemParameters.AudioCount += readSize;
@@ -347,10 +345,6 @@ public class SoundWaveHandler {
 					
 				}else if(state == BluetoothProfile.STATE_DISCONNECTED){
 					Log.d(TAG,"Sound device disconnected");
-					if(SCOActionRegistedFlag){
-						mContext.unregisterReceiver(mSCOStateUpdateReceiver);
-						SCOActionRegistedFlag = false;
-					}
 				}
 			}
 		}
@@ -371,6 +365,10 @@ public class SoundWaveHandler {
                 	Intent broadcast = new Intent(ACTION_SOUND_PREPARED_STATE);    
 	                mContext.sendBroadcast(broadcast);
                 }else if( AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state ){
+					if(SCOActionRegistedFlag && SystemParameters.IsBtHeadsetReady ){
+						mContext.unregisterReceiver(mSCOStateUpdateReceiver);
+						SCOActionRegistedFlag = false;
+					}
                 	SystemParameters.IsBtHeadsetReady = false;
                 	Intent broadcast = new Intent(ACTION_SOUND_NOT_PREPARE_STATE);    
 	                mContext.sendBroadcast(broadcast);

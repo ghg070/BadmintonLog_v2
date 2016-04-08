@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cc.nctu1210.api.koala6x.KoalaDevice;
@@ -49,13 +50,16 @@ public class BeaconHandler implements SensorEventListener {
     public static final long SCAN_PERIOD = 3000;
 
     // Data Store
-    private Vector<SensorData> AccDataset = new Vector<SensorData>();
-    private Vector<SensorData> GyroDataset = new Vector<SensorData>();;
+    private LinkedBlockingQueue<SensorData> AccDataset_for_file = null;
+    private LinkedBlockingQueue<SensorData> GyroDataset_for_file = null;;
+    private LinkedBlockingQueue<SensorData> AccDataset_for_algo = null;
+    private LinkedBlockingQueue<SensorData> GyroDataset_for_algo = null;;
 
     // FileWrite for Logging
     private LogFileWriter AccDataWriter;
     private LogFileWriter GyroDataWriter;
-    public boolean mIsRecording = false;
+    private boolean mIsRecording = false;
+    public AtomicBoolean isWrittingSensorDataLog = new AtomicBoolean(false);
 
     // Broadcast Related
     public final static String ACTION_BEACON_CONNECT_STATE = "BEACONHANDLER.ACTION_BEACON_CONNECT_STATE";
@@ -85,11 +89,6 @@ public class BeaconHandler implements SensorEventListener {
                     .build();
             filters = new ArrayList<ScanFilter>();
         }
-    }
-
-    private void initParameters(){
-        AccDataset.clear();
-        GyroDataset.clear();
     }
 
     public void deleteObject(){
@@ -250,40 +249,73 @@ public class BeaconHandler implements SensorEventListener {
     /***************************************/
     /**  BeaconHandler  Data Recording Function **/
     /***************************************/
-    public void startRecording(){
-        initParameters();
-        initLogFile();
-        mIsRecording = true;
-    }
-
-    public void stopRecording(){
-        mIsRecording = false;
-        closeLogFile();
-    }
-
     private void initLogFile(){
         AccDataWriter = new LogFileWriter("AccData.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
         GyroDataWriter = new LogFileWriter("GyroData.csv", LogFileWriter.GYROSCOPE_DATA_TYPE, LogFileWriter.TESTING_TYPE);
     }
 
-    private void closeLogFile(){
-        if(AccDataWriter != null)
-            AccDataWriter.closefile();
-        if(GyroDataWriter != null)
-            GyroDataWriter.closefile();
+    private void initParameters(){
+        AccDataset_for_file = new LinkedBlockingQueue<SensorData>();
+        GyroDataset_for_file = new LinkedBlockingQueue<SensorData>();
+        AccDataset_for_algo = new LinkedBlockingQueue<SensorData>();
+        GyroDataset_for_algo = new LinkedBlockingQueue<SensorData>();
+    }
+
+    public void startRecording(){
+        initParameters();
+        initLogFile();
+        mIsRecording = true;
+        startLogging();
+        if (SystemParameters.SensorStartTime == 0)
+            SystemParameters.SensorStartTime = System.currentTimeMillis();
+    }
+
+    public void stopRecording(){
+        mIsRecording = false;
+    }
+
+    private void startLogging(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                isWrittingSensorDataLog.set(true);
+                while( mIsRecording ||  AccDataset_for_file.size() > 0 || GyroDataset_for_file.size() > 0){
+                    if( AccDataset_for_file.size() > 0 ) {
+                        final SensorData acc_data = AccDataset_for_file.poll();
+                        try {
+                            AccDataWriter.writeInertialDataFile(acc_data.time, acc_data.values[0], acc_data.values[1], acc_data.values[2]);
+                        } catch (IOException e) {
+                            Log.e(TAG, e.getMessage());
+                        }
+                    }
+                    if( GyroDataset_for_file.size() > 0 ) {
+                        final SensorData gyro_data = GyroDataset_for_file.poll();
+                        try {
+                            GyroDataWriter.writeInertialDataFile(gyro_data.time, gyro_data.values[0], gyro_data.values[1], gyro_data.values[2]);
+                        } catch (IOException e) {
+                            Log.e(TAG, e.getMessage());
+                        }
+                    }
+                }
+                if(AccDataWriter != null)
+                    AccDataWriter.closefile();
+                if(GyroDataWriter != null)
+                    GyroDataWriter.closefile();
+
+                isWrittingSensorDataLog.set(false);
+            }
+        }).start();
     }
 
     @Override
     public void onSensorChange(final SensorEvent e) {
         if( mIsRecording ) {
             final int eventType = e.type;
-            final double values[] = new double[3];
+            final float values[] = new float[3];
 
             // Set Time
             long curTime = System.currentTimeMillis();
             long passTime = curTime - SystemParameters.StartTime;
-            if (SystemParameters.SensorStartTime == 0)
-                SystemParameters.SensorStartTime = curTime;
             SystemParameters.SensorEndTime = curTime;
 
             switch (eventType) {
@@ -295,12 +327,7 @@ public class BeaconHandler implements SensorEventListener {
                     //Log.d(TAG, "time=" + System.currentTimeMillis() + "gX:" + values[0] + "gY:" + values[1] + "gZ:" + values[2] + "\n");
                     if (SystemParameters.isServiceRunning.get()) {
                         SensorData sd = new SensorData(passTime, values);
-                        /*try {
-                            AccDataWriter.writeInertialDataFile(passTime, (float)values[0], (float)values[1], (float)values[2]);
-                        } catch (IOException e1) {
-                            Log.e(TAG,e1.getMessage());
-                        }*/
-                        AccDataset.add(sd);
+                        AccDataset_for_file.add(sd);
                     }
                     break;
                 case SensorEvent.TYPE_GYROSCOPE:
@@ -310,12 +337,7 @@ public class BeaconHandler implements SensorEventListener {
                     //Log.d(TAG, "time=" + System.currentTimeMillis() + "wX:" + values[0] + "wY:" + values[1] + "wZ:" + values[2] + "\n");
                     if (SystemParameters.isServiceRunning.get()) {
                         SensorData sd = new SensorData(passTime, values);
-                        /*try {
-                            GyroDataWriter.writeInertialDataFile(passTime, (float)values[0], (float)values[1], (float)values[2]);
-                        } catch (IOException e2) {
-                            Log.e(TAG,e2.getMessage());
-                        }*/
-                        GyroDataset.add(sd);
+                        GyroDataset_for_file.add(sd);
                     }
                     break;
             }
@@ -332,10 +354,10 @@ public class BeaconHandler implements SensorEventListener {
 
     public class SensorData{
         long time;
-        double values[];
-        public SensorData(long time, double[] vals){
+        float values[];
+        public SensorData(long time, float[] vals){
             this.time = time;
-            this.values = new double[3];
+            this.values = new float[3];
             for(int i = 0; i < 3; i++)
                 this.values[i] = vals[i];
         }
