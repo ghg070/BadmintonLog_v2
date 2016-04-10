@@ -177,18 +177,17 @@ public class SoundWaveHandler {
 						
 						long passTime = curTime-SystemParameters.StartTime;
 						if(SystemParameters.SoundStartTime == 0)
-							SystemParameters.SoundStartTime = curTime; 
-						
+							SystemParameters.SoundStartTime = curTime;
+						long offset = SystemParameters.SoundStartTime-SystemParameters.StartTime;
 						
 						if(readSize > 0){
 							AudioDataBuffer adb = new AudioDataBuffer(passTime, mAudioBuffer);
 							AudioDataBuffer_for_file.add(adb);
 							
-							float deltaT = 1/(float)SAMPLE_RATE;
+							float deltaT = (1/(float)SAMPLE_RATE)*1000;
 							for(int i = 0 ; i < mAudioBuffer.length; i++){
-								AudioData ad = new AudioData( passTime+(long)deltaT*i , (float)mAudioBuffer[i]/32768 );
+								AudioData ad = new AudioData( (long)(offset + deltaT*(SystemParameters.AudioCount+i)) , (float)mAudioBuffer[i]/32768 );
 								AudioDataset_for_algo.add(ad);
-
 							}
 							
 							SystemParameters.AudioCount += readSize;

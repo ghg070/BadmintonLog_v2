@@ -68,7 +68,8 @@ public class StrokeDetector {
                         Log.e(TAG, "Get Stroke!!!!");
                         StrokeTimes.add(result);
                         try {
-                            StrokeWriter.writeStrokeTime( MillisecToString(result) );
+                            long offset = SystemParameters.SoundStartTime-SystemParameters.StartTime;
+                            StrokeWriter.writeStrokeTime( MillisecToString(result), MillisecToString(result-offset) );
                         } catch (IOException e) {
                             Log.e(TAG,e.getMessage());
                         }
@@ -107,11 +108,13 @@ public class StrokeDetector {
         return stroke_t;
     }
 
-    // 符合規則後, 繼續pop到score低於Threshold為止
+    // 符合規則後, 繼續pop到score低於Threshold且超過8個Window為止為止
     public void JumpWindow( final LinkedBlockingQueue<ScoreComputing.WindowScore> AllWindows ){
+        int jump_w = 8;
         while(AllWindows.size() > 0){
             ScoreComputing.WindowScore ws = AllWindows.poll();
-            if (ws.score < SCORETHRESHOLD)
+            jump_w--;
+            if (ws.score < SCORETHRESHOLD && jump_w < 1)
                 break;
         }
     }

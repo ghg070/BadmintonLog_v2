@@ -40,6 +40,7 @@ public class LogFileWriter {
 	private static final String attributeWindowScore = "Timestamp,Score";
 	private static final String attributeAccData = "Timestamp,Gx,Gy,Gz";
 	private static final String attributeGyroData = "Timestamp,Wx,Wy,Wz";
+	private static final String attributeStrokeTime = "StrokeTime_for_System,StrokeTime_for_Wav";
 	
 	//Type Number
 	public static final int SOUNDWAVE_RAW_TYPE = 0;
@@ -113,8 +114,8 @@ public class LogFileWriter {
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}
-	public void writeStrokeTime( final String time) throws IOException{
-		StringBuilder outputString = new StringBuilder(time);
+	public void writeStrokeTime(final String time_sys, final String time_wav) throws IOException{
+		StringBuilder outputString = new StringBuilder( time_sys+","+time_wav );
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}
@@ -136,7 +137,11 @@ public class LogFileWriter {
 				+"\tAudioDataBuffer.csv Record Format\r\n"
 				+"\t\t"+ attributeAudioDataBuffer + "\r\n"
 				+"\tWindowScore.csv Window Score file\r\n"
+				+"\tWindowScore.csv Record Format\r\n"
 				+"\t\t"+ attributeWindowScore + "\r\n"
+				+"\tStrokeTime.csv Stroke Time file\r\n"
+				+"\tStrokeTime.csv Record Format\r\n"
+				+"\t\t"+ attributeStrokeTime + "\r\n"
 				+"\tAccData.csv Accelerometer Data file ("+SystemParameters.SensorCount+" records @ "+SensorRate+"Hz)\r\n"
 				+"\tAccData.csv Record Format\r\n"
 				+"\t\t"+ attributeAccData + "\r\n"
