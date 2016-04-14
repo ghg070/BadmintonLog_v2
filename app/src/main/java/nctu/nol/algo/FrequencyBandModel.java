@@ -87,6 +87,8 @@ public class FrequencyBandModel {
 	}
 
 	public void setTopKFreqBandTable(final Vector<MainFreqInOneWindow> AllSpectrumMainFreqs, int peak_num){
+		//計次數
+		HashMap<Float, Float> FreqCount = new HashMap<Float, Float>();
 		HashMap<Float, Float> MainFreqMap = new HashMap<Float, Float>();
 		for(int i = 0 ; i < AllSpectrumMainFreqs.size(); i++){
 			MainFreqInOneWindow mf = AllSpectrumMainFreqs.get(i);
@@ -97,10 +99,15 @@ public class FrequencyBandModel {
 				
 				//Initial value of new key(freq band)
 				if(!MainFreqMap.containsKey(FreqBand))
-					MainFreqMap.put(FreqBand, (float)0);	
+					MainFreqMap.put(FreqBand, (float)0);
+
+				//Initial value of new key(freq band)
+				if(!FreqCount.containsKey(FreqBand))
+					FreqCount.put(FreqBand, (float)0);
 				
 				//Sum power with same freq bands
 				MainFreqMap.put(FreqBand, MainFreqMap.get(FreqBand) + mf.freqbands[j].Power);
+				FreqCount.put(FreqBand, FreqCount.get(FreqBand) + 1);
 			}
 		}
 
@@ -110,7 +117,7 @@ public class FrequencyBandModel {
 		//Average Value
 		for(int i = 0; i < TopKMainFreqBandTable.size(); i++){
 			HashMap.Entry<Float, Float> entry = TopKMainFreqBandTable.get(i);
-		    entry.setValue(entry.getValue()/(peak_num*WINDOW_NUM));
+		    entry.setValue(entry.getValue()/FreqCount.get(entry.getValue()));
 		    
 		    Log.d(TAG,"key:"+entry.getKey()+" val:"+entry.getValue());
 
