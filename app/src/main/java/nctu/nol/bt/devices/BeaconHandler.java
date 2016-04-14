@@ -266,8 +266,6 @@ public class BeaconHandler implements SensorEventListener {
         initLogFile();
         mIsRecording = true;
         startLogging();
-        if (SystemParameters.SensorStartTime == 0)
-            SystemParameters.SensorStartTime = System.currentTimeMillis();
     }
 
     public void stopRecording(){
@@ -316,7 +314,6 @@ public class BeaconHandler implements SensorEventListener {
             // Set Time
             long curTime = System.currentTimeMillis();
             long passTime = curTime - SystemParameters.StartTime;
-            SystemParameters.SensorEndTime = curTime;
 
             switch (eventType) {
                 case SensorEvent.TYPE_ACCELEROMETER:

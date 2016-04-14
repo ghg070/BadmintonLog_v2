@@ -23,8 +23,6 @@ public class SystemParameters {
 
 	//for sensor
 	public static boolean IsKoalaReady = false;
-	public static long SensorStartTime = 0;
-	public static long SensorEndTime = 0;
 	public static int SensorCount = 0;
 	
 	//for Log File
@@ -48,8 +46,6 @@ public class SystemParameters {
 		SoundBufferCount = 0;
 
 		//for sensor
-		SensorStartTime = 0;
-		SensorEndTime = 0;
 		SensorCount = 0;
 		
 		//for log file

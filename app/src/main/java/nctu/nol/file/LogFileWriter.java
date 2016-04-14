@@ -126,7 +126,7 @@ public class LogFileWriter {
 		if(SystemParameters.Duration > 0){
 
 			long AudioRate = (long)( SystemParameters.AudioCount/((double)(SystemParameters.SoundEndTime-SystemParameters.SoundStartTime)/1000.0) );
-			long SensorRate = (long)( SystemParameters.SensorCount/((double)(SystemParameters.SensorEndTime-SystemParameters.SensorStartTime)/1000.0) );
+			long SensorRate = (long)( SystemParameters.SensorCount/SystemParameters.Duration );
 			
 			String outputString = 
 				"File Format Version: 1.0\r\n"
@@ -152,10 +152,7 @@ public class LogFileWriter {
 				+"Duration: "+SystemParameters.Duration	+" sec\r\n"
 				+"////////////// Audio Buffer Information //////////////"+ "\r\n"
 				+"First Buffer Start Timestamp: "+SystemParameters.SoundStartTime + "\r\n"
-				+"Final Buffer End Timestamp: "+SystemParameters.SoundEndTime + "\r\n"
-				+"////////////// Sensor Information //////////////"+ "\r\n"
-				+"First Data Start Timestamp: "+SystemParameters.SensorStartTime + "\r\n"
-				+"Final Data End Timestamp: "+SystemParameters.SensorEndTime + "\r\n";
+				+"Final Buffer End Timestamp: "+SystemParameters.SoundEndTime + "\r\n";
 			outputStream.write(outputString.getBytes());
 		
 		}
