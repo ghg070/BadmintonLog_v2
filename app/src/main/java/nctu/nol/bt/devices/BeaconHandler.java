@@ -65,6 +65,11 @@ public class BeaconHandler implements SensorEventListener {
     public final static String ACTION_BEACON_CONNECT_STATE = "BEACONHANDLER.ACTION_BEACON_CONNECT_STATE";
     public final static String ACTION_BEACON_DISCONNECT_STATE = "BEACONHANDLER.ACTION_BEACON_DISCONNECT_STATE";
 
+    //Correction coordinates
+    public double[] virtualX = new double[3];
+    public double[] virtualY = new double[3];
+    public double[] virtualZ = new double[3];
+
     public BeaconHandler(Activity activity){
         this.mActivity = activity;
         initBLEService();
@@ -358,6 +363,40 @@ public class BeaconHandler implements SensorEventListener {
             for(int i = 0; i < 3; i++)
                 this.values[i] = vals[i];
         }
+    }
+    //training average Axis cross product X
+    public void startCalibration(List<Double[]> dataY,List<Double[]> dataZ){
+        for (int i=0;i<3;i++) {
+            for (int j=0;j<dataY.size();i++) {
+                virtualY[i] += dataY.get(j)[i];
+            }
+        }
+        for(int i=0;i<3;i++)
+        {
+            virtualY[i] /= dataY.size();
+        }
+        for (int i=0;i<3;i++) {
+            for (int j=0;j<dataZ.size();i++) {
+                virtualZ[i] += dataZ.get(j)[i];
+            }
+        }
+        for(int i=0;i<3;i++)
+        {
+            virtualZ[i] /= dataZ.size();
+        }
+        for (int i = 0; i < 3; i++) {
+            virtualX[i] = virtualY[(i + 1) % 3] * virtualZ[(i + 2) % 3] - virtualY[(i + 2) % 3] * virtualZ[(i + 1) % 3];
+        }
+    }
+    //Correction coordinates
+    public double[] getCorrectionValue(double[] data,double[] virtualX,double[] virtualY,double[] virtualZ) {
+        double CorrectionValue[] = new double[3];
+        for(int i=0;i<3;i++) {
+            CorrectionValue[0] += data[i] * virtualX[i];
+            CorrectionValue[1] += data[i] * virtualY[i];
+            CorrectionValue[2] += data[i] * virtualZ[i];
+        }
+        return CorrectionValue;
     }
 
 }
