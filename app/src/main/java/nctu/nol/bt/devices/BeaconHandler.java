@@ -66,9 +66,9 @@ public class BeaconHandler implements SensorEventListener {
     public final static String ACTION_BEACON_DISCONNECT_STATE = "BEACONHANDLER.ACTION_BEACON_DISCONNECT_STATE";
 
     //Correction coordinates
-    public double[] virtualX = new double[3];
-    public double[] virtualY = new double[3];
-    public double[] virtualZ = new double[3];
+    public double[] virtualX = null;
+    public double[] virtualY = null;
+    public double[] virtualZ = null;
 
     public BeaconHandler(Activity activity){
         this.mActivity = activity;
@@ -366,6 +366,10 @@ public class BeaconHandler implements SensorEventListener {
     }
     //training average Axis cross product X
     public void startCalibration(List<Double[]> dataY,List<Double[]> dataZ){
+        //initial
+        virtualX = new double[3];
+        virtualY = new double[3];
+        virtualZ = new double[3];
         for (int i=0;i<3;i++) {
             for (int j=0;j<dataY.size();i++) {
                 virtualY[i] += dataY.get(j)[i];
