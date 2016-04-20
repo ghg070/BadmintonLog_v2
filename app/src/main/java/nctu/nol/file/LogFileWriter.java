@@ -49,13 +49,15 @@ public class LogFileWriter {
 	public static final int GYROSCOPE_DATA_TYPE = 3;
 	public static final int WINDOW_SCORE_TYPE = 4;
 	public static final int STROKE_TIME_TYPE = 5;
+	public static final int ACCELEROMETER_Calibration = 6;
 	public static final int README_TYPE = 10;
 	public static final int OTHER_TYPE = 11;
 	
 	//Used Type Number
 	public static final int TRAINING_TYPE = 0;
 	public static final int TESTING_TYPE = 1;
-	
+	public static final int CalibrationY_TYPE = 2;
+	public static final int CalibrationZ_TYPE = 3;
 	
 	public LogFileWriter(String filename,int file_type, int used_type){
 		this.fileName=filename;
@@ -226,7 +228,13 @@ public class LogFileWriter {
 					break;
 				case TESTING_TYPE:
 					SystemParameters.filePath = path+"/NOL/"+date+" - Testing/";
-				break;	
+					break;
+				case CalibrationY_TYPE:
+					SystemParameters.filePath = path+"/NOL/"+date+" - Calibration/";
+					break;
+				case CalibrationZ_TYPE:
+					SystemParameters.filePath = path+"/NOL/"+date+" - Calibration/";
+					break;
 				default:
 					break;
 			}
