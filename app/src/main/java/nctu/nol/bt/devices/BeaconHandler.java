@@ -300,8 +300,7 @@ public class BeaconHandler implements SensorEventListener {
                         try {
                             if(uType == LogFileWriter.TESTING_TYPE) {
                                 AccDataWriter.writeInertialDataFile(acc_data.time, acc_data.values[0], acc_data.values[1], acc_data.values[2]);
-                                float[] CalibrationTemp = new float[3];
-                                CalibrationTemp = getCorrectionValue(acc_data.values);
+                                final float CalibrationTemp[] = getCorrectionValue(acc_data.values);
                                 Cal_AccDataWriter.writeInertialDataFile(acc_data.time, CalibrationTemp[0], CalibrationTemp[1], CalibrationTemp[2]);
                             }
                             else if(uType == LogFileWriter.CALIBRATION_Y_TYPE) {
@@ -314,10 +313,11 @@ public class BeaconHandler implements SensorEventListener {
                             Log.e(TAG, e.getMessage());
                         }
                     }
-                    if( GyroDataset_for_file.size() > 0 && uType == LogFileWriter.TESTING_TYPE ) {
+                    if( GyroDataset_for_file.size() > 0 ) {
                         final SensorData gyro_data = GyroDataset_for_file.poll();
                         try {
-                            GyroDataWriter.writeInertialDataFile(gyro_data.time, gyro_data.values[0], gyro_data.values[1], gyro_data.values[2]);
+                            if( uType == LogFileWriter.TESTING_TYPE)
+                                GyroDataWriter.writeInertialDataFile(gyro_data.time, gyro_data.values[0], gyro_data.values[1], gyro_data.values[2]);
                         } catch (IOException e) {
                             Log.e(TAG, e.getMessage());
                         }
