@@ -164,7 +164,7 @@ public class MainActivity extends Activity {
 				CurKoalaDevice = clickedDeviceName + "-" +clickedMacAddress;
 				bh.ConnectToKoala(clickedMacAddress);
 				for(int i = 0; i < 2; i++)
-					CalibrationUI(i);
+					StartCalibration(i);
 			}
 		}
         super.onActivityResult(requestCode, resultCode, data);
@@ -640,7 +640,59 @@ public class MainActivity extends Activity {
 		StrokeDetector SD = new StrokeDetector(MainActivity.this, SC);
 		SD.StartStrokeDetector();
     }
-    
+
+	/* Calibration UI */
+	public void StartCalibration(int type) {
+		String Title,Message;
+		final int TypeTemp ;
+		if(type == 0) {
+			Title = "Calibration Z";
+			Message = "請將拍子垂直朝下";
+			TypeTemp = LogFileWriter.CALIBRATION_Z_TYPE;
+		}
+		else {
+			Title = "Calibration Y";
+			Message = "請將拍子平放，熊耳朝上";
+			TypeTemp = LogFileWriter.CALIBRATION_Y_TYPE;
+		}
+
+		AlertDialog.Builder CalZDialog = new AlertDialog.Builder(MainActivity.this);
+		CalZDialog.setTitle(Title)
+				.setMessage(Message)
+				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int id) {
+						showLogProcessDialog(TypeTemp);
+					}
+				}).show();
+	}
+
+	private void showLogProcessDialog(final int LogType) {
+		final ProgressDialog Cal_dialog = ProgressDialog.show(MainActivity.this, "校正中", "計算校正軸，請稍後",true);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					bh.startRecording(LogType);
+					//Service Start
+					SystemParameters.isServiceRunning.set(true);
+					Thread.sleep(bh.Cal_Time);
+					bh.stopRecording();
+					SystemParameters.isServiceRunning.set(false);
+					bh.startCalibration(LogType);
+				} catch (Exception e) {
+					Log.e(TAG,e.getMessage());
+				} finally {
+					runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							Cal_dialog.dismiss();
+						}
+					});
+				}
+			}
+		}).start();
+	}
     
     /***********************************************/
     /** Spinner Function for Select Bonded Device **/
@@ -716,54 +768,7 @@ public class MainActivity extends Activity {
         		return super.onOptionsItemSelected(item);
         }
     }
-	/* Calibration UI */
-	public void CalibrationUI(int type)
-	{
-		String Title = new String();
-		String Message = new String();
-		final int TypeTemp ;
-		if(type == 0) {
-			Title = "Calibration Z";
-			Message = "請將拍子垂直朝下";
-			TypeTemp = LogFileWriter.CalibrationZ_TYPE;
-		}
-		else {
-			Title = "Calibration Y";
-			Message = "請將拍子平放，熊耳朝上";
-			TypeTemp = LogFileWriter.CalibrationY_TYPE;
-		}
 
-		AlertDialog.Builder CalZDialog = new AlertDialog.Builder(MainActivity.this);
-		CalZDialog.setTitle(Title)
-				.setMessage(Message)
-				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int id) {
-						showLogProcessDialog(TypeTemp);
-					}
-				}).show();
-	}
-
-	private void showLogProcessDialog(final int LogType) {
-		final ProgressDialog Cal_dialog = ProgressDialog.show(MainActivity.this, "校正中", "計算校正軸，請稍後",true);
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					bh.startRecording(LogType);
-					//Service Start
-					SystemParameters.isServiceRunning.set(true);
-					Thread.sleep(bh.Cal_Time);
-					bh.startCalibration(LogType);
-					bh.stopRecording();
-				} catch (Exception e) {
-					e.printStackTrace();
-				} finally {
-					Cal_dialog.dismiss();
-				}
-			}
-		}).start();
-	}
 };
 
 

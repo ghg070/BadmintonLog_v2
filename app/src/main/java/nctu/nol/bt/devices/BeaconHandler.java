@@ -72,8 +72,7 @@ public class BeaconHandler implements SensorEventListener {
     public float[] virtualX = null;
     public float[] virtualY = null;
     public float[] virtualZ = null;
-    public LogFileWriter virtualAxis;
-    public static final long Cal_Time = 10000;
+    public static final long Cal_Time = 5000;
 
     public BeaconHandler(Activity activity){
         this.mActivity = activity;
@@ -263,16 +262,13 @@ public class BeaconHandler implements SensorEventListener {
         if(uType == LogFileWriter.TESTING_TYPE) {
             AccDataWriter = new LogFileWriter("AccData.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
             GyroDataWriter = new LogFileWriter("GyroData.csv", LogFileWriter.GYROSCOPE_DATA_TYPE, uType);
-            Cal_AccDataWriter = new LogFileWriter("Cal_AccData.csv", LogFileWriter.ACCELEROMETER_Calibration, uType);
+            Cal_AccDataWriter = new LogFileWriter("Cal_AccData.csv", LogFileWriter.ACCELEROMETER_CALIBRATION_TYPE, uType);
         }
-        else if(uType == LogFileWriter.CalibrationY_TYPE){
-            Cal_virtualY = new LogFileWriter("Cal_Y.csv", LogFileWriter.ACCELEROMETER_Calibration, uType);
-            GyroDataWriter = new LogFileWriter("Cal_GyroData.csv", LogFileWriter.GYROSCOPE_DATA_TYPE, uType);
-        }
-        else if(uType == LogFileWriter.CalibrationZ_TYPE) {
-            Cal_virtualZ = new LogFileWriter("Cal_Z.csv", LogFileWriter.ACCELEROMETER_Calibration, uType);
-            GyroDataWriter = new LogFileWriter("Cal_GyroData.csv", LogFileWriter.GYROSCOPE_DATA_TYPE, uType);
-        }
+        else if(uType == LogFileWriter.CALIBRATION_Y_TYPE)
+            Cal_virtualY = new LogFileWriter("Cal_Y.csv", LogFileWriter.ACCELEROMETER_CALIBRATION_TYPE, uType);
+        else if(uType == LogFileWriter.CALIBRATION_Z_TYPE)
+            Cal_virtualZ = new LogFileWriter("Cal_Z.csv", LogFileWriter.ACCELEROMETER_CALIBRATION_TYPE, uType);
+
     }
 
     private void initParameters(){
@@ -308,17 +304,17 @@ public class BeaconHandler implements SensorEventListener {
                                 CalibrationTemp = getCorrectionValue(acc_data.values);
                                 Cal_AccDataWriter.writeInertialDataFile(acc_data.time, CalibrationTemp[0], CalibrationTemp[1], CalibrationTemp[2]);
                             }
-                            else if(uType == LogFileWriter.CalibrationY_TYPE) {
+                            else if(uType == LogFileWriter.CALIBRATION_Y_TYPE) {
                                 Cal_virtualY.writeInertialDataFile(acc_data.time, acc_data.values[0], acc_data.values[1], acc_data.values[2]);
                             }
-                            else if(uType == LogFileWriter.CalibrationZ_TYPE){
+                            else if(uType == LogFileWriter.CALIBRATION_Z_TYPE){
                                 Cal_virtualZ.writeInertialDataFile(acc_data.time, acc_data.values[0], acc_data.values[1], acc_data.values[2]);
                             }
                         } catch (IOException e) {
                             Log.e(TAG, e.getMessage());
                         }
                     }
-                    if( GyroDataset_for_file.size() > 0 ) {
+                    if( GyroDataset_for_file.size() > 0 && uType == LogFileWriter.TESTING_TYPE ) {
                         final SensorData gyro_data = GyroDataset_for_file.poll();
                         try {
                             GyroDataWriter.writeInertialDataFile(gyro_data.time, gyro_data.values[0], gyro_data.values[1], gyro_data.values[2]);
@@ -333,6 +329,10 @@ public class BeaconHandler implements SensorEventListener {
                     GyroDataWriter.closefile();
                 if(Cal_AccDataWriter != null)
                     Cal_AccDataWriter.closefile();
+                if(Cal_virtualY != null)
+                    Cal_virtualY.closefile();
+                if(Cal_virtualZ != null)
+                    Cal_virtualZ.closefile();
 
                 isWrittingSensorDataLog.set(false);
             }
@@ -384,49 +384,43 @@ public class BeaconHandler implements SensorEventListener {
         }
     }
 
-    public class SensorData{
-        long time;
-        float values[];
-        public SensorData(long time, float[] vals){
-            this.time = time;
-            this.values = new float[3];
-            for(int i = 0; i < 3; i++)
-                this.values[i] = vals[i];
-        }
-    }
+
     //training average Axis cross product X
     public void startCalibration(int uType) {
-        //initial
+        // Initial
         float[] average = new float[3];
-        ArrayList<SensorData> CalTemp = new ArrayList<SensorData>();
+        for(int i = 0; i < 3; i++)
+            average[i] = 0;
+
+        // Pop Acc Data
+        int length = AccDataset_for_algo.size();
         while (AccDataset_for_algo.size() > 0) {
             final SensorData acc_data = AccDataset_for_algo.poll();
-            CalTemp.add(acc_data);
-        }
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < CalTemp.size(); j++) {
-                average[i] += CalTemp.get(j).values[i];
-            }
-        }
-
-        for (int i = 0; i < 3; i++) {
-            average[i] /= CalTemp.size();
-        }
-        if (uType == LogFileWriter.CalibrationY_TYPE) {
-            virtualY = new float[3];
-            virtualY = average;
-            Log.e(TAG, "virtualY" + virtualY[0] + virtualY[1] + virtualY[2]);
-        } else if (uType == LogFileWriter.CalibrationZ_TYPE) {
-            virtualZ = new float[3];
             for(int i = 0; i < 3; i++)
-                virtualZ[i] = average[i]*(-1);
-            virtualX = new float[3];
-            Log.e(TAG, "virtualZ" + virtualZ[0] + virtualZ[1] + virtualZ[2]);
-            for (int i = 0; i < 3; i++) {
-                virtualX[i] = virtualY[(i + 1) % 3] * virtualZ[(i + 2) % 3] - virtualY[(i + 2) % 3] * virtualZ[(i + 1) % 3];
-            }
+                average[i] += acc_data.values[i];
+        }
 
-            Log.e(TAG, "virtualX" + virtualX[0] + virtualX[1] + virtualX[2]);
+        if (length > 0) {
+            //Average
+            for (int i = 0; i < 3; i++)
+                average[i] /= length;
+
+            if (uType == LogFileWriter.CALIBRATION_Y_TYPE) {
+                virtualY = new float[3];
+                for(int i = 0; i < 3; i++)
+                    virtualY[i] = average[i];
+                Log.e(TAG, "virtualY" + virtualY[0] + virtualY[1] + virtualY[2]);
+            } else if (uType == LogFileWriter.CALIBRATION_Z_TYPE) {
+                virtualZ = new float[3];
+                for(int i = 0; i < 3; i++)
+                    virtualZ[i] = average[i]*(-1);
+                Log.e(TAG, "virtualZ" + virtualZ[0] + virtualZ[1] + virtualZ[2]);
+
+                virtualX = new float[3];
+                for (int i = 0; i < 3; i++)
+                    virtualX[i] = virtualY[(i + 1) % 3] * virtualZ[(i + 2) % 3] - virtualY[(i + 2) % 3] * virtualZ[(i + 1) % 3];
+                Log.e(TAG, "virtualX" + virtualX[0] + virtualX[1] + virtualX[2]);
+            }
         }
     }
 
@@ -442,6 +436,18 @@ public class BeaconHandler implements SensorEventListener {
         CorrectionValue[1] /= Math.sqrt(Math.pow(virtualY[0],2)+Math.pow(virtualY[1],2)+Math.pow(virtualY[2],2));
         CorrectionValue[2] /= Math.sqrt(Math.pow(virtualZ[0],2)+Math.pow(virtualZ[1],2)+Math.pow(virtualZ[2],2));
         return CorrectionValue;
+    }
+
+
+    public class SensorData{
+        long time;
+        float values[];
+        public SensorData(long time, float[] vals){
+            this.time = time;
+            this.values = new float[3];
+            for(int i = 0; i < 3; i++)
+                this.values[i] = vals[i];
+        }
     }
 
 }
