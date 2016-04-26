@@ -594,6 +594,9 @@ public class MainActivity extends Activity {
 		fbm.setTopKFreqBandTable(AllMainFreqBands, peaks.size());
 		List<HashMap.Entry<Float, Float>> TopKMainFreqs = fbm.getTopKMainFreqBandTable();
 
+		//Count Stroke Detector's Threshold
+		StrokeDetector.ComputeScoreThreshold(TopKMainFreqs,vals,SoundWaveHandler.SAMPLE_RATE, FrequencyBandModel.FFT_LENGTH);
+
 
 		// Test File for All Spectrum Main Freq Bands
 		LogFileWriter AllSpectrumMainFreqsTestWriter = new LogFileWriter("AllSpectrumMainFreqs.csv", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
@@ -659,6 +662,7 @@ public class MainActivity extends Activity {
 		AlertDialog.Builder CalZDialog = new AlertDialog.Builder(MainActivity.this);
 		CalZDialog.setTitle(Title)
 				.setMessage(Message)
+				.setCancelable(false)
 				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int id) {
