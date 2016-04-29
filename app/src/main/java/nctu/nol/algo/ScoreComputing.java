@@ -86,12 +86,7 @@ public class ScoreComputing {
                         }
 
                         // Count score with specific freq bands and dataset
-                        CountSpectrum CS = new CountSpectrum();
-                        float score = 0;
-                        for (int j = 0; j < FreqIdxs.size(); j++) {
-                            float power = CS.dft_specific_idx(FreqIdxs.get(j), w_dataset);
-                            score += power / FreqMax;
-                        }
+                        float score = CountWindowScore(w_dataset, FreqIdxs, FreqMax);
                         WindowScore w_score = new WindowScore(w_timestamp, score);
                         AllWindowScores_for_file.add(w_score);
                         AllWindowScores_for_algo.add(w_score);
@@ -102,6 +97,16 @@ public class ScoreComputing {
             }
         };
         computing_t.start();
+    }
+
+    public static float CountWindowScore(final float[] dataset, final List<Integer> FreqIdxs, final float FreqMax){
+        CountSpectrum CS = new CountSpectrum();
+        float score = 0;
+        for (int j = 0; j < FreqIdxs.size(); j++) {
+            float power = CS.dft_specific_idx(FreqIdxs.get(j), dataset);
+            score += power / FreqMax;
+        }
+        return score;
     }
 
     /* 啟動Thread寫檔, 紀錄每個Window的分數 */
