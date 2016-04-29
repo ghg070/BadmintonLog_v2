@@ -81,12 +81,7 @@ public class StrokeDetector {
 
 
             // Count score with specific freq bands and dataset
-            CountSpectrum CS = new CountSpectrum();
-            float score = 0;
-            for (int j = 0; j < FreqIdxs.size(); j++) {
-                float power = CS.dft_specific_idx(FreqIdxs.get(j), w_dataset);
-                score += power / FreqMax;
-            }
+            float score = ScoreComputing.CountWindowScore(w_dataset, FreqIdxs, FreqMax);
             AllScores.add(score);
             sum += score;
         }
