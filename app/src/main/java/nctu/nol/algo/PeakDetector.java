@@ -38,7 +38,7 @@ public class PeakDetector {
 		int newPeak = -1;
 		float maxVal = vals[curPeakIndex];
 		//向左找
-		for(int i = curPeakIndex-1; attrs[curPeakIndex]-attrs[i] < PEAKWINDOWSIZE_IN_MILLISECOND && i > 0; i--){
+		for(int i = curPeakIndex-1; attrs[curPeakIndex]-attrs[i] < PEAKWINDOWSIZE_IN_MILLISECOND/2 && i > 0; i--){
 			if( IsPeak(vals, i, maxVal) ){
 				newPeak = i;
 				maxVal = vals[newPeak];
@@ -46,7 +46,7 @@ public class PeakDetector {
 		}
 		
 		//向右找
-		for(int i = curPeakIndex+1; attrs[i]-attrs[curPeakIndex] < PEAKWINDOWSIZE_IN_MILLISECOND && i < vals.length-1; i++){
+		for(int i = curPeakIndex+1; attrs[i]-attrs[curPeakIndex] < PEAKWINDOWSIZE_IN_MILLISECOND/2 && i < vals.length-1; i++){
 			if( IsPeak(vals, i, maxVal) ){
 				newPeak = i;
 				maxVal = vals[newPeak];
