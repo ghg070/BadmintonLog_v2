@@ -42,6 +42,7 @@ public class StrokeDetector {
 
     /* Broadcast Related */
     public final static String ACTION_STROKE_DETECTED_STATE = "STROKEDETECTOR.ACTION_STROKE_DETECTED_STATE";
+    public final static String EXTRA_STROKETIME = "STROKEDETECTOR.STROKETIME";
 
     /* Constructor, Class內的初始化(參數之類的), 在new這個Class的時候會自動觸發 */
     public StrokeDetector(Activity act, ScoreComputing sc){
@@ -130,6 +131,7 @@ public class StrokeDetector {
                         JumpWindow(w_scores);
 
                         Intent broadcast = new Intent(ACTION_STROKE_DETECTED_STATE);
+                        broadcast.putExtra(EXTRA_STROKETIME,result);
                         mContext.sendBroadcast(broadcast);
 
                     } catch (NotMatchRuleException e) {}

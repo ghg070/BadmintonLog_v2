@@ -12,6 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
 import nctu.nol.algo.ScoreComputing;
+import nctu.nol.algo.StrokeClassifier;
 import nctu.nol.algo.StrokeDetector;
 import nctu.nol.bt.devices.BeaconHandler;
 import nctu.nol.bt.devices.SoundWaveHandler;
@@ -266,7 +267,7 @@ public class MainActivity extends Activity {
 				// Active Calibration
 				SystemParameters.initializeSystemParameters();
 				for(int i = 0; i < 2; i++)
-					StartCalibration(i);
+					ActiveCalibration(i);
 
 			}else if( BeaconHandler.ACTION_BEACON_DISCONNECT_STATE.equals(action) ){
 				tv_KoalaConnected.setText("disconnected");
@@ -331,6 +332,10 @@ public class MainActivity extends Activity {
 			if( StrokeDetector.ACTION_STROKE_DETECTED_STATE.equals(action) ){
 				SystemParameters.StrokeCount++;
 				tv_strokeCount.setText(SystemParameters.StrokeCount+"");
+
+				long StrokeTime = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
+				if(StrokeTime != 0 && SystemParameters.IsKoalaReady)
+					bh.StartFeatureExtraction(StrokeTime);
 			}
 		}
 	};
@@ -422,6 +427,7 @@ public class MainActivity extends Activity {
 		ReadmeWriter = new LogFileWriter("Readme.txt", LogFileWriter.README_TYPE, LogType);
 
 		new Thread(){
+			@Override
 			public void run() {
 				try {
 					// AudioRecord Ready
@@ -484,6 +490,7 @@ public class MainActivity extends Activity {
 				//Wait log file write done
 				if( sw != null ) while(sw.isWrittingAudioDataLog.get());
 				if( SC != null ) while(SC.isWrittingWindowScore.get());
+				if( bh != null ) while(bh.isWrittingSensorDataLog.get());
 
 				//Training
 				if(LogType == LogFileWriter.TRAINING_TYPE)
@@ -511,6 +518,62 @@ public class MainActivity extends Activity {
 				});
 			}
 		}.start();
+	}
+
+	/* Calibration UI */
+	public void ActiveCalibration(int type) {
+		String Title,Message;
+		final int TypeTemp ;
+		if(type == 0) {
+			Title = "Calibration Z";
+			Message = "請將拍子垂直朝下";
+			TypeTemp = LogFileWriter.CALIBRATION_Z_TYPE;
+		}
+		else {
+			Title = "Calibration Y";
+			Message = "請將拍子平放，熊耳朝上";
+			TypeTemp = LogFileWriter.CALIBRATION_Y_TYPE;
+		}
+
+		AlertDialog.Builder CalZDialog = new AlertDialog.Builder(MainActivity.this);
+		CalZDialog.setTitle(Title)
+				.setMessage(Message)
+				.setCancelable(false)
+				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int id) {
+						showLogProcessDialog(TypeTemp);
+					}
+				}).show();
+	}
+
+	private void showLogProcessDialog(final int LogType) {
+		final ProgressDialog Cal_dialog = ProgressDialog.show(MainActivity.this, "校正中", "計算校正軸，請稍後",true);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					bh.startRecording(LogType);
+					//Service Start
+					SetMeasureStartTime();
+					SystemParameters.isServiceRunning.set(true);
+					Thread.sleep(bh.Cal_Time);
+					bh.stopRecording();
+					SystemParameters.isServiceRunning.set(false);
+					while(bh.isWrittingSensorDataLog.get()); //wait logging
+					bh.startCalibration(LogType);
+				} catch (Exception e) {
+					Log.e(TAG,e.getMessage());
+				} finally {
+					runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							Cal_dialog.dismiss();
+						}
+					});
+				}
+			}
+		}).start();
 	}
 	
 	private void SetMeasureStartTime(){
@@ -662,60 +725,6 @@ public class MainActivity extends Activity {
 		SD.StartStrokeDetector();
     }
 
-	/* Calibration UI */
-	public void StartCalibration(int type) {
-		String Title,Message;
-		final int TypeTemp ;
-		if(type == 0) {
-			Title = "Calibration Z";
-			Message = "請將拍子垂直朝下";
-			TypeTemp = LogFileWriter.CALIBRATION_Z_TYPE;
-		}
-		else {
-			Title = "Calibration Y";
-			Message = "請將拍子平放，熊耳朝上";
-			TypeTemp = LogFileWriter.CALIBRATION_Y_TYPE;
-		}
-
-		AlertDialog.Builder CalZDialog = new AlertDialog.Builder(MainActivity.this);
-		CalZDialog.setTitle(Title)
-				.setMessage(Message)
-				.setCancelable(false)
-				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int id) {
-						showLogProcessDialog(TypeTemp);
-					}
-				}).show();
-	}
-
-	private void showLogProcessDialog(final int LogType) {
-		final ProgressDialog Cal_dialog = ProgressDialog.show(MainActivity.this, "校正中", "計算校正軸，請稍後",true);
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					bh.startRecording(LogType);
-					//Service Start
-					SetMeasureStartTime();
-					SystemParameters.isServiceRunning.set(true);
-					Thread.sleep(bh.Cal_Time);
-					bh.stopRecording();
-					SystemParameters.isServiceRunning.set(false);
-					bh.startCalibration(LogType);
-				} catch (Exception e) {
-					Log.e(TAG,e.getMessage());
-				} finally {
-					runOnUiThread(new Runnable() {
-						@Override
-						public void run() {
-							Cal_dialog.dismiss();
-						}
-					});
-				}
-			}
-		}).start();
-	}
     
     /***********************************************/
     /** Spinner Function for Select Bonded Device **/
