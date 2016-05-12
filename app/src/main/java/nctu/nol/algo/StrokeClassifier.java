@@ -63,8 +63,9 @@ public class StrokeClassifier {
 
             // load classifier from file
             InputStream in_stream = mActivity.getResources().openRawResource( mActivity.getResources().getIdentifier("smo", "raw", mActivity.getPackageName()));
-            Classifier smo = (Classifier) weka.core.SerializationHelper.read(in_stream);
-            result = smo.classifyInstance(inst);
+            //InputStream in_stream = mActivity.getResources().openRawResource( mActivity.getResources().getIdentifier("random_forest", "raw", mActivity.getPackageName()));
+            Classifier clf = (Classifier) weka.core.SerializationHelper.read(in_stream);
+            result = clf.classifyInstance(inst);
             String type = dataset.classAttribute().value((int)result);
 
             //print result
@@ -639,6 +640,9 @@ public class StrokeClassifier {
      * Statistic Function
      **********************/
     private double max(final double[] vals) {
+        if(vals.length == 0)
+            return 0;
+
         double result = Double.MIN_VALUE;
         for (int i = 0; i < vals.length; i++) {
             if (result < vals[i])
@@ -648,6 +652,9 @@ public class StrokeClassifier {
     }
 
     private double min(final double[] vals) {
+        if(vals.length == 0)
+            return 0;
+
         double result = Double.MAX_VALUE;
         for (int i = 0; i < vals.length; i++) {
             if (result > vals[i])
@@ -657,6 +664,9 @@ public class StrokeClassifier {
     }
 
     private double mean(final double[] vals) {
+        if(vals.length == 0)
+            return 0;
+
         double result = 0;
         for (int i = 0; i < vals.length; i++)
             result += vals[i];
@@ -665,6 +675,9 @@ public class StrokeClassifier {
     }
 
     private double std(final double[] vals) {
+        if(vals.length == 0)
+            return 0;
+
         double result = 0;
         double mean_val = mean(vals);
         for (int i = 0; i < vals.length; i++)
@@ -674,6 +687,9 @@ public class StrokeClassifier {
     }
 
     private double rms(final double[] vals) {
+        if(vals.length == 0)
+            return 0;
+
         double result = 0;
         for (int i = 0; i < vals.length; i++)
             result += Math.pow(vals[i], 2);
@@ -683,10 +699,15 @@ public class StrokeClassifier {
 
     // Crest Factor
     private double CF(final double max, final double rms) {
+        if (rms == 0)
+            return 0;
         return max / rms;
     }
 
     private double skewness(final double[] vals){
+        if(vals.length == 0)
+            return 0;
+
         double result = 0;
         double mean_val = mean(vals);
         for(int i = 0; i < vals.length; i++)
@@ -696,6 +717,9 @@ public class StrokeClassifier {
     }
 
     private double kurtosis(final double[] vals){
+        if(vals.length == 0)
+            return 0;
+
         double result = 0;
         double mean_val = mean(vals);
         for(int i = 0; i < vals.length; i++)
@@ -705,8 +729,8 @@ public class StrokeClassifier {
     }
 
     private double corrcoef(final double[] l_val, final double[] r_val) {
-        if (l_val.length != r_val.length)
-            return Double.NaN;
+        if (l_val.length != r_val.length || l_val.length  == 0 || r_val.length == 0)
+            return 0;
         double l_mean = mean(l_val), r_mean = mean(r_val);
 
         double up = 0, down1 = 0, down2 = 0;
@@ -728,6 +752,9 @@ public class StrokeClassifier {
     }
 
     private double iqr(final double[] vals){
+        if (vals.length < 2)
+            return 0;
+
         double [] copy_vals = new double[vals.length];
         for(int i = 0; i < vals.length; i++)
             copy_vals[i] = vals[i];

@@ -300,8 +300,8 @@ public class BeaconHandler implements SensorEventListener {
     public void startRecording(int uType){
         initParameters();
         initLogFile(uType);
-
-        StrokeTypeClassifier.initLogFile();
+        if(uType == LogFileWriter.TESTING_TYPE)
+            StrokeTypeClassifier.initLogFile();
 
         mIsRecording = true;
         startDeleteOldSensorData();
@@ -450,56 +450,61 @@ public class BeaconHandler implements SensorEventListener {
     /***************************************/
     /**  BeaconHandler Feature Extraction **/
     /***************************************/
-    public void StartFeatureExtraction(long StrokeTime){
-        IsFeatureExtracting.set(true);
+    public void StartFeatureExtraction(final long StrokeTime){
+        new Thread(){
+            @Override
+            public void run() {
+                IsFeatureExtracting.set(true);
 
-        /** Get Left Part of AccData **/
-        ArrayList<float[]> LeftPart_AccData = new ArrayList<float[]>();
-        while (AccDataset_for_algo.size() > 0 && AccDataset_for_algo.peek().time < StrokeTime - StrokeClassifier.FeatureExtraction_Alpha)
-            AccDataset_for_algo.poll();
-        while (AccDataset_for_algo.size() > 0 && AccDataset_for_algo.peek().time < StrokeTime)
-            LeftPart_AccData.add( AccDataset_for_algo.poll().values );
+                /** Get Left Part of AccData **/
+                ArrayList<float[]> LeftPart_AccData = new ArrayList<float[]>();
+                while (AccDataset_for_algo.size() > 0 && AccDataset_for_algo.peek().time < StrokeTime - StrokeClassifier.FeatureExtraction_Alpha)
+                    AccDataset_for_algo.poll();
+                while (AccDataset_for_algo.size() > 0 && AccDataset_for_algo.peek().time < StrokeTime)
+                    LeftPart_AccData.add( AccDataset_for_algo.poll().values );
 
-        /** Get Right Part of AccData **/
-        ArrayList<float[]> RightPart_AccData = new ArrayList<float[]>();
-        while (AccDataset_for_algo.size() > 0 && AccDataset_for_algo.peek().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta)
-            RightPart_AccData.add( AccDataset_for_algo.poll().values );
+                /** Get Right Part of AccData **/
+                ArrayList<float[]> RightPart_AccData = new ArrayList<float[]>();
+                while (AccDataset_for_algo.size() > 0 && AccDataset_for_algo.peek().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta)
+                    RightPart_AccData.add( AccDataset_for_algo.poll().values );
 
-        /** Get Left Part of AccData (Reduce Gravity) **/
-        ArrayList<float[]> LeftPart_AccData_ReduceGravity = new ArrayList<float[]>();
-        while (AccDataset_GravityReduced_for_algo.size() > 0 && AccDataset_GravityReduced_for_algo.peek().time < StrokeTime - StrokeClassifier.FeatureExtraction_Alpha)
-            AccDataset_GravityReduced_for_algo.poll();
-        while (AccDataset_GravityReduced_for_algo.size() > 0 && AccDataset_GravityReduced_for_algo.peek().time < StrokeTime)
-            LeftPart_AccData_ReduceGravity.add( AccDataset_GravityReduced_for_algo.poll().values );
+                /** Get Left Part of AccData (Reduce Gravity) **/
+                ArrayList<float[]> LeftPart_AccData_ReduceGravity = new ArrayList<float[]>();
+                while (AccDataset_GravityReduced_for_algo.size() > 0 && AccDataset_GravityReduced_for_algo.peek().time < StrokeTime - StrokeClassifier.FeatureExtraction_Alpha)
+                    AccDataset_GravityReduced_for_algo.poll();
+                while (AccDataset_GravityReduced_for_algo.size() > 0 && AccDataset_GravityReduced_for_algo.peek().time < StrokeTime)
+                    LeftPart_AccData_ReduceGravity.add( AccDataset_GravityReduced_for_algo.poll().values );
 
-        /** Get Right Part of AccData (Reduce Gravity) **/
-        ArrayList<float[]> RightPart_AccData_ReduceGravity = new ArrayList<float[]>();
-        while (AccDataset_GravityReduced_for_algo.size() > 0 && AccDataset_GravityReduced_for_algo.peek().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta)
-            RightPart_AccData_ReduceGravity.add( AccDataset_GravityReduced_for_algo.poll().values );
+                /** Get Right Part of AccData (Reduce Gravity) **/
+                ArrayList<float[]> RightPart_AccData_ReduceGravity = new ArrayList<float[]>();
+                while (AccDataset_GravityReduced_for_algo.size() > 0 && AccDataset_GravityReduced_for_algo.peek().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta)
+                    RightPart_AccData_ReduceGravity.add( AccDataset_GravityReduced_for_algo.poll().values );
 
-        /** Get Left Part of GyroData **/
-        ArrayList<float[]> LeftPart_GyroData = new ArrayList<float[]>();
-        while (GyroDataset_for_algo.size() > 0 && GyroDataset_for_algo.peek().time < StrokeTime - StrokeClassifier.FeatureExtraction_Alpha)
-            GyroDataset_for_algo.poll();
-        while (GyroDataset_for_algo.size() > 0 && GyroDataset_for_algo.peek().time < StrokeTime)
-            LeftPart_GyroData.add( GyroDataset_for_algo.poll().values );
+                /** Get Left Part of GyroData **/
+                ArrayList<float[]> LeftPart_GyroData = new ArrayList<float[]>();
+                while (GyroDataset_for_algo.size() > 0 && GyroDataset_for_algo.peek().time < StrokeTime - StrokeClassifier.FeatureExtraction_Alpha)
+                    GyroDataset_for_algo.poll();
+                while (GyroDataset_for_algo.size() > 0 && GyroDataset_for_algo.peek().time < StrokeTime)
+                    LeftPart_GyroData.add( GyroDataset_for_algo.poll().values );
 
-        /** Get Right Part of GyroData **/
-        ArrayList<float[]> RightPart_GyroData = new ArrayList<float[]>();
-        while (GyroDataset_for_algo.size() > 0 && GyroDataset_for_algo.peek().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta)
-            RightPart_GyroData.add( GyroDataset_for_algo.poll().values );
+                /** Get Right Part of GyroData **/
+                ArrayList<float[]> RightPart_GyroData = new ArrayList<float[]>();
+                while (GyroDataset_for_algo.size() > 0 && GyroDataset_for_algo.peek().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta)
+                    RightPart_GyroData.add( GyroDataset_for_algo.poll().values );
 
-        final ArrayList<Float> stroke_features =  StrokeTypeClassifier.FeatureExtraction(
-                LeftPart_AccData,
-                RightPart_AccData,
-                LeftPart_AccData_ReduceGravity,
-                RightPart_AccData_ReduceGravity,
-                LeftPart_GyroData,
-                RightPart_GyroData);
+                final ArrayList<Float> stroke_features =  StrokeTypeClassifier.FeatureExtraction(
+                        LeftPart_AccData,
+                        RightPart_AccData,
+                        LeftPart_AccData_ReduceGravity,
+                        RightPart_AccData_ReduceGravity,
+                        LeftPart_GyroData,
+                        RightPart_GyroData);
 
-        IsFeatureExtracting.set(false);
+                IsFeatureExtracting.set(false);
 
-        StrokeTypeClassifier.Classify(StrokeTime, stroke_features);
+                StrokeTypeClassifier.Classify(StrokeTime, stroke_features);
+            }
+        }.start();
     }
 
 

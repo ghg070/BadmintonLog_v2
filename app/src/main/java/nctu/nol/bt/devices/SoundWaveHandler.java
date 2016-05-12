@@ -49,7 +49,7 @@ public class SoundWaveHandler {
 	private LinkedBlockingQueue<AudioData> AudioDataset_for_algo = null;
 	
 	//FileWrite for Logging
-	private LogFileWriter SoundDataWriter;
+	//private LogFileWriter SoundDataWriter;
 	private LogFileWriter SoundRawWriter;
 	private int usedType;
 	public AtomicBoolean isWrittingAudioDataLog = new AtomicBoolean(false);
@@ -116,7 +116,7 @@ public class SoundWaveHandler {
 	
 	private void initLogFile(int uType){
 		usedType = uType;
-		SoundDataWriter = new LogFileWriter("AudioDataBuffer.csv", LogFileWriter.SOUNDWAVE_DATA_TYPE, usedType);
+		//SoundDataWriter = new LogFileWriter("AudioDataBuffer.csv", LogFileWriter.SOUNDWAVE_DATA_TYPE, usedType);
 		SoundRawWriter = new LogFileWriter("Sound.raw", LogFileWriter.SOUNDWAVE_RAW_TYPE, usedType);
 	}
 
@@ -211,15 +211,15 @@ public class SoundWaveHandler {
 					if( AudioDataBuffer_for_file.size() > 0 ) {
 						final AudioDataBuffer adb = AudioDataBuffer_for_file.poll();
 						try {
-							SoundDataWriter.writeAudioDataBufferFile(adb.timestamp, adb.buffer);
+							//SoundDataWriter.writeAudioDataBufferFile(adb.timestamp, adb.buffer);
 							SoundRawWriter.writeSoundWaveRawFile(adb.buffer);
 						} catch (IOException e) {
 							Log.e(TAG, e.getMessage());
 						}
 					}
 				}
-				if(SoundDataWriter != null)
-					SoundDataWriter.closefile();
+				//if(SoundDataWriter != null)
+					//SoundDataWriter.closefile();
 				if(SoundRawWriter != null)
 					SoundRawWriter.closefile();
 				GenerateWavFile();
