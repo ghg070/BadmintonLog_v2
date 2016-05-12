@@ -34,9 +34,6 @@ public class StrokeDetector {
     /* Thread Related */
     private Thread detector_t;
 
-    /* Logging Related */
-    private LogFileWriter StrokeWriter;
-
     /* Stroke Time Related */
     private Vector<Long> StrokeTimes = new Vector<Long>();
 
@@ -52,7 +49,6 @@ public class StrokeDetector {
 
     private void initParameter(){
         StrokeTimes.clear();
-        StrokeWriter = new LogFileWriter("StrokeTime.csv", LogFileWriter.STROKE_TIME_TYPE, LogFileWriter.TESTING_TYPE);
     }
 
     /* 根據訓練資料, 計算StrokeDetector的Score Threshold */
@@ -120,12 +116,6 @@ public class StrokeDetector {
 
                         Log.e(TAG, "Get Stroke!!!!");
                         StrokeTimes.add(result);
-                        try {
-                            long offset = SystemParameters.SoundStartTime-SystemParameters.StartTime;
-                            StrokeWriter.writeStrokeTime( MillisecToString(result), MillisecToString(result-offset) );
-                        } catch (IOException e) {
-                            Log.e(TAG,e.getMessage());
-                        }
 
                         // if no exception occur, jump curIdx to the window position where the score is lower than threshold
                         JumpWindow(w_scores);
@@ -137,9 +127,6 @@ public class StrokeDetector {
                     } catch (NotMatchRuleException e) {}
                     catch (ReservedException e) {}
                 }
-
-                if( StrokeWriter != null)
-                    StrokeWriter.closefile();
             }
         };
         detector_t.start();
@@ -171,17 +158,6 @@ public class StrokeDetector {
             if (ws.score < SCORETHRESHOLD && jump_w < 1)
                 break;
         }
-    }
-
-    private String MillisecToString(long timestamp){
-        Time t=new Time();
-        t.set(timestamp);
-        int minute = t.minute;
-        int second = t.second;
-        int millisecond = (int)(timestamp%1000);
-
-        // MM:SS.mmm
-        return String.format("%02d:%02d.%03d", minute, second, millisecond);
     }
 
     /**********************/

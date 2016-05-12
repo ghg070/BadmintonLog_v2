@@ -94,7 +94,8 @@ public class MainActivity extends Activity {
 	private ScoreComputing SC = null;
     
 	/*stroke*/
-	private  TextView tv_strokeCount;
+	private TextView tv_strokeCount;
+	private TextView tv_strokeType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,6 +139,7 @@ public class MainActivity extends Activity {
 		unregisterReceiver(mSoundWaveHandlerStateUpdateReceiver);
 		unregisterReceiver(mKoalaStateUpdateReceiver);
 		unregisterReceiver(mStrokeCountUpdateReceiver);
+		unregisterReceiver(mStrokeTypeResultReceiver);
 
 		System.exit(0);
 		return;
@@ -172,11 +174,12 @@ public class MainActivity extends Activity {
 				Handler handler = new Handler();
 				handler.postDelayed(new Runnable() {
 					public void run() {
-						if(WaitConnectDialog.isShowing()) {
+						if (WaitConnectDialog.isShowing()) {
 							WaitConnectDialog.dismiss();
-							Toast.makeText(MainActivity.this,"Connect fail, please retry.",Toast.LENGTH_SHORT).show();
+							Toast.makeText(MainActivity.this, "Connect fail, please retry.", Toast.LENGTH_SHORT).show();
 						}
-					}}, 10000);  // 10 seconds
+					}
+				}, 10000);  // 10 seconds
 			}
 		}
         super.onActivityResult(requestCode, resultCode, data);
@@ -185,7 +188,8 @@ public class MainActivity extends Activity {
 	private void initialViewandEvent(){
 		//TextView
 		tv_durationTime = (TextView) findViewById(R.id.tv_duration);
-		tv_strokeCount = (TextView) findViewById(R.id.tv_stroke);
+		tv_strokeCount = (TextView) findViewById(R.id.tv_stroke_count);
+		tv_strokeType = (TextView) findViewById(R.id.tv_stroke_type);
 		tv_HeadsetConnected = (TextView) findViewById(R.id.tv_headset);
 		tv_KoalaConnected = (TextView) findViewById(R.id.tv_koala);
 
@@ -228,6 +232,8 @@ public class MainActivity extends Activity {
 		//Initial StrokeDetector
 		registerReceiver(mStrokeCountUpdateReceiver,makeStrokeCountUpdateIntentFilter());
 
+		// Initial StrokeClassifier
+		registerReceiver(mStrokeTypeResultReceiver, makeStrokeTypeResultIntentFilter());
 	}
 
     public void updatedBondedDeviceSpinner() {
@@ -344,6 +350,21 @@ public class MainActivity extends Activity {
 
 		intentFilter.addAction(StrokeDetector.ACTION_STROKE_DETECTED_STATE);
 
+		return intentFilter;
+	}
+	private final BroadcastReceiver mStrokeTypeResultReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if( StrokeClassifier.ACTION_OUTPUT_RESULT_STATE.equals(action) ){
+				String stroke_type = intent.getStringExtra(StrokeClassifier.EXTRA_TYPE);
+				tv_strokeType.setText(stroke_type);
+			}
+		}
+	};
+	private static IntentFilter makeStrokeTypeResultIntentFilter() {
+		final IntentFilter intentFilter = new IntentFilter();
+		intentFilter.addAction(StrokeClassifier.ACTION_OUTPUT_RESULT_STATE);
 		return intentFilter;
 	}
 

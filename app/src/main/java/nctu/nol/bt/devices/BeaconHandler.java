@@ -93,7 +93,6 @@ public class BeaconHandler implements SensorEventListener {
     public BeaconHandler(Activity activity){
         this.mActivity = activity;
         StrokeTypeClassifier = new StrokeClassifier(activity);
-
         initBLEService();
     }
 
@@ -278,12 +277,12 @@ public class BeaconHandler implements SensorEventListener {
         if(uType == LogFileWriter.TESTING_TYPE) {
             AccDataWriter = new LogFileWriter("AccData.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
             GyroDataWriter = new LogFileWriter("GyroData.csv", LogFileWriter.GYROSCOPE_DATA_TYPE, uType);
-            Cal_AccDataWriter = new LogFileWriter("Cal_AccData.csv", LogFileWriter.ACCELEROMETER_CALIBRATION_TYPE, uType);
+            Cal_AccDataWriter = new LogFileWriter("Cal_AccData.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
         }
         else if(uType == LogFileWriter.CALIBRATION_Y_TYPE)
-            Cal_virtualY = new LogFileWriter("Cal_Y.csv", LogFileWriter.ACCELEROMETER_CALIBRATION_TYPE, uType);
+            Cal_virtualY = new LogFileWriter("Cal_Y.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
         else if(uType == LogFileWriter.CALIBRATION_Z_TYPE)
-            Cal_virtualZ = new LogFileWriter("Cal_Z.csv", LogFileWriter.ACCELEROMETER_CALIBRATION_TYPE, uType);
+            Cal_virtualZ = new LogFileWriter("Cal_Z.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
 
     }
 
@@ -301,6 +300,9 @@ public class BeaconHandler implements SensorEventListener {
     public void startRecording(int uType){
         initParameters();
         initLogFile(uType);
+
+        StrokeTypeClassifier.initLogFile();
+
         mIsRecording = true;
         startDeleteOldSensorData();
         startLogging(uType);
@@ -308,6 +310,8 @@ public class BeaconHandler implements SensorEventListener {
 
     public void stopRecording(){
         mIsRecording = false;
+
+        StrokeTypeClassifier.closeLogFile();
     }
 
     // 將時間過久的感測器資料捨棄, 避免佔用記憶體空間
@@ -477,7 +481,7 @@ public class BeaconHandler implements SensorEventListener {
         ArrayList<float[]> LeftPart_GyroData = new ArrayList<float[]>();
         while (GyroDataset_for_algo.size() > 0 && GyroDataset_for_algo.peek().time < StrokeTime - StrokeClassifier.FeatureExtraction_Alpha)
             GyroDataset_for_algo.poll();
-        while (GyroDataset_for_algo.size() > 0 && AccDataset_for_algo.peek().time < StrokeTime)
+        while (GyroDataset_for_algo.size() > 0 && GyroDataset_for_algo.peek().time < StrokeTime)
             LeftPart_GyroData.add( GyroDataset_for_algo.poll().values );
 
         /** Get Right Part of GyroData **/
@@ -494,6 +498,8 @@ public class BeaconHandler implements SensorEventListener {
                 RightPart_GyroData);
 
         IsFeatureExtracting.set(false);
+
+        StrokeTypeClassifier.Classify(StrokeTime, stroke_features);
     }
 
 

@@ -48,8 +48,7 @@ public class LogFileWriter {
 	public static final int ACCELEROMETER_DATA_TYPE = 2;
 	public static final int GYROSCOPE_DATA_TYPE = 3;
 	public static final int WINDOW_SCORE_TYPE = 4;
-	public static final int STROKE_TIME_TYPE = 5;
-	public static final int ACCELEROMETER_CALIBRATION_TYPE = 6;
+	public static final int STROKE_TYPE = 5;
 	public static final int README_TYPE = 10;
 	public static final int OTHER_TYPE = 11;
 	
@@ -116,8 +115,8 @@ public class LogFileWriter {
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}
-	public void writeStrokeTime(final String time_sys, final String time_wav) throws IOException{
-		StringBuilder outputString = new StringBuilder( time_sys+","+time_wav );
+	public void writeStroke( final String time_wav, final String type) throws IOException{
+		StringBuilder outputString = new StringBuilder( time_wav+","+type );
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}
