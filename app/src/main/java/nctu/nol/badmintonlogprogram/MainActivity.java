@@ -12,6 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
 import nctu.nol.algo.ScoreComputing;
+import nctu.nol.algo.StrokeClassifier;
 import nctu.nol.algo.StrokeDetector;
 import nctu.nol.bt.devices.BeaconHandler;
 import nctu.nol.bt.devices.SoundWaveHandler;
@@ -93,7 +94,8 @@ public class MainActivity extends Activity {
 	private ScoreComputing SC = null;
     
 	/*stroke*/
-	private  TextView tv_strokeCount;
+	private TextView tv_strokeCount;
+	private TextView tv_strokeType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -137,6 +139,7 @@ public class MainActivity extends Activity {
 		unregisterReceiver(mSoundWaveHandlerStateUpdateReceiver);
 		unregisterReceiver(mKoalaStateUpdateReceiver);
 		unregisterReceiver(mStrokeCountUpdateReceiver);
+		unregisterReceiver(mStrokeTypeResultReceiver);
 
 		System.exit(0);
 		return;
@@ -171,11 +174,12 @@ public class MainActivity extends Activity {
 				Handler handler = new Handler();
 				handler.postDelayed(new Runnable() {
 					public void run() {
-						if(WaitConnectDialog.isShowing()) {
+						if (WaitConnectDialog.isShowing()) {
 							WaitConnectDialog.dismiss();
-							Toast.makeText(MainActivity.this,"Connect fail, please retry.",Toast.LENGTH_SHORT).show();
+							Toast.makeText(MainActivity.this, "Connect fail, please retry.", Toast.LENGTH_SHORT).show();
 						}
-					}}, 10000);  // 10 seconds
+					}
+				}, 10000);  // 10 seconds
 			}
 		}
         super.onActivityResult(requestCode, resultCode, data);
@@ -184,7 +188,8 @@ public class MainActivity extends Activity {
 	private void initialViewandEvent(){
 		//TextView
 		tv_durationTime = (TextView) findViewById(R.id.tv_duration);
-		tv_strokeCount = (TextView) findViewById(R.id.tv_stroke);
+		tv_strokeCount = (TextView) findViewById(R.id.tv_stroke_count);
+		tv_strokeType = (TextView) findViewById(R.id.tv_stroke_type);
 		tv_HeadsetConnected = (TextView) findViewById(R.id.tv_headset);
 		tv_KoalaConnected = (TextView) findViewById(R.id.tv_koala);
 
@@ -227,6 +232,8 @@ public class MainActivity extends Activity {
 		//Initial StrokeDetector
 		registerReceiver(mStrokeCountUpdateReceiver,makeStrokeCountUpdateIntentFilter());
 
+		// Initial StrokeClassifier
+		registerReceiver(mStrokeTypeResultReceiver, makeStrokeTypeResultIntentFilter());
 	}
 
     public void updatedBondedDeviceSpinner() {
@@ -266,7 +273,7 @@ public class MainActivity extends Activity {
 				// Active Calibration
 				SystemParameters.initializeSystemParameters();
 				for(int i = 0; i < 2; i++)
-					StartCalibration(i);
+					ActiveCalibration(i);
 
 			}else if( BeaconHandler.ACTION_BEACON_DISCONNECT_STATE.equals(action) ){
 				tv_KoalaConnected.setText("disconnected");
@@ -331,6 +338,10 @@ public class MainActivity extends Activity {
 			if( StrokeDetector.ACTION_STROKE_DETECTED_STATE.equals(action) ){
 				SystemParameters.StrokeCount++;
 				tv_strokeCount.setText(SystemParameters.StrokeCount+"");
+
+				long StrokeTime = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
+				if(StrokeTime != 0 && SystemParameters.IsKoalaReady)
+					bh.StartFeatureExtraction(StrokeTime);
 			}
 		}
 	};
@@ -339,6 +350,21 @@ public class MainActivity extends Activity {
 
 		intentFilter.addAction(StrokeDetector.ACTION_STROKE_DETECTED_STATE);
 
+		return intentFilter;
+	}
+	private final BroadcastReceiver mStrokeTypeResultReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			String action = intent.getAction();
+			if( StrokeClassifier.ACTION_OUTPUT_RESULT_STATE.equals(action) ){
+				String stroke_type = intent.getStringExtra(StrokeClassifier.EXTRA_TYPE);
+				tv_strokeType.setText(stroke_type);
+			}
+		}
+	};
+	private static IntentFilter makeStrokeTypeResultIntentFilter() {
+		final IntentFilter intentFilter = new IntentFilter();
+		intentFilter.addAction(StrokeClassifier.ACTION_OUTPUT_RESULT_STATE);
 		return intentFilter;
 	}
 
@@ -422,6 +448,7 @@ public class MainActivity extends Activity {
 		ReadmeWriter = new LogFileWriter("Readme.txt", LogFileWriter.README_TYPE, LogType);
 
 		new Thread(){
+			@Override
 			public void run() {
 				try {
 					// AudioRecord Ready
@@ -484,6 +511,7 @@ public class MainActivity extends Activity {
 				//Wait log file write done
 				if( sw != null ) while(sw.isWrittingAudioDataLog.get());
 				if( SC != null ) while(SC.isWrittingWindowScore.get());
+				if( bh != null ) while(bh.isWrittingSensorDataLog.get());
 
 				//Training
 				if(LogType == LogFileWriter.TRAINING_TYPE)
@@ -511,6 +539,62 @@ public class MainActivity extends Activity {
 				});
 			}
 		}.start();
+	}
+
+	/* Calibration UI */
+	public void ActiveCalibration(int type) {
+		String Title,Message;
+		final int TypeTemp ;
+		if(type == 0) {
+			Title = "Calibration Z";
+			Message = "請將拍子垂直朝下";
+			TypeTemp = LogFileWriter.CALIBRATION_Z_TYPE;
+		}
+		else {
+			Title = "Calibration Y";
+			Message = "請將拍子平放，熊耳朝上";
+			TypeTemp = LogFileWriter.CALIBRATION_Y_TYPE;
+		}
+
+		AlertDialog.Builder CalZDialog = new AlertDialog.Builder(MainActivity.this);
+		CalZDialog.setTitle(Title)
+				.setMessage(Message)
+				.setCancelable(false)
+				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int id) {
+						showLogProcessDialog(TypeTemp);
+					}
+				}).show();
+	}
+
+	private void showLogProcessDialog(final int LogType) {
+		final ProgressDialog Cal_dialog = ProgressDialog.show(MainActivity.this, "校正中", "計算校正軸，請稍後",true);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					bh.startRecording(LogType);
+					//Service Start
+					SetMeasureStartTime();
+					SystemParameters.isServiceRunning.set(true);
+					Thread.sleep(bh.Cal_Time);
+					bh.stopRecording();
+					SystemParameters.isServiceRunning.set(false);
+					while(bh.isWrittingSensorDataLog.get()); //wait logging
+					bh.startCalibration(LogType);
+				} catch (Exception e) {
+					Log.e(TAG,e.getMessage());
+				} finally {
+					runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							Cal_dialog.dismiss();
+						}
+					});
+				}
+			}
+		}).start();
 	}
 	
 	private void SetMeasureStartTime(){
@@ -662,60 +746,6 @@ public class MainActivity extends Activity {
 		SD.StartStrokeDetector();
     }
 
-	/* Calibration UI */
-	public void StartCalibration(int type) {
-		String Title,Message;
-		final int TypeTemp ;
-		if(type == 0) {
-			Title = "Calibration Z";
-			Message = "請將拍子垂直朝下";
-			TypeTemp = LogFileWriter.CALIBRATION_Z_TYPE;
-		}
-		else {
-			Title = "Calibration Y";
-			Message = "請將拍子平放，熊耳朝上";
-			TypeTemp = LogFileWriter.CALIBRATION_Y_TYPE;
-		}
-
-		AlertDialog.Builder CalZDialog = new AlertDialog.Builder(MainActivity.this);
-		CalZDialog.setTitle(Title)
-				.setMessage(Message)
-				.setCancelable(false)
-				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int id) {
-						showLogProcessDialog(TypeTemp);
-					}
-				}).show();
-	}
-
-	private void showLogProcessDialog(final int LogType) {
-		final ProgressDialog Cal_dialog = ProgressDialog.show(MainActivity.this, "校正中", "計算校正軸，請稍後",true);
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					bh.startRecording(LogType);
-					//Service Start
-					SetMeasureStartTime();
-					SystemParameters.isServiceRunning.set(true);
-					Thread.sleep(bh.Cal_Time);
-					bh.stopRecording();
-					SystemParameters.isServiceRunning.set(false);
-					bh.startCalibration(LogType);
-				} catch (Exception e) {
-					Log.e(TAG,e.getMessage());
-				} finally {
-					runOnUiThread(new Runnable() {
-						@Override
-						public void run() {
-							Cal_dialog.dismiss();
-						}
-					});
-				}
-			}
-		}).start();
-	}
     
     /***********************************************/
     /** Spinner Function for Select Bonded Device **/

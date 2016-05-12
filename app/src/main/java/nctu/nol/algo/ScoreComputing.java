@@ -79,9 +79,9 @@ public class ScoreComputing {
                             SoundWaveHandler.AudioData ad = curSample.poll();
                             float w_data = ad.data;
                             w_dataset[i] = w_data;
-                            if (max < w_data) {
+                            if (max < Math.abs(w_data)) {
                                 w_timestamp = ad.time;
-                                max = w_data;
+                                max = Math.abs(w_data);
                             }
                         }
 
@@ -91,7 +91,7 @@ public class ScoreComputing {
                         AllWindowScores_for_file.add(w_score);
                         AllWindowScores_for_algo.add(w_score);
 
-                        Log.d(TAG, w_timestamp + " " + score);
+                        // Log.d(TAG, w_timestamp + " " + score);
                     }
                 }
             }
