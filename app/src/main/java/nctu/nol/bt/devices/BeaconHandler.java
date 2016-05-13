@@ -119,7 +119,6 @@ public class BeaconHandler implements SensorEventListener {
 
     public void deleteObject(){
         mServiceManager.close();
-        mServiceManager.customFinalize();
     }
 
     /*********************************/
@@ -405,6 +404,8 @@ public class BeaconHandler implements SensorEventListener {
                     values[1] = e.values[1];
                     values[2] = e.values[2];
 
+                    Log.e(TAG,"Sequence: " + e.seq);
+
                     gravity[0] = values[0]*(1.0-GravityReducing_Alpah) + GravityReducing_Alpah*gravity[0];
                     gravity[1] = values[1]*(1.0-GravityReducing_Alpah) + GravityReducing_Alpah*gravity[1];
                     gravity[2] = values[2]*(1.0-GravityReducing_Alpah) + GravityReducing_Alpah*gravity[2];
@@ -444,6 +445,11 @@ public class BeaconHandler implements SensorEventListener {
         if (position != -1) {
             Log.d(TAG, "mac Address:" + addr + " rssi:" + rssi);
         }
+    }
+
+    @Override
+    public void onKoalaServiceStatusChanged(boolean b) {
+
     }
 
 
