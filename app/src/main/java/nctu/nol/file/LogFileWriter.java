@@ -82,8 +82,8 @@ public class LogFileWriter {
 		outputStream.write(outputString.toString().getBytes());
 	}
 
-	public void writeInertialDataFile(final long timestamp, final float x, final float y, final float z ) throws IOException{
-		StringBuilder outputString =  new StringBuilder(timestamp + "," + x + "," + y + "," + z);
+	public void writeInertialDataFile(final long seq, final long timestamp, final float x, final float y, final float z ) throws IOException{
+		StringBuilder outputString =  new StringBuilder(seq + "," + timestamp + "," + x + "," + y + "," + z);
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}

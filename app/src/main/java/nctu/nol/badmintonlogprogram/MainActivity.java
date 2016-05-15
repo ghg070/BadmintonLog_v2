@@ -179,7 +179,7 @@ public class MainActivity extends Activity {
 							Toast.makeText(MainActivity.this, "Connect fail, please retry.", Toast.LENGTH_SHORT).show();
 						}
 					}
-				}, 10000);  // 10 seconds
+				}, 15000);  // 15 seconds
 			}
 		}
         super.onActivityResult(requestCode, resultCode, data);
@@ -268,16 +268,17 @@ public class MainActivity extends Activity {
 			if( BeaconHandler.ACTION_BEACON_CONNECT_STATE.equals(action) ){
 				tv_KoalaConnected.setText(CurKoalaDevice);
 				btKoalaConnect.setText(R.string.Koala_Connected_State);
+
+			}else if( BeaconHandler.ACTION_BEACON_DISCONNECT_STATE.equals(action) ){
+				tv_KoalaConnected.setText("disconnected");
+				btKoalaConnect.setText(R.string.Koala_Disconnected_State);
+			}else if( BeaconHandler.ACTION_BEACON_FIRST_DATA_RECEIVE.equals(action) ){
 				WaitConnectDialog.dismiss();
 
 				// Active Calibration
 				SystemParameters.initializeSystemParameters();
 				for(int i = 0; i < 2; i++)
 					ActiveCalibration(i);
-
-			}else if( BeaconHandler.ACTION_BEACON_DISCONNECT_STATE.equals(action) ){
-				tv_KoalaConnected.setText("disconnected");
-				btKoalaConnect.setText(R.string.Koala_Disconnected_State);
 			}
 		}
 	};
@@ -286,6 +287,7 @@ public class MainActivity extends Activity {
 
 		intentFilter.addAction(BeaconHandler.ACTION_BEACON_CONNECT_STATE);
 		intentFilter.addAction(BeaconHandler.ACTION_BEACON_DISCONNECT_STATE);
+		intentFilter.addAction(BeaconHandler.ACTION_BEACON_FIRST_DATA_RECEIVE);
 
 		return intentFilter;
 	}
@@ -340,8 +342,8 @@ public class MainActivity extends Activity {
 				tv_strokeCount.setText(SystemParameters.StrokeCount+"");
 
 				long StrokeTime = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
-				if(StrokeTime != 0 && SystemParameters.IsKoalaReady)
-					bh.StartFeatureExtraction(StrokeTime);
+				//if(StrokeTime != 0 && SystemParameters.IsKoalaReady)
+				//	bh.StartFeatureExtraction(StrokeTime);
 			}
 		}
 	};
@@ -578,11 +580,11 @@ public class MainActivity extends Activity {
 					//Service Start
 					SetMeasureStartTime();
 					SystemParameters.isServiceRunning.set(true);
-					Thread.sleep(bh.Cal_Time);
+					Thread.sleep(bh.Correct_Corrdinate_Time);
 					bh.stopRecording();
 					SystemParameters.isServiceRunning.set(false);
 					while(bh.isWrittingSensorDataLog.get()); //wait logging
-					bh.startCalibration(LogType);
+					bh.StartAxisCalibration(LogType);
 				} catch (Exception e) {
 					Log.e(TAG,e.getMessage());
 				} finally {
