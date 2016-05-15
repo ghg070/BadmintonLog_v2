@@ -318,7 +318,7 @@ public class BeaconHandler implements SensorEventListener {
         mIsRecording = true;
 
         handler.postDelayed(time_cali_work,Calibration_Period);
-        //startDeleteOldSensorData();
+        startDeleteOldSensorData();
         startLogging(uType);
     }
 
@@ -455,10 +455,11 @@ public class BeaconHandler implements SensorEventListener {
     /***************************************/
     /**  BeaconHandler Feature Extraction **/
     /***************************************/
-    public void StartFeatureExtraction(final long StrokeTime){
+    public void ClassifyStrokeType(final long StrokeTime){
         new Thread(){
             @Override
             public void run() {
+                /** Feature Extraction* */
                 IsFeatureExtracting.set(true);
 
                 /** Get Left Part of AccData **/
@@ -504,9 +505,9 @@ public class BeaconHandler implements SensorEventListener {
                         RightPart_AccData_ReduceGravity,
                         LeftPart_GyroData,
                         RightPart_GyroData);
-
                 IsFeatureExtracting.set(false);
 
+                /** Classification **/
                 StrokeTypeClassifier.Classify(StrokeTime, stroke_features);
             }
         }.start();
