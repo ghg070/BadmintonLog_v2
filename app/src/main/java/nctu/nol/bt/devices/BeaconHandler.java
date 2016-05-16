@@ -13,6 +13,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Handler;
+import android.os.HandlerThread;
+import android.provider.ContactsContract;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -51,7 +53,6 @@ public class BeaconHandler implements SensorEventListener {
     public static final long SCAN_PERIOD = 3000;
 
     // Time Calibration
-    private Handler handler = new Handler();
     private LinkedBlockingQueue<SensorData> acc_buffer = null;
     private LinkedBlockingQueue<SensorData> gyro_buffer = null;
     private static double acc_time_counter = 0;
@@ -69,12 +70,14 @@ public class BeaconHandler implements SensorEventListener {
     private AtomicBoolean IsFeatureExtracting = new AtomicBoolean(false);
 
     // Classifcation
+    private LinkedBlockingQueue<Long> StrokeClassifyRequest;
     private StrokeClassifier StrokeTypeClassifier = null;
 
     // FileWrite for Logging
     private LogFileWriter AccDataWriter;
     private LogFileWriter GyroDataWriter;
     private LogFileWriter Cal_AccDataWriter;
+    private LogFileWriter UnCeliAccDataWriter;
     private LinkedBlockingQueue<SensorData> AccDataset_for_file = null;
     private LinkedBlockingQueue<SensorData> GyroDataset_for_file = null;
     private boolean mIsRecording = false;
@@ -94,7 +97,7 @@ public class BeaconHandler implements SensorEventListener {
     public float[] virtualX = null;
     public float[] virtualY = null;
     public float[] virtualZ = null;
-    public static final long Correct_Corrdinate_Time = 6000; // 決定三軸校正時要花多久時間，須大於時間校正的時間
+    public static final long Correct_Corrdinate_Time = 3601000; // 決定三軸校正時要花多久時間，須大於時間校正的時間
 
     public BeaconHandler(Activity activity){
         this.mActivity = activity;
@@ -280,6 +283,7 @@ public class BeaconHandler implements SensorEventListener {
     /** BeaconHandler Data Recording Function **/
     /*******************************************/
     private void initLogFile(int uType){
+        UnCeliAccDataWriter = new LogFileWriter("UnCeliAccData.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
         if(uType == LogFileWriter.TESTING_TYPE) {
             AccDataWriter = new LogFileWriter("AccData.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
             GyroDataWriter = new LogFileWriter("GyroData.csv", LogFileWriter.GYROSCOPE_DATA_TYPE, uType);
@@ -317,15 +321,17 @@ public class BeaconHandler implements SensorEventListener {
 
         mIsRecording = true;
 
-        handler.postDelayed(time_cali_work,Calibration_Period);
+        StartTimeCalibrationTask();
         startDeleteOldSensorData();
         startLogging(uType);
     }
 
     public void stopRecording(){
         mIsRecording = false;
-        handler.removeCallbacks(time_cali_work);
         StrokeTypeClassifier.closeLogFile();
+
+        if(UnCeliAccDataWriter != null)
+            UnCeliAccDataWriter.closefile();
     }
 
     // 將時間過久的感測器資料捨棄, 避免佔用記憶體空間
@@ -413,6 +419,11 @@ public class BeaconHandler implements SensorEventListener {
             final float values[] = new float[3];
             final int seq = (e.seq+SEQ_MAX)%SEQ_MAX;
 
+            // Set Time
+            long curTime = System.currentTimeMillis();
+            long passTime = curTime - SystemParameters.StartTime;
+
+
             switch (eventType) {
                 case SensorEvent.TYPE_ACCELEROMETER:
                     values[0] = e.values[0];
@@ -422,6 +433,12 @@ public class BeaconHandler implements SensorEventListener {
                     if (SystemParameters.isServiceRunning.get()) {
                         SensorData sd = new SensorData(seq, values);
                         acc_buffer.add(sd);
+
+                        try {
+                            UnCeliAccDataWriter.writeInertialDataFile(seq, passTime, values[0], values[1], values[2]);
+                        } catch (IOException e1) {
+                            Log.e(TAG,e1.getMessage());
+                        }
                     }
                     break;
                 case SensorEvent.TYPE_GYROSCOPE:
@@ -455,6 +472,19 @@ public class BeaconHandler implements SensorEventListener {
     /***************************************/
     /**  BeaconHandler Feature Extraction **/
     /***************************************/
+    public void InputStrokeClassifyRequest(final long StrokeTime){
+        StrokeClassifyRequest.add(StrokeTime);
+    }
+
+    private void StartClassification(){
+        new Thread(){
+            @Override
+            public void run(){
+
+            }
+        }.start();
+    }
+
     public void ClassifyStrokeType(final long StrokeTime){
         new Thread(){
             @Override
@@ -571,45 +601,68 @@ public class BeaconHandler implements SensorEventListener {
         return CorrectionValue;
     }
 
-    private Runnable time_cali_work = new Runnable() {
-        @Override
-        public void run() {
-            IsTimeCalibration.set(true);
+    private void StartTimeCalibrationTask(){
+        new Thread(){
+            @Override
+            public void run() {
+                while(mIsRecording) {
+                    try {
+                        sleep(Calibration_Period);
+                    } catch (InterruptedException e) {
+                        Log.e(TAG, e.getMessage());
+                    }
+                    inerital_time_calibration();
+                }
+            }
+        }.start();
+    }
 
-            // pop current inertial data
-            SensorData[] acc_dataset = new SensorData[acc_buffer.size()];
-            SensorData[] gyro_dataset = new SensorData[gyro_buffer.size()];
-            for(int i = 0; i < acc_dataset.length; i++)
-                acc_dataset[i] = acc_buffer.poll();
-            for(int i = 0; i < gyro_dataset.length; i++)
-                gyro_dataset[i] = gyro_buffer.poll();
-            SystemParameters.SensorCount += acc_dataset.length;
+    private void inerital_time_calibration(){
+        new Thread(){
+            @Override
+            public void run(){
+                IsTimeCalibration.set(true);
 
-            // reduce gravity for accData
-            final SensorData[] reduced_acc_dataset = ReduceGravity(acc_dataset);
+                // pop current inertial data
+                SensorData[] acc_dataset = new SensorData[acc_buffer.size()];
+                SensorData[] gyro_dataset = new SensorData[gyro_buffer.size()];
+                for (int i = 0; i < acc_dataset.length; i++) {
+                    SensorData sd = acc_buffer.poll();
+                    acc_dataset[i] = new SensorData(sd.seq, sd.values);
+                }
+                for (int i = 0; i < gyro_dataset.length; i++) {
+                    SensorData sd = gyro_buffer.poll();
+                    gyro_dataset[i] = new SensorData(sd.seq, sd.values);
+                }
+                SystemParameters.SensorCount += acc_dataset.length;
 
-            // count all data length (contain loss packet)
-            int dataSize_acc = getSumDataSizeWithLossPacket(acc_dataset);
-            int dataSize_gyro = getSumDataSizeWithLossPacket(gyro_dataset);
-            SystemParameters.SensorCount_ContainLoss += dataSize_acc;
+                // reduce gravity for accData
+                final SensorData[] reduced_acc_dataset = ReduceGravity(acc_dataset);
 
-            // count current frequency in a period time
-            double Frequency_acc = dataSize_acc/((double)Calibration_Period/1000.0);
-            double Frequency_gyro = dataSize_gyro/((double)Calibration_Period/1000.0);
+                // count all data length (contain loss packet)
+                int dataSize_acc = getSumDataSizeWithLossPacket(acc_dataset);
+                int dataSize_gyro = getSumDataSizeWithLossPacket(gyro_dataset);
+                SystemParameters.SensorCount_ContainLoss += dataSize_acc;
 
-            // set time to dataset
-            double temp_time_counter = acc_time_counter;
-            acc_time_counter = setCaliedTime(acc_dataset, Frequency_acc, acc_time_counter, AccDataset_for_algo, AccDataset_for_file);
-            gyro_time_counter = setCaliedTime(gyro_dataset, Frequency_gyro, gyro_time_counter, GyroDataset_for_algo, GyroDataset_for_file);
-            setCaliedTime(reduced_acc_dataset, Frequency_acc, temp_time_counter, AccDataset_GravityReduced_for_algo, null);
-            LastDataTime = (long)acc_time_counter;
+                // count current frequency in a period time
+                double deltaT_acc = (double) Calibration_Period / dataSize_acc;
+                double deltaT_gyro = (double) Calibration_Period / dataSize_gyro;
 
-            IsTimeCalibration.set(false);
-            handler.postDelayed(this, Calibration_Period);
-        }
-    };
+                // set time to dataset
+                double temp_time_counter = acc_time_counter;
+                setCaliedTime(acc_dataset, deltaT_acc, acc_time_counter, AccDataset_for_algo, AccDataset_for_file);
+                setCaliedTime(gyro_dataset, deltaT_gyro, gyro_time_counter, GyroDataset_for_algo, GyroDataset_for_file);
+                setCaliedTime(reduced_acc_dataset, deltaT_acc, temp_time_counter, AccDataset_GravityReduced_for_algo, null);
+                acc_time_counter += Calibration_Period;
+                gyro_time_counter += Calibration_Period;
+                LastDataTime = (long) acc_time_counter;
 
-    private int getSumDataSizeWithLossPacket(SensorData[] dataset){
+                IsTimeCalibration.set(false);
+            }
+        }.start();
+    }
+
+    private int getSumDataSizeWithLossPacket(final SensorData[] dataset){
         int dataSize = dataset.length;
         for(int i = 0; i < dataset.length-1; i++){
             int pre_seq = dataset[i].seq;
@@ -619,15 +672,15 @@ public class BeaconHandler implements SensorEventListener {
         return dataSize;
     }
 
-    private double setCaliedTime(SensorData[] dataset, double sampling_frequency, double CurrentDataTime, LinkedBlockingQueue<SensorData> algo_queue, LinkedBlockingQueue<SensorData> file_queue){
+    private void setCaliedTime(final SensorData[] dataset, double deltaT, double CurrentDataTime, LinkedBlockingQueue<SensorData> algo_queue, LinkedBlockingQueue<SensorData> file_queue){
         for(int i = 0; i < dataset.length; i++){
+            //Log.e(TAG, i+" "+CurrentDataTime+" "+deltaT+" "+dataset.length);
             /** final element **/
             if (i == dataset.length-1){
                 dataset[i].time = (long)CurrentDataTime;
                 algo_queue.add(dataset[i]);
                 if(file_queue != null)
                     file_queue.add(dataset[i]);
-                CurrentDataTime += (1/sampling_frequency)*1000;
                 break;
             }
 
@@ -639,6 +692,7 @@ public class BeaconHandler implements SensorEventListener {
             if(next_seq-pre_seq != 1){
                 // use interpolation
                 for(int j = 0; j < next_seq-pre_seq; j++){
+                    //Log.e(TAG, i+" "+CurrentDataTime+" "+deltaT+" "+dataset.length);
                     float[] values = new float[3];
                     int X = pre_seq + j;
                     for(int k = 0; k < values.length; k++)
@@ -649,17 +703,17 @@ public class BeaconHandler implements SensorEventListener {
                     algo_queue.add(sd);
                     if(file_queue != null)
                         file_queue.add(sd);
-                    CurrentDataTime += (1/sampling_frequency)*1000;
+                    CurrentDataTime += deltaT;
                 }
             }else{
+                //Log.e(TAG, i+" "+CurrentDataTime+" "+deltaT+" "+dataset.length);
                 dataset[i].time = (long)CurrentDataTime;
                 algo_queue.add(dataset[i]);
                 if(file_queue != null)
                     file_queue.add(dataset[i]);
-                CurrentDataTime += (1/sampling_frequency)*1000;
+                CurrentDataTime += deltaT;
             }
         }
-        return CurrentDataTime;
     }
 
     private SensorData[] ReduceGravity(final SensorData[] ori_dataset){

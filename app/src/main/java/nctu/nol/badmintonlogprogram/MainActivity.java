@@ -344,8 +344,8 @@ public class MainActivity extends Activity {
 				tv_strokeCount.setText(SystemParameters.StrokeCount+"");
 
 				long StrokeTime = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
-				//if(StrokeTime != 0 && SystemParameters.IsKoalaReady)
-				//	bh.StartFeatureExtraction(StrokeTime);
+				if(StrokeTime != 0 && SystemParameters.IsKoalaReady)
+					bh.InputStrokeClassifyRequest(StrokeTime);
 			}
 		}
 	};
