@@ -59,7 +59,7 @@ public class BeaconHandler implements SensorEventListener {
     private LinkedBlockingQueue<SensorData> acc_buffer = null;
     private LinkedBlockingQueue<SensorData> gyro_buffer = null;
     private static final int SEQ_MAX = 128;
-    private static long Calibration_Period = 5000; //ms
+    private static long Calibration_Period = 2000; //ms
     private AtomicBoolean IsTimeCalibration = new AtomicBoolean(false);
     private Thread ThreadTimeCalibration = null;
     private double LastCaliTime = 0;
@@ -99,7 +99,7 @@ public class BeaconHandler implements SensorEventListener {
     public float[] virtualX = null;
     public float[] virtualY = null;
     public float[] virtualZ = null;
-    public static final long Correct_Corrdinate_Time = 6000; // 決定三軸校正時要花多久時間，須大於時間校正的時間
+    public static final long Correct_Corrdinate_Time = 5000; // 決定三軸校正時要花多久時間，須大於時間校正的時間
 
     public BeaconHandler(Activity activity){
         this.mActivity = activity;
@@ -650,27 +650,29 @@ public class BeaconHandler implements SensorEventListener {
                 }
                 SystemParameters.SensorCount += acc_dataset.length;
 
-                // reduce gravity for accData
-                final SensorData[] reduced_acc_dataset = ReduceGravity(acc_dataset);
+                if(acc_dataset.length > 0) {
+                    // reduce gravity for accData
+                    final SensorData[] reduced_acc_dataset = ReduceGravity(acc_dataset);
 
-                // count all data length (contain loss packet)
-                int dataSize_acc = getSumDataSizeWithLossPacket(acc_dataset);
-                int dataSize_gyro = getSumDataSizeWithLossPacket(gyro_dataset);
-                SystemParameters.SensorCount_ContainLoss += dataSize_acc;
+                    // count all data length (contain loss packet)
+                    int dataSize_acc = getSumDataSizeWithLossPacket(acc_dataset);
+                    int dataSize_gyro = getSumDataSizeWithLossPacket(gyro_dataset);
+                    SystemParameters.SensorCount_ContainLoss += dataSize_acc;
 
-                // count current frequency in a period time
-                double currentTime = (double)(System.currentTimeMillis()-SystemParameters.StartTime);
-                double Period = (currentTime-LastCaliTime); //不直接使用Calibraiton_Time, Thread的執行時間會有誤差, 累積下來很可觀
-                double deltaT_acc = Period / dataSize_acc;
-                double deltaT_gyro = Period / dataSize_gyro;
+                    // count current frequency in a period time
+                    double currentTime = (double) (System.currentTimeMillis() - SystemParameters.StartTime);
+                    double Period = (currentTime - LastCaliTime); //不直接使用Calibraiton_Time, Thread的執行時間會有誤差, 累積下來很可觀
+                    double deltaT_acc = Period / dataSize_acc;
+                    double deltaT_gyro = Period / dataSize_gyro;
 
-                // set time to dataset
-                setCaliedTime(acc_dataset, deltaT_acc, LastCaliTime, AccDataset_for_algo, AccDataset_for_file);
-                setCaliedTime(gyro_dataset, deltaT_gyro, LastCaliTime, GyroDataset_for_algo, GyroDataset_for_file);
-                setCaliedTime(reduced_acc_dataset, deltaT_acc, LastCaliTime, AccDataset_GravityReduced_for_algo, null);
-                LastCaliTime += Period;
+                    // set time to dataset
+                    setCaliedTime(acc_dataset, deltaT_acc, LastCaliTime, AccDataset_for_algo, AccDataset_for_file);
+                    setCaliedTime(gyro_dataset, deltaT_gyro, LastCaliTime, GyroDataset_for_algo, GyroDataset_for_file);
+                    setCaliedTime(reduced_acc_dataset, deltaT_acc, LastCaliTime, AccDataset_GravityReduced_for_algo, null);
+                    LastCaliTime += Period;
 
-                SystemParameters.SensorEndTime = (long) LastCaliTime;
+                    SystemParameters.SensorEndTime = (long) LastCaliTime;
+                }
 
                 IsTimeCalibration.set(false);
             }

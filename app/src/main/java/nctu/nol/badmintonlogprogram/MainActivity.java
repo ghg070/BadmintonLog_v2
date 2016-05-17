@@ -581,7 +581,7 @@ public class MainActivity extends Activity {
 		@Override
 		public void run() {
 			if(SystemParameters.SensorCount_ContainLoss != 0){
-				float loss_percent = 1 - (SystemParameters.SensorCount/(float)SystemParameters.SensorCount_ContainLoss);
+				float loss_percent = 1 - (SystemParameters.SensorCount/(float)SystemParameters.SensorCount_ContainLoss)*100;
 				tv_PacketLoss.setText(String.format("%.2f%%",loss_percent));
 			}
 			timerHandler.postDelayed(this, 1000);
