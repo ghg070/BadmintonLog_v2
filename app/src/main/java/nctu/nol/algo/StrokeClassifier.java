@@ -29,7 +29,7 @@ public class StrokeClassifier {
     public final static String EXTRA_TYPE = "STROKECLASSIFIER.EXTRA_TYPE";
 
     // LogFile Related
-    private LogFileWriter StrokeWriter;
+    public LogFileWriter StrokeWriter;
 
     private Activity mActivity;
 
@@ -813,7 +813,7 @@ public class StrokeClassifier {
         };
         return i;
     }
-    void quickSort(double arr[], int left, int right) {
+    private void quickSort(double arr[], int left, int right) {
         int index = partition(arr, left, right);
         if (left < index - 1)
             quickSort(arr, left, index - 1);
@@ -821,7 +821,7 @@ public class StrokeClassifier {
             quickSort(arr, index, right);
     }
 
-    private String MillisecToString(long timestamp){
+    public String MillisecToString(long timestamp){
         Time t=new Time();
         t.set(timestamp);
         int minute = t.minute;

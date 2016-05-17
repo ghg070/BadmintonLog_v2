@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.xml.transform.stream.StreamSource;
+
 import cc.nctu1210.api.koala6x.KoalaDevice;
 import cc.nctu1210.api.koala6x.KoalaService;
 import cc.nctu1210.api.koala6x.KoalaServiceManager;
@@ -60,13 +62,13 @@ public class BeaconHandler implements SensorEventListener {
     private static final int SEQ_MAX = 128;
     private static long Calibration_Period = 5000; //ms
     private AtomicBoolean IsTimeCalibration = new AtomicBoolean(false);
+    private Thread ThreadTimeCalibration = null;
 
     // Data Store
     private LinkedBlockingQueue<SensorData> AccDataset_for_algo = null;
     private LinkedBlockingQueue<SensorData> AccDataset_GravityReduced_for_algo = null;
     private LinkedBlockingQueue<SensorData> GyroDataset_for_algo = null;
     public static final long Abandon_Time = 20000; // 決定多久以前的資料要捨去, 需大於Correct_Corrdinate_Time
-    private long LastDataTime = 0;
     private AtomicBoolean IsFeatureExtracting = new AtomicBoolean(false);
 
     // Classifcation
@@ -97,7 +99,7 @@ public class BeaconHandler implements SensorEventListener {
     public float[] virtualX = null;
     public float[] virtualY = null;
     public float[] virtualZ = null;
-    public static final long Correct_Corrdinate_Time = 3601000; // 決定三軸校正時要花多久時間，須大於時間校正的時間
+    public static final long Correct_Corrdinate_Time = 6000; // 決定三軸校正時要花多久時間，須大於時間校正的時間
 
     public BeaconHandler(Activity activity){
         this.mActivity = activity;
@@ -328,6 +330,7 @@ public class BeaconHandler implements SensorEventListener {
 
     public void stopRecording(){
         mIsRecording = false;
+        StopTimeCalibrationTask();
         StrokeTypeClassifier.closeLogFile();
 
         if(UnCeliAccDataWriter != null)
@@ -342,15 +345,15 @@ public class BeaconHandler implements SensorEventListener {
                 while(mIsRecording) {
                     if ( !IsFeatureExtracting.get() ) {
                         // Check AccDataset
-                        if (AccDataset_for_algo.size() > 0 && LastDataTime - AccDataset_for_algo.peek().time > Abandon_Time)
+                        if (AccDataset_for_algo.size() > 0 && SystemParameters.SensorEndTime - AccDataset_for_algo.peek().time > Abandon_Time)
                             AccDataset_for_algo.poll();
 
                         // Check AccDataset(Gravity Reduced)
-                        if (AccDataset_GravityReduced_for_algo.size() > 0 && LastDataTime - AccDataset_GravityReduced_for_algo.peek().time > Abandon_Time)
+                        if (AccDataset_GravityReduced_for_algo.size() > 0 && SystemParameters.SensorEndTime - AccDataset_GravityReduced_for_algo.peek().time > Abandon_Time)
                             AccDataset_GravityReduced_for_algo.poll();
 
                         // Check GyroDataset
-                        if (GyroDataset_for_algo.size() > 0 && LastDataTime - GyroDataset_for_algo.peek().time > Abandon_Time)
+                        if (GyroDataset_for_algo.size() > 0 && SystemParameters.SensorEndTime - GyroDataset_for_algo.peek().time > Abandon_Time)
                             GyroDataset_for_algo.poll();
                     }
                 }
@@ -473,7 +476,12 @@ public class BeaconHandler implements SensorEventListener {
     /**  BeaconHandler Feature Extraction **/
     /***************************************/
     public void InputStrokeClassifyRequest(final long StrokeTime){
-        StrokeClassifyRequest.add(StrokeTime);
+        try {
+            StrokeTypeClassifier.StrokeWriter.writeStroke(StrokeTypeClassifier.MillisecToString(StrokeTime),"None");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //StrokeClassifyRequest.add(StrokeTime);
     }
 
     private void StartClassification(){
@@ -602,25 +610,32 @@ public class BeaconHandler implements SensorEventListener {
     }
 
     private void StartTimeCalibrationTask(){
-        new Thread(){
+        ThreadTimeCalibration = new Thread(){
             @Override
             public void run() {
                 while(mIsRecording) {
-                    try {
-                        sleep(Calibration_Period);
-                    } catch (InterruptedException e) {
-                        Log.e(TAG, e.getMessage());
+                    if(SystemParameters.isServiceRunning.get()) {
+                        try {
+                            sleep(Calibration_Period);
+                            inerital_time_calibration(Calibration_Period);
+                        } catch (InterruptedException e) {}
                     }
-                    inerital_time_calibration();
                 }
             }
-        }.start();
+        };
+        ThreadTimeCalibration.start();
     }
 
-    private void inerital_time_calibration(){
+    private void StopTimeCalibrationTask(){
+        ThreadTimeCalibration.interrupt();
+        ThreadTimeCalibration = null;
+    }
+
+    private void inerital_time_calibration(final double Period){
         new Thread(){
             @Override
             public void run(){
+
                 IsTimeCalibration.set(true);
 
                 // pop current inertial data
@@ -645,17 +660,17 @@ public class BeaconHandler implements SensorEventListener {
                 SystemParameters.SensorCount_ContainLoss += dataSize_acc;
 
                 // count current frequency in a period time
-                double deltaT_acc = (double) Calibration_Period / dataSize_acc;
-                double deltaT_gyro = (double) Calibration_Period / dataSize_gyro;
+                double deltaT_acc = Period / dataSize_acc;
+                double deltaT_gyro = Period / dataSize_gyro;
 
                 // set time to dataset
                 double temp_time_counter = acc_time_counter;
                 setCaliedTime(acc_dataset, deltaT_acc, acc_time_counter, AccDataset_for_algo, AccDataset_for_file);
                 setCaliedTime(gyro_dataset, deltaT_gyro, gyro_time_counter, GyroDataset_for_algo, GyroDataset_for_file);
                 setCaliedTime(reduced_acc_dataset, deltaT_acc, temp_time_counter, AccDataset_GravityReduced_for_algo, null);
-                acc_time_counter += Calibration_Period;
-                gyro_time_counter += Calibration_Period;
-                LastDataTime = (long) acc_time_counter;
+                acc_time_counter += Period;
+                gyro_time_counter += Period;
+                SystemParameters.SensorEndTime = (long) acc_time_counter;
 
                 IsTimeCalibration.set(false);
             }

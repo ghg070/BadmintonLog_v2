@@ -127,7 +127,7 @@ public class LogFileWriter {
 		if(SystemParameters.Duration > 0){
 
 			long AudioRate = (long)( SystemParameters.AudioCount/((double)(SystemParameters.SoundEndTime-SystemParameters.SoundStartTime)/1000.0) );
-			long SensorRate = (long)( SystemParameters.SensorCount/SystemParameters.Duration );
+			long SensorRate = (long)( SystemParameters.SensorCount/((double)SystemParameters.SensorEndTime/1000.0) );
 			
 			String outputString = 
 				"File Format Version: 1.0\r\n"
