@@ -21,6 +21,7 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -57,12 +58,11 @@ public class BeaconHandler implements SensorEventListener {
     // Time Calibration
     private LinkedBlockingQueue<SensorData> acc_buffer = null;
     private LinkedBlockingQueue<SensorData> gyro_buffer = null;
-    private static double acc_time_counter = 0;
-    private static double gyro_time_counter = 0;
     private static final int SEQ_MAX = 128;
     private static long Calibration_Period = 5000; //ms
     private AtomicBoolean IsTimeCalibration = new AtomicBoolean(false);
     private Thread ThreadTimeCalibration = null;
+    private double LastCaliTime = 0;
 
     // Data Store
     private LinkedBlockingQueue<SensorData> AccDataset_for_algo = null;
@@ -301,8 +301,7 @@ public class BeaconHandler implements SensorEventListener {
     private void initParameters(){
         acc_buffer = new LinkedBlockingQueue<SensorData>();
         gyro_buffer = new LinkedBlockingQueue<SensorData>();
-        acc_time_counter = 0;
-        gyro_time_counter = 0;
+        LastCaliTime = 0;
 
         AccDataset_for_file = new LinkedBlockingQueue<SensorData>();
         GyroDataset_for_file = new LinkedBlockingQueue<SensorData>();
@@ -617,7 +616,7 @@ public class BeaconHandler implements SensorEventListener {
                     if(SystemParameters.isServiceRunning.get()) {
                         try {
                             sleep(Calibration_Period);
-                            inerital_time_calibration(Calibration_Period);
+                            inerital_time_calibration();
                         } catch (InterruptedException e) {}
                     }
                 }
@@ -631,7 +630,7 @@ public class BeaconHandler implements SensorEventListener {
         ThreadTimeCalibration = null;
     }
 
-    private void inerital_time_calibration(final double Period){
+    private void inerital_time_calibration(){
         new Thread(){
             @Override
             public void run(){
@@ -660,17 +659,18 @@ public class BeaconHandler implements SensorEventListener {
                 SystemParameters.SensorCount_ContainLoss += dataSize_acc;
 
                 // count current frequency in a period time
+                double currentTime = (double)(System.currentTimeMillis()-SystemParameters.StartTime);
+                double Period = (currentTime-LastCaliTime); //不直接使用Calibraiton_Time, Thread的執行時間會有誤差, 累積下來很可觀
                 double deltaT_acc = Period / dataSize_acc;
                 double deltaT_gyro = Period / dataSize_gyro;
 
                 // set time to dataset
-                double temp_time_counter = acc_time_counter;
-                setCaliedTime(acc_dataset, deltaT_acc, acc_time_counter, AccDataset_for_algo, AccDataset_for_file);
-                setCaliedTime(gyro_dataset, deltaT_gyro, gyro_time_counter, GyroDataset_for_algo, GyroDataset_for_file);
-                setCaliedTime(reduced_acc_dataset, deltaT_acc, temp_time_counter, AccDataset_GravityReduced_for_algo, null);
-                acc_time_counter += Period;
-                gyro_time_counter += Period;
-                SystemParameters.SensorEndTime = (long) acc_time_counter;
+                setCaliedTime(acc_dataset, deltaT_acc, LastCaliTime, AccDataset_for_algo, AccDataset_for_file);
+                setCaliedTime(gyro_dataset, deltaT_gyro, LastCaliTime, GyroDataset_for_algo, GyroDataset_for_file);
+                setCaliedTime(reduced_acc_dataset, deltaT_acc, LastCaliTime, AccDataset_GravityReduced_for_algo, null);
+                LastCaliTime += Period;
+
+                SystemParameters.SensorEndTime = (long) LastCaliTime;
 
                 IsTimeCalibration.set(false);
             }
