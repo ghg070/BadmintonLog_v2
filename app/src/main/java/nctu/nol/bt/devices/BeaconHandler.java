@@ -12,9 +12,6 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.provider.ContactsContract;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -24,8 +21,6 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.xml.transform.stream.StreamSource;
 
 import cc.nctu1210.api.koala6x.KoalaDevice;
 import cc.nctu1210.api.koala6x.KoalaService;
@@ -65,9 +60,9 @@ public class BeaconHandler implements SensorEventListener {
     private double LastCaliTime = 0;
 
     // Data Store
-    private LinkedBlockingQueue<SensorData> AccDataset_for_algo = null;
-    private LinkedBlockingQueue<SensorData> AccDataset_GravityReduced_for_algo = null;
-    private LinkedBlockingQueue<SensorData> GyroDataset_for_algo = null;
+    private LinkedBlockingDeque<SensorData> AccDataset_for_algo = null;
+    private LinkedBlockingDeque<SensorData> AccDataset_GravityReduced_for_algo = null;
+    private LinkedBlockingDeque<SensorData> GyroDataset_for_algo = null;
     public static final long Abandon_Time = 20000; // 決定多久以前的資料要捨去, 需大於Correct_Corrdinate_Time
     private AtomicBoolean IsFeatureExtracting = new AtomicBoolean(false);
 
@@ -306,9 +301,9 @@ public class BeaconHandler implements SensorEventListener {
         AccDataset_for_file = new LinkedBlockingQueue<SensorData>();
         GyroDataset_for_file = new LinkedBlockingQueue<SensorData>();
 
-        AccDataset_for_algo = new LinkedBlockingQueue<SensorData>();
-        AccDataset_GravityReduced_for_algo = new LinkedBlockingQueue<SensorData>();
-        GyroDataset_for_algo = new LinkedBlockingQueue<SensorData>();
+        AccDataset_for_algo = new LinkedBlockingDeque<SensorData>();
+        AccDataset_GravityReduced_for_algo = new LinkedBlockingDeque<SensorData>();
+        GyroDataset_for_algo = new LinkedBlockingDeque<SensorData>();
 
         for(int i = 0; i < gravity.length; i++)
             gravity[i] = 0;
@@ -433,7 +428,7 @@ public class BeaconHandler implements SensorEventListener {
                     values[2] = e.values[2];
 
                     if (SystemParameters.isServiceRunning.get()) {
-                        SensorData sd = new SensorData(seq, values);
+                        SensorData sd = new SensorData(seq, passTime,values);
                         acc_buffer.add(sd);
 
                         try {
@@ -449,7 +444,7 @@ public class BeaconHandler implements SensorEventListener {
                     values[2] = e.values[2];
                     //Log.d(TAG, "time=" + System.currentTimeMillis() + "wX:" + values[0] + "wY:" + values[1] + "wZ:" + values[2] + "\n");
                     if (SystemParameters.isServiceRunning.get()) {
-                        SensorData sd = new SensorData(seq, values);
+                        SensorData sd = new SensorData(seq, passTime, values);
                         gyro_buffer.add(sd);
                     }
                     break;
@@ -642,21 +637,22 @@ public class BeaconHandler implements SensorEventListener {
                 SensorData[] gyro_dataset = new SensorData[gyro_buffer.size()];
                 for (int i = 0; i < acc_dataset.length; i++) {
                     SensorData sd = acc_buffer.poll();
-                    acc_dataset[i] = new SensorData(sd.seq, sd.values);
+                    acc_dataset[i] = new SensorData(sd.seq, sd.time, sd.values);
                 }
                 for (int i = 0; i < gyro_dataset.length; i++) {
                     SensorData sd = gyro_buffer.poll();
-                    gyro_dataset[i] = new SensorData(sd.seq, sd.values);
+                    gyro_dataset[i] = new SensorData(sd.seq, sd.time, sd.values);
                 }
-                SystemParameters.SensorCount += acc_dataset.length;
 
                 if(acc_dataset.length > 0) {
+                    SystemParameters.SensorCount += acc_dataset.length;
+
                     // reduce gravity for accData
                     final SensorData[] reduced_acc_dataset = ReduceGravity(acc_dataset);
 
                     // count all data length (contain loss packet)
-                    int dataSize_acc = getSumDataSizeWithLossPacket(acc_dataset);
-                    int dataSize_gyro = getSumDataSizeWithLossPacket(gyro_dataset);
+                    int dataSize_acc = getSumDataSizeWithLossPacket(acc_dataset, AccDataset_for_algo.peekLast());
+                    int dataSize_gyro = getSumDataSizeWithLossPacket(gyro_dataset, GyroDataset_for_algo.peekLast());
                     SystemParameters.SensorCount_ContainLoss += dataSize_acc;
 
                     // count current frequency in a period time
@@ -670,7 +666,7 @@ public class BeaconHandler implements SensorEventListener {
                     setCaliedTime(gyro_dataset, deltaT_gyro, LastCaliTime, GyroDataset_for_algo, GyroDataset_for_file);
                     setCaliedTime(reduced_acc_dataset, deltaT_acc, LastCaliTime, AccDataset_GravityReduced_for_algo, null);
                     LastCaliTime += Period;
-
+                    //Log.e(TAG,Period+" "+LastCaliTime);
                     SystemParameters.SensorEndTime = (long) LastCaliTime;
                 }
 
@@ -679,56 +675,51 @@ public class BeaconHandler implements SensorEventListener {
         }.start();
     }
 
-    private int getSumDataSizeWithLossPacket(final SensorData[] dataset){
+    private int getSumDataSizeWithLossPacket(final SensorData[] dataset, final SensorData prev_data){
         int dataSize = dataset.length;
-        for(int i = 0; i < dataset.length-1; i++){
-            int pre_seq = dataset[i].seq;
-            int next_seq = (dataset[i+1].seq < pre_seq) ? (dataset[i+1].seq+SEQ_MAX) : dataset[i+1].seq;
-            dataSize += (next_seq-pre_seq-1); // loss packet num
+        int prev_seq = (prev_data == null) ? -1 : prev_data.seq;
+        for(int i = 0; i < dataset.length; i++){
+            if(prev_seq == -1 ) { // 第一個校正Window的資料集, 沒有前一筆資料
+                prev_seq = dataset[i].seq;
+                continue;
+            }
+            int cur_seq = (dataset[i].seq < prev_seq) ? (dataset[i].seq+SEQ_MAX) : dataset[i].seq;
+
+            dataSize += (cur_seq-prev_seq-1); // loss packet num
+            prev_seq = dataset[i].seq;
         }
         return dataSize;
     }
 
-    private void setCaliedTime(final SensorData[] dataset, double deltaT, double CurrentDataTime, LinkedBlockingQueue<SensorData> algo_queue, LinkedBlockingQueue<SensorData> file_queue){
+    private void setCaliedTime(final SensorData[] dataset, double deltaT, double CurrentDataTime, LinkedBlockingDeque<SensorData> algo_queue, LinkedBlockingQueue<SensorData> file_queue){
         for(int i = 0; i < dataset.length; i++){
             //Log.e(TAG, i+" "+CurrentDataTime+" "+deltaT+" "+dataset.length);
-            /** final element **/
-            if (i == dataset.length-1){
-                dataset[i].time = (long)CurrentDataTime;
-                algo_queue.add(dataset[i]);
+            if(algo_queue.peekLast() == null){
+                SensorData new_sd = new SensorData(dataset[i].seq, (long)CurrentDataTime, dataset[i].values);
+                algo_queue.add(new_sd);
                 if(file_queue != null)
-                    file_queue.add(dataset[i]);
-                break;
-            }
-
-            /** other element **/
-            int pre_seq = dataset[i].seq;
-            int next_seq = (dataset[i+1].seq < pre_seq) ? (dataset[i+1].seq+SEQ_MAX) : dataset[i+1].seq;
-
-            // if there are loss packets
-            if(next_seq-pre_seq != 1){
-                // use interpolation
-                for(int j = 0; j < next_seq-pre_seq; j++){
-                    //Log.e(TAG, i+" "+CurrentDataTime+" "+deltaT+" "+dataset.length);
+                    file_queue.add(new_sd);
+                CurrentDataTime += deltaT;
+            }else{
+                final SensorData prev_sd = algo_queue.peekLast();
+                int prev_seq = prev_sd.seq;
+                int cur_seq = (dataset[i].seq < prev_seq) ? (dataset[i].seq+SEQ_MAX) : dataset[i].seq;
+                for(int j = 1; j <= (cur_seq-prev_seq); j++){
                     float[] values = new float[3];
-                    int X = pre_seq + j;
+                    int X = prev_seq + j;
                     for(int k = 0; k < values.length; k++)
-                        values[k] = ((X - pre_seq)/(float)(next_seq - pre_seq)) * (dataset[i + 1].values[k] - dataset[i].values[k]) + dataset[i].values[k];
+                        values[k] = ((X - prev_seq)/(float)(cur_seq - prev_seq)) * (dataset[i].values[k] - prev_sd.values[k]) + prev_sd.values[k];
 
-                    SensorData sd = new SensorData(X, values);
-                    sd.time = (long)CurrentDataTime;
-                    algo_queue.add(sd);
+                    SensorData new_sd;
+                    if(X >= SEQ_MAX)
+                        new_sd = new SensorData(X-SEQ_MAX, (long)CurrentDataTime, values);
+                    else
+                        new_sd = new SensorData(X, (long)CurrentDataTime, values);
+                    algo_queue.add(new_sd);
                     if(file_queue != null)
-                        file_queue.add(sd);
+                        file_queue.add(new_sd);
                     CurrentDataTime += deltaT;
                 }
-            }else{
-                //Log.e(TAG, i+" "+CurrentDataTime+" "+deltaT+" "+dataset.length);
-                dataset[i].time = (long)CurrentDataTime;
-                algo_queue.add(dataset[i]);
-                if(file_queue != null)
-                    file_queue.add(dataset[i]);
-                CurrentDataTime += deltaT;
             }
         }
     }
@@ -745,7 +736,7 @@ public class BeaconHandler implements SensorEventListener {
             for(int j = 0; j < new_values.length; j++)
                 new_values[j] -= gravity[j];
 
-            result[i] = new SensorData(ori_dataset[i].seq, new_values);
+            result[i] = new SensorData(ori_dataset[i].seq,ori_dataset[i].time ,new_values);
         }
         return result;
     }
@@ -754,8 +745,9 @@ public class BeaconHandler implements SensorEventListener {
         public int seq;
         public long time;
         public float values[];
-        public SensorData(int seq, float[] vals){
+        public SensorData(int seq, long time , float[] vals){
             this.seq = seq;
+            this.time = time;
             this.values = new float[3];
             for(int i = 0; i < 3; i++)
                 this.values[i] = vals[i];
