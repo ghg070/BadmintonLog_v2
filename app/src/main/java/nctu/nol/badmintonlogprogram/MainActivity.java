@@ -79,6 +79,7 @@ public class MainActivity extends Activity {
 	private Button btKoalaConnect;
 	private String CurKoalaDevice;
 	private ProgressDialog WaitConnectDialog = null;
+	private TextView tv_PacketLoss;
      
     /* Bonded Device Related */
 	private Spinner spBondedDeviceSpinner;
@@ -88,7 +89,7 @@ public class MainActivity extends Activity {
     /* Timer Related */
   	private Handler timerHandler = new Handler();
     private TextView tv_durationTime;
-    
+
     /* Algorithm Related */
     private FrequencyBandModel fbm = null;
 	private ScoreComputing SC = null;
@@ -179,7 +180,7 @@ public class MainActivity extends Activity {
 							Toast.makeText(MainActivity.this, "Connect fail, please retry.", Toast.LENGTH_SHORT).show();
 						}
 					}
-				}, 10000);  // 10 seconds
+				}, 15000);  // 15 seconds
 			}
 		}
         super.onActivityResult(requestCode, resultCode, data);
@@ -192,6 +193,7 @@ public class MainActivity extends Activity {
 		tv_strokeType = (TextView) findViewById(R.id.tv_stroke_type);
 		tv_HeadsetConnected = (TextView) findViewById(R.id.tv_headset);
 		tv_KoalaConnected = (TextView) findViewById(R.id.tv_koala);
+		tv_PacketLoss = (TextView) findViewById(R.id.tv_packetloss);
 
 		//Button
 		btMicConnect = (Button) findViewById(R.id.bt_micconnect);
@@ -268,16 +270,17 @@ public class MainActivity extends Activity {
 			if( BeaconHandler.ACTION_BEACON_CONNECT_STATE.equals(action) ){
 				tv_KoalaConnected.setText(CurKoalaDevice);
 				btKoalaConnect.setText(R.string.Koala_Connected_State);
+
+			}else if( BeaconHandler.ACTION_BEACON_DISCONNECT_STATE.equals(action) ){
+				tv_KoalaConnected.setText("disconnected");
+				btKoalaConnect.setText(R.string.Koala_Disconnected_State);
+			}else if( BeaconHandler.ACTION_BEACON_FIRST_DATA_RECEIVE.equals(action) ){
 				WaitConnectDialog.dismiss();
 
 				// Active Calibration
 				SystemParameters.initializeSystemParameters();
 				for(int i = 0; i < 2; i++)
 					ActiveCalibration(i);
-
-			}else if( BeaconHandler.ACTION_BEACON_DISCONNECT_STATE.equals(action) ){
-				tv_KoalaConnected.setText("disconnected");
-				btKoalaConnect.setText(R.string.Koala_Disconnected_State);
 			}
 		}
 	};
@@ -286,6 +289,7 @@ public class MainActivity extends Activity {
 
 		intentFilter.addAction(BeaconHandler.ACTION_BEACON_CONNECT_STATE);
 		intentFilter.addAction(BeaconHandler.ACTION_BEACON_DISCONNECT_STATE);
+		intentFilter.addAction(BeaconHandler.ACTION_BEACON_FIRST_DATA_RECEIVE);
 
 		return intentFilter;
 	}
@@ -341,7 +345,7 @@ public class MainActivity extends Activity {
 
 				long StrokeTime = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
 				if(StrokeTime != 0 && SystemParameters.IsKoalaReady)
-					bh.StartFeatureExtraction(StrokeTime);
+					bh.InputStrokeClassifyRequest(StrokeTime);
 			}
 		}
 	};
@@ -409,11 +413,10 @@ public class MainActivity extends Activity {
 				Toast.makeText(MainActivity.this,"You have to connect bt headset.",Toast.LENGTH_SHORT).show();
 		}
 	};
-	
+
 	private Button.OnClickListener TestingStartClickListener = new Button.OnClickListener() {
 		@Override
 		public void onClick(View arg0) {
-
 			if(fbm != null && fbm.CheckModelHasTrained()){
 				if(SystemParameters.IsBtHeadsetReady && /*SystemParameters.IsKoalaReady &&*/ !isTesting)
 					ActiveLogging(LogFileWriter.TESTING_TYPE);
@@ -443,7 +446,6 @@ public class MainActivity extends Activity {
 			isTraining = true;
 		}
 
-
 		//Initial Log File
 		ReadmeWriter = new LogFileWriter("Readme.txt", LogFileWriter.README_TYPE, LogType);
 
@@ -466,10 +468,9 @@ public class MainActivity extends Activity {
 
 					//設定定時要執行的方法
 					timerHandler.removeCallbacks(updateTimer);
-					timerHandler.postDelayed(updateTimer, 1000);//設定Delay的時間
-
-					//init stroke count 0
-					SystemParameters.StrokeCount = 0;
+					timerHandler.postDelayed(updateTimer, 1000); //計時用
+					timerHandler.removeCallbacks(updatePacketLoss);
+					timerHandler.postDelayed(updatePacketLoss, 1000); //計算封包遺失率用
 
 					//Service Start
 					SystemParameters.isServiceRunning.set(true);
@@ -482,8 +483,10 @@ public class MainActivity extends Activity {
 						public void run(){
 							Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
 
-							//init stroke count 0
+							//init UI
 							tv_strokeCount.setText("0");
+							tv_PacketLoss.setText("0%");
+							tv_strokeType.setText("None");
 						}
 					});
 				} catch (InterruptedException e) {
@@ -502,6 +505,7 @@ public class MainActivity extends Activity {
 		if( LogType == LogFileWriter.TESTING_TYPE )
 			bh.stopRecording();
 		timerHandler.removeCallbacks(updateTimer);
+		timerHandler.removeCallbacks(updatePacketLoss);
 
 		final ProgressDialog dialog = ProgressDialog.show(MainActivity.this,
 				"寫檔中", "處理檔案中，請稍後",true);
@@ -533,68 +537,11 @@ public class MainActivity extends Activity {
 							btTesting.setEnabled(true);
 							isTraining = false;
 						}
-
 						dialog.dismiss();
 					}
 				});
 			}
 		}.start();
-	}
-
-	/* Calibration UI */
-	public void ActiveCalibration(int type) {
-		String Title,Message;
-		final int TypeTemp ;
-		if(type == 0) {
-			Title = "Calibration Z";
-			Message = "請將拍子垂直朝下";
-			TypeTemp = LogFileWriter.CALIBRATION_Z_TYPE;
-		}
-		else {
-			Title = "Calibration Y";
-			Message = "請將拍子平放，熊耳朝上";
-			TypeTemp = LogFileWriter.CALIBRATION_Y_TYPE;
-		}
-
-		AlertDialog.Builder CalZDialog = new AlertDialog.Builder(MainActivity.this);
-		CalZDialog.setTitle(Title)
-				.setMessage(Message)
-				.setCancelable(false)
-				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int id) {
-						showLogProcessDialog(TypeTemp);
-					}
-				}).show();
-	}
-
-	private void showLogProcessDialog(final int LogType) {
-		final ProgressDialog Cal_dialog = ProgressDialog.show(MainActivity.this, "校正中", "計算校正軸，請稍後",true);
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					bh.startRecording(LogType);
-					//Service Start
-					SetMeasureStartTime();
-					SystemParameters.isServiceRunning.set(true);
-					Thread.sleep(bh.Cal_Time);
-					bh.stopRecording();
-					SystemParameters.isServiceRunning.set(false);
-					while(bh.isWrittingSensorDataLog.get()); //wait logging
-					bh.startCalibration(LogType);
-				} catch (Exception e) {
-					Log.e(TAG,e.getMessage());
-				} finally {
-					runOnUiThread(new Runnable() {
-						@Override
-						public void run() {
-							Cal_dialog.dismiss();
-						}
-					});
-				}
-			}
-		}).start();
 	}
 	
 	private void SetMeasureStartTime(){
@@ -625,13 +572,22 @@ public class MainActivity extends Activity {
 			Long seconds = (spentTime/1000) % 60;
 			//compute the passed hours
 			Long hour = minutes / 60 ;
-						
 			tv_durationTime.setText(String.format("%02d:%02d",minutes, seconds));
-			
 			timerHandler.postDelayed(this, 1000);
-
 		}
     };
+
+	private Runnable updatePacketLoss = new Runnable() {
+		@Override
+		public void run() {
+			if(SystemParameters.SensorCount_ContainLoss != 0){
+				float loss_percent = (1 - (SystemParameters.SensorCount/(float)SystemParameters.SensorCount_ContainLoss))*100;
+				tv_PacketLoss.setText(String.format("%.2f%%",loss_percent));
+			}
+			timerHandler.postDelayed(this, 1000);
+		}
+	};
+
     private void showLogInformationDialog(){//and also write readme.txt	
 		try {
 			if(ReadmeWriter != null){
@@ -653,7 +609,66 @@ public class MainActivity extends Activity {
 							public void onClick(DialogInterface dialog,int id) {}
 						}).show();
 	}
-    
+
+	/************************
+	 *  Axis Calibration Related
+	 ***********************/
+	/* Calibration UI */
+	public void ActiveCalibration(int type) {
+		String Title,Message;
+		final int TypeTemp ;
+		if(type == 0) {
+			Title = "Calibration Z";
+			Message = "請將拍子垂直朝下";
+			TypeTemp = LogFileWriter.CALIBRATION_Z_TYPE;
+		}
+		else {
+			Title = "Calibration Y";
+			Message = "請將拍子平放，熊耳朝上";
+			TypeTemp = LogFileWriter.CALIBRATION_Y_TYPE;
+		}
+
+		AlertDialog.Builder CalZDialog = new AlertDialog.Builder(MainActivity.this);
+		CalZDialog.setTitle(Title)
+				.setMessage(Message)
+				.setCancelable(false)
+				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int id) {
+						showAxisCalibrationProcessDialog(TypeTemp);
+					}
+				}).show();
+	}
+
+	private void showAxisCalibrationProcessDialog(final int LogType) {
+		final ProgressDialog Cal_dialog = ProgressDialog.show(MainActivity.this, "校正中", "計算校正軸，請稍後",true);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					bh.startRecording(LogType);
+					//Service Start
+					SetMeasureStartTime();
+					SystemParameters.isServiceRunning.set(true);
+					Thread.sleep(bh.Correct_Corrdinate_Time);
+					bh.stopRecording();
+					SystemParameters.isServiceRunning.set(false);
+					while(bh.isWrittingSensorDataLog.get()); //wait logging
+					bh.StartAxisCalibration(LogType);
+				} catch (Exception e) {
+					Log.e(TAG,e.getMessage());
+				} finally {
+					runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							Cal_dialog.dismiss();
+						}
+					});
+				}
+			}
+		}).start();
+	}
+
     /***********************/
     /** Algorithm Related **/
     /***********************/

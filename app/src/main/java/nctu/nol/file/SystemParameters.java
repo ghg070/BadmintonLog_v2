@@ -24,6 +24,8 @@ public class SystemParameters {
 	//for sensor
 	public static boolean IsKoalaReady = false;
 	public static int SensorCount = 0;
+	public static int SensorCount_ContainLoss = 0;
+	public static long SensorEndTime = 0;
 	
 	//for Log File
 	public static String filePath = "";
@@ -47,6 +49,8 @@ public class SystemParameters {
 
 		//for sensor
 		SensorCount = 0;
+		SensorCount_ContainLoss = 0;
+		SensorEndTime = 0;
 		
 		//for log file
 		filePath = "";
