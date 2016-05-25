@@ -345,7 +345,7 @@ public class MainActivity extends Activity {
 
 				long StrokeTime = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
 				if(StrokeTime != 0 && SystemParameters.IsKoalaReady)
-					bh.InputStrokeClassifyRequest(StrokeTime);
+					bh.StrokeClassifyRequest(StrokeTime);
 			}
 		}
 	};
