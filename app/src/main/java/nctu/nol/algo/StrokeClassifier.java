@@ -63,7 +63,6 @@ public class StrokeClassifier {
 
             // load classifier from file
             InputStream in_stream = mActivity.getResources().openRawResource( mActivity.getResources().getIdentifier("smo", "raw", mActivity.getPackageName()));
-            //InputStream in_stream = mActivity.getResources().openRawResource( mActivity.getResources().getIdentifier("random_forest", "raw", mActivity.getPackageName()));
             Classifier clf = (Classifier) weka.core.SerializationHelper.read(in_stream);
             result = clf.classifyInstance(inst);
             String type = dataset.classAttribute().value((int)result);
