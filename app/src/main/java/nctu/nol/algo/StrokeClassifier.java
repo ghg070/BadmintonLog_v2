@@ -3,7 +3,6 @@ package nctu.nol.algo;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.text.format.Time;
 import android.util.Log;
 
 
@@ -30,6 +29,7 @@ public class StrokeClassifier {
 
     // LogFile Related
     public LogFileWriter StrokeWriter;
+    public LogFileWriter StrokeFeature;
 
     private Activity mActivity;
 
@@ -43,10 +43,13 @@ public class StrokeClassifier {
 
     public void initLogFile(){
         StrokeWriter = new LogFileWriter("StrokeType.csv", LogFileWriter.STROKE_TYPE, LogFileWriter.TESTING_TYPE);
+        StrokeFeature = new LogFileWriter("StrokeFeature.csv", LogFileWriter.STROKE_TYPE, LogFileWriter.TESTING_TYPE);
     }
     public void closeLogFile(){
         if(StrokeWriter != null)
             StrokeWriter.closefile();
+        if(StrokeFeature != null)
+            StrokeFeature.closefile();
     }
 
     public double Classify(final long stroke_time, final ArrayList<Float> allVals) {
@@ -60,6 +63,7 @@ public class StrokeClassifier {
             // Set instance's values for the attributes
             for(int i = 0; i < allVals.size(); i++)
                 inst.setValue(attributeList.get(i), allVals.get(i));
+            StrokeFeature.writeFeatures(allVals);
 
             // load classifier from file
             InputStream in_stream = mActivity.getResources().openRawResource( mActivity.getResources().getIdentifier("smo", "raw", mActivity.getPackageName()));
@@ -642,7 +646,7 @@ public class StrokeClassifier {
         if(vals.length == 0)
             return 0;
 
-        double result = Double.MIN_VALUE;
+        double result = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < vals.length; i++) {
             if (result < vals[i])
                 result = vals[i];
@@ -654,7 +658,7 @@ public class StrokeClassifier {
         if(vals.length == 0)
             return 0;
 
-        double result = Double.MAX_VALUE;
+        double result = Double.POSITIVE_INFINITY;
         for (int i = 0; i < vals.length; i++) {
             if (result > vals[i])
                 result = vals[i];
