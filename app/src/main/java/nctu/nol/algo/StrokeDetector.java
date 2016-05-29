@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import nctu.nol.bt.devices.BeaconHandler;
 import nctu.nol.bt.devices.SoundWaveHandler;
 import nctu.nol.file.LogFileWriter;
 import nctu.nol.file.SystemParameters;
@@ -98,7 +99,7 @@ public class StrokeDetector {
     }
 
     /* 啟動Thread持續偵測Window分數是否連續達標 */
-    public void StartStrokeDetector(){
+    public void StartStrokeDetector(final BeaconHandler bh){
         /*
         *   用Thread持續檢查Window Score的變化情形
         *   連續N個Window Score大於Threshold即稱為有擊球行為
@@ -121,8 +122,13 @@ public class StrokeDetector {
                         JumpWindow(w_scores);
 
                         Intent broadcast = new Intent(ACTION_STROKE_DETECTED_STATE);
-                        broadcast.putExtra(EXTRA_STROKETIME,result);
+                        //broadcast.putExtra(EXTRA_STROKETIME,result);
                         mContext.sendBroadcast(broadcast);
+
+                        if(result != 0 && SystemParameters.IsKoalaReady)
+                            bh.StrokeClassifyRequest(result);
+
+
 
                     } catch (NotMatchRuleException e) {}
                     catch (ReservedException e) {}
