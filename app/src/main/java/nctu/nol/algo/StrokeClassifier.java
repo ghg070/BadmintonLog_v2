@@ -93,12 +93,80 @@ public class StrokeClassifier {
         return result;
     }
 
+    int test = 1;
     public final ArrayList<Float> FeatureExtraction(final ArrayList<float[]> L_AccData,
                                                     final ArrayList<float[]> R_AccData,
                                                     final ArrayList<float[]> L_AccData_Without_Gravity,
                                                     final ArrayList<float[]> R_AccData_Without_Gravity,
                                                     final ArrayList<float[]> L_GyroData,
                                                     final ArrayList<float[]> R_GyroData) {
+
+        LogFileWriter lg, la, lw;
+        LogFileWriter rg, ra, rw;
+        lg = new LogFileWriter(test+"_lg.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        la = new LogFileWriter(test+"_la.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        lw = new LogFileWriter(test+"_lw.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        rg = new LogFileWriter(test+"_rg.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        ra = new LogFileWriter(test+"_ra.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        rw = new LogFileWriter(test+"_rw.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        test++;
+
+        for(int i = 0; i < L_AccData.size(); i++){
+            float []vals = L_AccData.get(i);
+            try {
+                lg.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        for(int i = 0; i < R_AccData.size(); i++){
+            float []vals = R_AccData.get(i);
+            try {
+                rg.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        for(int i = 0; i < L_AccData_Without_Gravity.size(); i++){
+            float []vals = L_AccData_Without_Gravity.get(i);
+            try {
+                la.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        for(int i = 0; i < R_AccData_Without_Gravity.size(); i++){
+            float []vals = R_AccData_Without_Gravity.get(i);
+            try {
+                ra.writeInertialDataFile(1, 1, vals[0],vals[1],vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        for(int i = 0; i < L_GyroData.size(); i++){
+            float []vals = L_GyroData.get(i);
+            try {
+                lw.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        for(int i = 0; i < R_GyroData.size(); i++){
+            float []vals = R_GyroData.get(i);
+            try {
+                rw.writeInertialDataFile(1, 1, vals[0], vals[1], vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        lg.closefile();
+        la.closefile();
+        lw.closefile();
+        rg.closefile();
+        ra.closefile();
+        rw.closefile();
+
         // Preprocessing
         double[] l_gx_dataset = new double[L_AccData.size()],
                 l_gy_dataset = new double[L_AccData.size()],
