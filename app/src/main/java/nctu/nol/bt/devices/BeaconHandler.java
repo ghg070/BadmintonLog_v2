@@ -68,6 +68,7 @@ public class BeaconHandler implements SensorEventListener {
 
     // Classifcation
     private StrokeClassifier StrokeTypeClassifier = null;
+    private LinkedBlockingQueue<Long> StrokeRequest = null;
 
     // FileWrite for Logging
     private LogFileWriter AccDataWriter;
@@ -307,6 +308,8 @@ public class BeaconHandler implements SensorEventListener {
         AccDataset_GravityReduced_for_algo = new LinkedBlockingDeque<SensorData>();
         GyroDataset_for_algo = new LinkedBlockingDeque<SensorData>();
 
+        StrokeRequest = new LinkedBlockingQueue<>();
+
         for(int i = 0; i < gravity.length; i++)
             gravity[i] = 0;
     }
@@ -322,6 +325,7 @@ public class BeaconHandler implements SensorEventListener {
         StartTimeCalibrationTask();
         startDeleteOldSensorData();
         startLogging(uType);
+        StartCheckClassifyRequest();
     }
 
     public void stopRecording(){
@@ -472,15 +476,27 @@ public class BeaconHandler implements SensorEventListener {
     /**  BeaconHandler Feature Extraction **/
     /***************************************/
     public void StrokeClassifyRequest(final long StrokeTime){
+        StrokeRequest.add(StrokeTime);
+    }
+
+    private void StartCheckClassifyRequest(){
         new Thread() {
             @Override
             public void run() {
-                // wait until get Acc get data
-                while(AccDataset_for_algo.size() == 0 || AccDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + Calibration_Period);
-                while(GyroDataset_for_algo.size() == 0 || GyroDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + Calibration_Period);
+                while(mIsRecording) {
+                    if (StrokeRequest.size() > 0) {
+                        long StrokeTime = StrokeRequest.poll();
 
-                // Get data already, start to classify
-                ClassifyStrokeType(StrokeTime);
+                        // wait until get Acc get data
+                        while (AccDataset_for_algo.size() == 0 || AccDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + Calibration_Period)
+                            ;
+                        while (GyroDataset_for_algo.size() == 0 || GyroDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + Calibration_Period)
+                            ;
+
+                        // Get data already, start to classify
+                        ClassifyStrokeType(StrokeTime);
+                    }
+                }
             }
         }.start();
     }
