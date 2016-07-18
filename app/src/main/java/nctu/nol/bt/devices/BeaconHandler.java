@@ -88,7 +88,7 @@ public class BeaconHandler implements SensorEventListener {
     private boolean first_data_flag = false;
 
     // Gravity Reducing Related
-    private static final double GravityReducing_Alpah = 0.67;
+    private static final double GravityReducing_Alpah = 0.99;
     private static double[] gravity = new double[3];
 
     //Correction coordinates Related
@@ -325,7 +325,8 @@ public class BeaconHandler implements SensorEventListener {
         StartTimeCalibrationTask();
         startDeleteOldSensorData();
         startLogging(uType);
-        StartCheckClassifyRequest();
+        if(uType == LogFileWriter.TESTING_TYPE)
+            StartCheckClassifyRequest();
     }
 
     public void stopRecording(){
@@ -475,7 +476,7 @@ public class BeaconHandler implements SensorEventListener {
     /***************************************/
     /**  BeaconHandler Feature Extraction **/
     /***************************************/
-    public void StrokeClassifyRequest(final long StrokeTime){
+    public void AddStrokeClassifyRequest(final long StrokeTime){
         StrokeRequest.add(StrokeTime);
     }
 
@@ -488,10 +489,8 @@ public class BeaconHandler implements SensorEventListener {
                         long StrokeTime = StrokeRequest.poll();
 
                         // wait until get Acc get data
-                        while (AccDataset_for_algo.size() == 0 || AccDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + Calibration_Period)
-                            ;
-                        while (GyroDataset_for_algo.size() == 0 || GyroDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + Calibration_Period)
-                            ;
+                        while (AccDataset_for_algo.size() == 0 || AccDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + Calibration_Period);
+                        while (GyroDataset_for_algo.size() == 0 || GyroDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + Calibration_Period);
 
                         // Get data already, start to classify
                         ClassifyStrokeType(StrokeTime);

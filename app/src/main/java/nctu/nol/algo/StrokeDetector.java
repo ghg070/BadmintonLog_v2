@@ -122,11 +122,10 @@ public class StrokeDetector {
                         JumpWindow(w_scores);
 
                         Intent broadcast = new Intent(ACTION_STROKE_DETECTED_STATE);
-                        //broadcast.putExtra(EXTRA_STROKETIME,result);
                         mContext.sendBroadcast(broadcast);
 
                         if(result != 0 && SystemParameters.IsKoalaReady)
-                            bh.StrokeClassifyRequest(result);
+                            bh.AddStrokeClassifyRequest(result);
 
 
 

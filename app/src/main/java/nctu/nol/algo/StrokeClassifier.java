@@ -101,7 +101,7 @@ public class StrokeClassifier {
                                                     final ArrayList<float[]> L_GyroData,
                                                     final ArrayList<float[]> R_GyroData) {
 
-        LogFileWriter lg, la, lw;
+        /*LogFileWriter lg, la, lw;
         LogFileWriter rg, ra, rw;
         lg = new LogFileWriter(test+"_lg.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
         la = new LogFileWriter(test+"_la.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
@@ -165,7 +165,7 @@ public class StrokeClassifier {
         lw.closefile();
         rg.closefile();
         ra.closefile();
-        rw.closefile();
+        rw.closefile();*/
 
         // Preprocessing
         double[] l_gx_dataset = new double[L_AccData.size()],
@@ -182,6 +182,12 @@ public class StrokeClassifier {
                 r_az_dataset = new double[R_AccData_Without_Gravity.size()],
                 l_force_dataset = new double[L_AccData_Without_Gravity.size()],
                 r_force_dataset = new double[R_AccData_Without_Gravity.size()],
+                l_gravX_dataset = new double[L_AccData.size()],
+                l_gravY_dataset = new double[L_AccData.size()],
+                l_gravZ_dataset = new double[L_AccData.size()],
+                r_gravX_dataset = new double[R_AccData.size()],
+                r_gravY_dataset = new double[R_AccData.size()],
+                r_gravZ_dataset = new double[R_AccData.size()],
                 l_wx_dataset = new double[L_GyroData.size()],
                 l_wy_dataset = new double[L_GyroData.size()],
                 l_wz_dataset = new double[L_GyroData.size()],
@@ -209,6 +215,16 @@ public class StrokeClassifier {
             r_ay_dataset[i] = R_AccData_Without_Gravity.get(i)[1];
             r_az_dataset[i] = R_AccData_Without_Gravity.get(i)[2];
             r_force_dataset[i] = Math.sqrt(Math.pow(r_ax_dataset[i], 2) + Math.pow(r_ay_dataset[i], 2) + Math.pow(r_az_dataset[i], 2));
+        }
+        for (int i = 0; i < L_AccData.size(); i++) {
+            l_gravX_dataset[i] = L_AccData.get(i)[0]-L_AccData_Without_Gravity.get(i)[0];
+            l_gravY_dataset[i] = L_AccData.get(i)[1]-L_AccData_Without_Gravity.get(i)[1];
+            l_gravZ_dataset[i] = L_AccData.get(i)[2]-L_AccData_Without_Gravity.get(i)[2];
+        }
+        for (int i = 0; i < R_AccData.size(); i++) {
+            r_gravX_dataset[i] = R_AccData.get(i)[0]-R_AccData_Without_Gravity.get(i)[0];
+            r_gravY_dataset[i] = R_AccData.get(i)[1]-R_AccData_Without_Gravity.get(i)[1];
+            r_gravZ_dataset[i] = R_AccData.get(i)[2]-R_AccData_Without_Gravity.get(i)[2];
         }
         for (int i = 0; i < L_GyroData.size(); i++) {
             l_wx_dataset[i] = L_GyroData.get(i)[0];
@@ -405,6 +421,86 @@ public class StrokeClassifier {
         allValues.add((float)iqr(r_force_dataset));
         allValues.add((float)skewness(r_force_dataset));
         allValues.add((float)kurtosis(r_force_dataset));
+
+        max_val = max(l_gravX_dataset);
+        rms_val = rms(l_gravX_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(l_gravX_dataset));
+        allValues.add((float)mean(l_gravX_dataset));
+        allValues.add((float)std(l_gravX_dataset));
+        allValues.add((float)rms(l_gravX_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(l_gravX_dataset));
+        allValues.add((float)skewness(l_gravX_dataset));
+        allValues.add((float)kurtosis(l_gravX_dataset));
+
+        max_val = max(r_gravX_dataset);
+        rms_val = rms(r_gravX_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(r_gravX_dataset));
+        allValues.add((float)mean(r_gravX_dataset));
+        allValues.add((float)std(r_gravX_dataset));
+        allValues.add((float)rms(r_gravX_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(r_gravX_dataset));
+        allValues.add((float)skewness(r_gravX_dataset));
+        allValues.add((float)kurtosis(r_gravX_dataset));
+
+        max_val = max(l_gravY_dataset);
+        rms_val = rms(l_gravY_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(l_gravY_dataset));
+        allValues.add((float)mean(l_gravY_dataset));
+        allValues.add((float)std(l_gravY_dataset));
+        allValues.add((float)rms(l_gravY_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(l_gravY_dataset));
+        allValues.add((float)skewness(l_gravY_dataset));
+        allValues.add((float)kurtosis(l_gravY_dataset));
+
+        max_val = max(r_gravY_dataset);
+        rms_val = rms(r_gravY_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(r_gravY_dataset));
+        allValues.add((float)mean(r_gravY_dataset));
+        allValues.add((float)std(r_gravY_dataset));
+        allValues.add((float)rms(r_gravY_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(r_gravY_dataset));
+        allValues.add((float)skewness(r_gravY_dataset));
+        allValues.add((float)kurtosis(r_gravY_dataset));
+
+        max_val = max(l_gravZ_dataset);
+        rms_val = rms(l_gravZ_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(l_gravZ_dataset));
+        allValues.add((float)mean(l_gravZ_dataset));
+        allValues.add((float)std(l_gravZ_dataset));
+        allValues.add((float)rms(l_gravZ_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(l_gravZ_dataset));
+        allValues.add((float)skewness(l_gravZ_dataset));
+        allValues.add((float)kurtosis(l_gravZ_dataset));
+
+        max_val = max(r_gravZ_dataset);
+        rms_val = rms(r_gravZ_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(r_gravZ_dataset));
+        allValues.add((float)mean(r_gravZ_dataset));
+        allValues.add((float)std(r_gravZ_dataset));
+        allValues.add((float)rms(r_gravZ_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(r_gravZ_dataset));
+        allValues.add((float)skewness(r_gravZ_dataset));
+        allValues.add((float)kurtosis(r_gravZ_dataset));
+
+        allValues.add((float)corrcoef(l_gravX_dataset, l_gravY_dataset));
+        allValues.add((float)corrcoef(l_gravX_dataset, l_gravZ_dataset));
+        allValues.add((float)corrcoef(l_gravY_dataset, l_gravZ_dataset));
+
+        allValues.add((float)corrcoef(r_gravX_dataset, r_gravY_dataset));
+        allValues.add((float)corrcoef(r_gravX_dataset, r_gravZ_dataset));
+        allValues.add((float)corrcoef(r_gravY_dataset, r_gravZ_dataset));
 
         max_val = max(l_wx_dataset);
         rms_val = rms(l_wx_dataset);
@@ -629,6 +725,66 @@ public class StrokeClassifier {
         attributeList.add( new Attribute("r_force_Iqr") );
         attributeList.add( new Attribute("r_force_Skewness") );
         attributeList.add( new Attribute("r_force_Kurtosis") );
+        attributeList.add( new Attribute("l_gravX_Max") );
+        attributeList.add( new Attribute("l_gravX_Min") );
+        attributeList.add( new Attribute("l_gravX_Avg") );
+        attributeList.add( new Attribute("l_gravX_Std") );
+        attributeList.add( new Attribute("l_gravX_RMS") );
+        attributeList.add( new Attribute("l_gravX_CF") );
+        attributeList.add( new Attribute("l_gravX_Iqr") );
+        attributeList.add( new Attribute("l_gravX_Skewness") );
+        attributeList.add( new Attribute("l_gravX_Kurtosis") );
+        attributeList.add( new Attribute("r_gravX_Max") );
+        attributeList.add( new Attribute("r_gravX_Min") );
+        attributeList.add( new Attribute("r_gravX_Avg") );
+        attributeList.add( new Attribute("r_gravX_Std") );
+        attributeList.add( new Attribute("r_gravX_RMS") );
+        attributeList.add( new Attribute("r_gravX_CF") );
+        attributeList.add( new Attribute("r_gravX_Iqr") );
+        attributeList.add( new Attribute("r_gravX_Skewness") );
+        attributeList.add( new Attribute("r_gravX_Kurtosis") );
+        attributeList.add( new Attribute("l_gravY_Max") );
+        attributeList.add( new Attribute("l_gravY_Min") );
+        attributeList.add( new Attribute("l_gravY_Avg") );
+        attributeList.add( new Attribute("l_gravY_Std") );
+        attributeList.add( new Attribute("l_gravY_RMS") );
+        attributeList.add( new Attribute("l_gravY_CF") );
+        attributeList.add( new Attribute("l_gravY_Iqr") );
+        attributeList.add( new Attribute("l_gravY_Skewness") );
+        attributeList.add( new Attribute("l_gravY_Kurtosis") );
+        attributeList.add( new Attribute("r_gravY_Max") );
+        attributeList.add( new Attribute("r_gravY_Min") );
+        attributeList.add( new Attribute("r_gravY_Avg") );
+        attributeList.add( new Attribute("r_gravY_Std") );
+        attributeList.add( new Attribute("r_gravY_RMS") );
+        attributeList.add( new Attribute("r_gravY_CF") );
+        attributeList.add( new Attribute("r_gravY_Iqr") );
+        attributeList.add( new Attribute("r_gravY_Skewness") );
+        attributeList.add( new Attribute("r_gravY_Kurtosis") );
+        attributeList.add( new Attribute("l_gravZ_Max") );
+        attributeList.add( new Attribute("l_gravZ_Min") );
+        attributeList.add( new Attribute("l_gravZ_Avg") );
+        attributeList.add( new Attribute("l_gravZ_Std") );
+        attributeList.add( new Attribute("l_gravZ_RMS") );
+        attributeList.add( new Attribute("l_gravZ_CF") );
+        attributeList.add( new Attribute("l_gravZ_Iqr") );
+        attributeList.add( new Attribute("l_gravZ_Skewness") );
+        attributeList.add( new Attribute("l_gravZ_Kurtosis") );
+        attributeList.add( new Attribute("r_gravZ_Max") );
+        attributeList.add( new Attribute("r_gravZ_Min") );
+        attributeList.add( new Attribute("r_gravZ_Avg") );
+        attributeList.add( new Attribute("r_gravZ_Std") );
+        attributeList.add( new Attribute("r_gravZ_RMS") );
+        attributeList.add( new Attribute("r_gravZ_CF") );
+        attributeList.add( new Attribute("r_gravZ_Iqr") );
+        attributeList.add( new Attribute("r_gravZ_Skewness") );
+        attributeList.add( new Attribute("r_gravZ_Kurtosis") );
+        attributeList.add( new Attribute("l_gravXgravY_Corr") );
+        attributeList.add( new Attribute("l_gravXgravZ_Corr") );
+        attributeList.add( new Attribute("l_gravYgravZ_Corr") );
+        attributeList.add( new Attribute("r_gravXgravY_Corr") );
+        attributeList.add( new Attribute("r_gravXgravZ_Corr") );
+        attributeList.add( new Attribute("r_gravYgravZ_Corr") );
         attributeList.add( new Attribute("l_wx_Max") );
         attributeList.add( new Attribute("l_wx_Min") );
         attributeList.add( new Attribute("l_wx_Avg") );
@@ -689,7 +845,7 @@ public class StrokeClassifier {
         attributeList.add( new Attribute("r_wxwy_Corr") );
         attributeList.add( new Attribute("r_wxwz_Corr") );
         attributeList.add( new Attribute("r_wywz_Corr") );
-        
+
         // Result Type
         ArrayList<String> classVal = new ArrayList<String>();
         classVal.add("netplay");
