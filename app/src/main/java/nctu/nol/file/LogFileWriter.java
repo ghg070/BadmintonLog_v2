@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 
 
 import android.os.Environment;
@@ -70,8 +71,7 @@ public class LogFileWriter {
 			outputStream.writeShort(dataset[i]);
 		}		
 	}
-	
-	
+
 	public void writeAudioDataBufferFile(final long timestamp, final short[] dataset) throws IOException{
 		StringBuilder outputString =  new StringBuilder(timestamp+","+dataset.length);
 		for(int i = 0 ; i < dataset.length; i++){
@@ -120,7 +120,14 @@ public class LogFileWriter {
 		outputString.append("\n");
 		outputStream.write(outputString.toString().getBytes());
 	}
-	
+	public void writeFeatures( final ArrayList<Float> vals ) throws IOException{
+		StringBuilder outputString = new StringBuilder( String.format("%f",vals.get(0)) );
+		for(int i = 1; i < vals.size(); i++)
+			outputString.append(String.format(",%f",vals.get(i)));
+		outputString.append("\n");
+		outputStream.write(outputString.toString().getBytes());
+	}
+
 	
 	public void writeReadMeFile() throws IOException{
 		Log.d(TAG, "SystemParameters.totalSecond:"+SystemParameters.Duration);

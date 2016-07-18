@@ -278,9 +278,9 @@ public class MainActivity extends Activity {
 				WaitConnectDialog.dismiss();
 
 				// Active Calibration
-				SystemParameters.initializeSystemParameters();
-				for(int i = 0; i < 2; i++)
-					ActiveCalibration(i);
+				//SystemParameters.initializeSystemParameters();
+				//for(int i = 0; i < 2; i++)
+				//	ActiveCalibration(i);
 			}
 		}
 	};
@@ -343,9 +343,9 @@ public class MainActivity extends Activity {
 				SystemParameters.StrokeCount++;
 				tv_strokeCount.setText(SystemParameters.StrokeCount+"");
 
-				long StrokeTime = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
+				/*long StrokeTime = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
 				if(StrokeTime != 0 && SystemParameters.IsKoalaReady)
-					bh.InputStrokeClassifyRequest(StrokeTime);
+					bh.StrokeClassifyRequest(StrokeTime);*/
 			}
 		}
 	};
@@ -758,7 +758,7 @@ public class MainActivity extends Activity {
 
 		/* 用來偵測擊球的模組 */
 		StrokeDetector SD = new StrokeDetector(MainActivity.this, SC);
-		SD.StartStrokeDetector();
+		SD.StartStrokeDetector(bh);
     }
 
     

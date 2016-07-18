@@ -3,7 +3,6 @@ package nctu.nol.algo;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.text.format.Time;
 import android.util.Log;
 
 
@@ -30,6 +29,7 @@ public class StrokeClassifier {
 
     // LogFile Related
     public LogFileWriter StrokeWriter;
+    public LogFileWriter StrokeFeature;
 
     private Activity mActivity;
 
@@ -43,10 +43,13 @@ public class StrokeClassifier {
 
     public void initLogFile(){
         StrokeWriter = new LogFileWriter("StrokeType.csv", LogFileWriter.STROKE_TYPE, LogFileWriter.TESTING_TYPE);
+        StrokeFeature = new LogFileWriter("StrokeFeature.csv", LogFileWriter.STROKE_TYPE, LogFileWriter.TESTING_TYPE);
     }
     public void closeLogFile(){
         if(StrokeWriter != null)
             StrokeWriter.closefile();
+        if(StrokeFeature != null)
+            StrokeFeature.closefile();
     }
 
     public double Classify(final long stroke_time, final ArrayList<Float> allVals) {
@@ -60,10 +63,10 @@ public class StrokeClassifier {
             // Set instance's values for the attributes
             for(int i = 0; i < allVals.size(); i++)
                 inst.setValue(attributeList.get(i), allVals.get(i));
+            StrokeFeature.writeFeatures(allVals);
 
             // load classifier from file
             InputStream in_stream = mActivity.getResources().openRawResource( mActivity.getResources().getIdentifier("smo", "raw", mActivity.getPackageName()));
-            //InputStream in_stream = mActivity.getResources().openRawResource( mActivity.getResources().getIdentifier("random_forest", "raw", mActivity.getPackageName()));
             Classifier clf = (Classifier) weka.core.SerializationHelper.read(in_stream);
             result = clf.classifyInstance(inst);
             String type = dataset.classAttribute().value((int)result);
@@ -90,12 +93,80 @@ public class StrokeClassifier {
         return result;
     }
 
+    int test = 1;
     public final ArrayList<Float> FeatureExtraction(final ArrayList<float[]> L_AccData,
                                                     final ArrayList<float[]> R_AccData,
                                                     final ArrayList<float[]> L_AccData_Without_Gravity,
                                                     final ArrayList<float[]> R_AccData_Without_Gravity,
                                                     final ArrayList<float[]> L_GyroData,
                                                     final ArrayList<float[]> R_GyroData) {
+
+        LogFileWriter lg, la, lw;
+        LogFileWriter rg, ra, rw;
+        lg = new LogFileWriter(test+"_lg.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        la = new LogFileWriter(test+"_la.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        lw = new LogFileWriter(test+"_lw.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        rg = new LogFileWriter(test+"_rg.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        ra = new LogFileWriter(test+"_ra.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        rw = new LogFileWriter(test+"_rw.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        test++;
+
+        for(int i = 0; i < L_AccData.size(); i++){
+            float []vals = L_AccData.get(i);
+            try {
+                lg.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        for(int i = 0; i < R_AccData.size(); i++){
+            float []vals = R_AccData.get(i);
+            try {
+                rg.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        for(int i = 0; i < L_AccData_Without_Gravity.size(); i++){
+            float []vals = L_AccData_Without_Gravity.get(i);
+            try {
+                la.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        for(int i = 0; i < R_AccData_Without_Gravity.size(); i++){
+            float []vals = R_AccData_Without_Gravity.get(i);
+            try {
+                ra.writeInertialDataFile(1, 1, vals[0],vals[1],vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        for(int i = 0; i < L_GyroData.size(); i++){
+            float []vals = L_GyroData.get(i);
+            try {
+                lw.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        for(int i = 0; i < R_GyroData.size(); i++){
+            float []vals = R_GyroData.get(i);
+            try {
+                rw.writeInertialDataFile(1, 1, vals[0], vals[1], vals[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        lg.closefile();
+        la.closefile();
+        lw.closefile();
+        rg.closefile();
+        ra.closefile();
+        rw.closefile();
+
         // Preprocessing
         double[] l_gx_dataset = new double[L_AccData.size()],
                 l_gy_dataset = new double[L_AccData.size()],
@@ -643,7 +714,7 @@ public class StrokeClassifier {
         if(vals.length == 0)
             return 0;
 
-        double result = Double.MIN_VALUE;
+        double result = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < vals.length; i++) {
             if (result < vals[i])
                 result = vals[i];
@@ -655,7 +726,7 @@ public class StrokeClassifier {
         if(vals.length == 0)
             return 0;
 
-        double result = Double.MAX_VALUE;
+        double result = Double.POSITIVE_INFINITY;
         for (int i = 0; i < vals.length; i++) {
             if (result > vals[i])
                 result = vals[i];
