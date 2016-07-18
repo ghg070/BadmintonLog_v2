@@ -418,7 +418,7 @@ public class MainActivity extends Activity {
 		@Override
 		public void onClick(View arg0) {
 			if(fbm != null && fbm.CheckModelHasTrained()){
-				if(SystemParameters.IsBtHeadsetReady && /*SystemParameters.IsKoalaReady &&*/ !isTesting)
+				if(SystemParameters.IsBtHeadsetReady && SystemParameters.IsKoalaReady && !isTesting)
 					ActiveLogging(LogFileWriter.TESTING_TYPE);
 				else if(isTesting)
 					StopLogging(LogFileWriter.TESTING_TYPE);
@@ -572,8 +572,11 @@ public class MainActivity extends Activity {
 			Long seconds = (spentTime/1000) % 60;
 			//compute the passed hours
 			Long hour = minutes / 60 ;
-			tv_durationTime.setText(String.format("%02d:%02d",minutes, seconds));
-			timerHandler.postDelayed(this, 1000);
+			//compute the passed millis
+			Long millis = spentTime%1000;
+
+			tv_durationTime.setText(String.format("%02d:%02d.%03d",minutes, seconds, millis));
+			timerHandler.postDelayed(this, 1);
 		}
     };
 
