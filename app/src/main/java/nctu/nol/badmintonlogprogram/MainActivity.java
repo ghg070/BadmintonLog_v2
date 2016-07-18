@@ -278,9 +278,9 @@ public class MainActivity extends Activity {
 				WaitConnectDialog.dismiss();
 
 				// Active Calibration
-				//SystemParameters.initializeSystemParameters();
-				//for(int i = 0; i < 2; i++)
-				//	ActiveCalibration(i);
+				SystemParameters.initializeSystemParameters();
+				for(int i = 0; i < 2; i++)
+					ActiveCalibration(i);
 			}
 		}
 	};

@@ -93,7 +93,6 @@ public class StrokeClassifier {
         return result;
     }
 
-    int test = 1;
     public final ArrayList<Float> FeatureExtraction(final ArrayList<float[]> L_AccData,
                                                     final ArrayList<float[]> R_AccData,
                                                     final ArrayList<float[]> L_AccData_Without_Gravity,

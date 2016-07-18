@@ -54,7 +54,7 @@ public class BeaconHandler implements SensorEventListener {
     private LinkedBlockingQueue<SensorData> acc_buffer = null;
     private LinkedBlockingQueue<SensorData> gyro_buffer = null;
     private static final int SEQ_MAX = 128;
-    private static long Calibration_Period = 2000; //ms
+    private static long TimeCalibration_Period = 2000; //ms
     private AtomicBoolean IsTimeCalibration = new AtomicBoolean(false);
     private Thread ThreadTimeCalibration = null;
     private double LastCaliTime = 0;
@@ -74,7 +74,7 @@ public class BeaconHandler implements SensorEventListener {
     private LogFileWriter AccDataWriter;
     private LogFileWriter GyroDataWriter;
     private LogFileWriter AccDataReducedWriter;
-    //private LogFileWriter Cal_AccDataWriter;
+    private LogFileWriter Cal_AccDataWriter;
     private LinkedBlockingQueue<SensorData> AccDataset_for_file = null;
     private LinkedBlockingQueue<SensorData> AccDataset_GravityReduced_for_file = null;
     private LinkedBlockingQueue<SensorData> GyroDataset_for_file = null;
@@ -88,7 +88,7 @@ public class BeaconHandler implements SensorEventListener {
     private boolean first_data_flag = false;
 
     // Gravity Reducing Related
-    private static final double GravityReducing_Alpah = 0.99;
+    private static final double GravityReducing_Alpah = 0.8;
     private static double[] gravity = new double[3];
 
     //Correction coordinates Related
@@ -286,7 +286,7 @@ public class BeaconHandler implements SensorEventListener {
             AccDataWriter = new LogFileWriter("AccData.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
             AccDataReducedWriter = new LogFileWriter("AccData_Reduced.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
             GyroDataWriter = new LogFileWriter("GyroData.csv", LogFileWriter.GYROSCOPE_DATA_TYPE, uType);
-            //Cal_AccDataWriter = new LogFileWriter("Cal_AccData.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
+            Cal_AccDataWriter = new LogFileWriter("Cal_AccData.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
         }
         else if(uType == LogFileWriter.CALIBRATION_Y_TYPE)
             AccDataWriter = new LogFileWriter("Cal_Y.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, uType);
@@ -372,8 +372,8 @@ public class BeaconHandler implements SensorEventListener {
                         try {
                             if(uType == LogFileWriter.TESTING_TYPE) {
                                 AccDataWriter.writeInertialDataFile(acc_data.seq, acc_data.time, acc_data.values[0], acc_data.values[1], acc_data.values[2]);
-                                //final float CalibrationTemp[] = getCorrectionValue(acc_data.values);
-                                //Cal_AccDataWriter.writeInertialDataFile(acc_data.seq, acc_data.time, CalibrationTemp[0], CalibrationTemp[1], CalibrationTemp[2]);
+                                final float CalibrationTemp[] = getCorrectionValue(acc_data.values);
+                                Cal_AccDataWriter.writeInertialDataFile(acc_data.seq, acc_data.time, CalibrationTemp[0], CalibrationTemp[1], CalibrationTemp[2]);
                             }
                             else if(uType == LogFileWriter.CALIBRATION_Y_TYPE)
                                 AccDataWriter.writeInertialDataFile(acc_data.seq, acc_data.time, acc_data.values[0], acc_data.values[1], acc_data.values[2]);
@@ -406,8 +406,8 @@ public class BeaconHandler implements SensorEventListener {
                     AccDataWriter.closefile();
                 if(GyroDataWriter != null)
                     GyroDataWriter.closefile();
-                //if(Cal_AccDataWriter != null)
-                //    Cal_AccDataWriter.closefile();
+                if(Cal_AccDataWriter != null)
+                    Cal_AccDataWriter.closefile();
 
                 isWrittingSensorDataLog.set(false);
             }
@@ -489,8 +489,8 @@ public class BeaconHandler implements SensorEventListener {
                         long StrokeTime = StrokeRequest.poll();
 
                         // wait until get Acc get data
-                        while (AccDataset_for_algo.size() == 0 || AccDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + Calibration_Period);
-                        while (GyroDataset_for_algo.size() == 0 || GyroDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + Calibration_Period);
+                        while (AccDataset_for_algo.size() == 0 || AccDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + TimeCalibration_Period);
+                        while (GyroDataset_for_algo.size() == 0 || GyroDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + TimeCalibration_Period);
 
                         // Get data already, start to classify
                         ClassifyStrokeType(StrokeTime);
@@ -619,7 +619,7 @@ public class BeaconHandler implements SensorEventListener {
                 while(mIsRecording) {
                     if(SystemParameters.isServiceRunning.get()) {
                         try {
-                            sleep(Calibration_Period);
+                            sleep(TimeCalibration_Period);
                             inerital_time_calibration();
                         } catch (InterruptedException e) {}
                     }
