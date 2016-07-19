@@ -36,7 +36,7 @@ public class StrokeDetector {
     private Thread detector_t;
 
     /* Stroke Time Related */
-    private Vector<Long> StrokeTimes = new Vector<Long>();
+    public static Vector<Long> StrokeTimes = new Vector<Long>();
 
     /* Broadcast Related */
     public final static String ACTION_STROKE_DETECTED_STATE = "STROKEDETECTOR.ACTION_STROKE_DETECTED_STATE";
@@ -116,18 +116,14 @@ public class StrokeDetector {
                         long result = CheckStroke(w_scores);
 
                         Log.e(TAG, "Get Stroke!!!!");
-                        StrokeTimes.add(result);
+                        if(result != 0) StrokeTimes.add(result);
 
                         // if no exception occur, jump curIdx to the window position where the score is lower than threshold
                         JumpWindow(w_scores);
 
                         Intent broadcast = new Intent(ACTION_STROKE_DETECTED_STATE);
+                        broadcast.putExtra(EXTRA_STROKETIME, result);
                         mContext.sendBroadcast(broadcast);
-
-                        if(result != 0 && SystemParameters.IsKoalaReady)
-                            bh.AddStrokeClassifyRequest(result);
-
-
 
                     } catch (NotMatchRuleException e) {}
                     catch (ReservedException e) {}

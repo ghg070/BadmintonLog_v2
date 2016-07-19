@@ -28,6 +28,7 @@ import cc.nctu1210.api.koala6x.KoalaServiceManager;
 import cc.nctu1210.api.koala6x.SensorEvent;
 import cc.nctu1210.api.koala6x.SensorEventListener;
 import nctu.nol.algo.StrokeClassifier;
+import nctu.nol.algo.StrokeDetector;
 import nctu.nol.file.LogFileWriter;
 import nctu.nol.file.SystemParameters;
 
@@ -68,7 +69,6 @@ public class BeaconHandler implements SensorEventListener {
 
     // Classifcation
     private StrokeClassifier StrokeTypeClassifier = null;
-    private LinkedBlockingQueue<Long> StrokeRequest = null;
 
     // FileWrite for Logging
     private LogFileWriter AccDataWriter;
@@ -308,8 +308,6 @@ public class BeaconHandler implements SensorEventListener {
         AccDataset_GravityReduced_for_algo = new LinkedBlockingDeque<SensorData>();
         GyroDataset_for_algo = new LinkedBlockingDeque<SensorData>();
 
-        StrokeRequest = new LinkedBlockingQueue<>();
-
         for(int i = 0; i < gravity.length; i++)
             gravity[i] = 0;
     }
@@ -476,17 +474,14 @@ public class BeaconHandler implements SensorEventListener {
     /***************************************/
     /**  BeaconHandler Feature Extraction **/
     /***************************************/
-    public void AddStrokeClassifyRequest(final long StrokeTime){
-        StrokeRequest.add(StrokeTime);
-    }
-
     private void StartCheckClassifyRequest(){
         new Thread() {
             @Override
             public void run() {
+                int pointer_idx = 0;
                 while(mIsRecording) {
-                    if (StrokeRequest.size() > 0) {
-                        long StrokeTime = StrokeRequest.poll();
+                    if (pointer_idx < StrokeDetector.StrokeTimes.size() ) {
+                        long StrokeTime = StrokeDetector.StrokeTimes.get(pointer_idx);
 
                         // wait until get Acc get data
                         while (AccDataset_for_algo.size() == 0 || AccDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + TimeCalibration_Period);
@@ -494,6 +489,8 @@ public class BeaconHandler implements SensorEventListener {
 
                         // Get data already, start to classify
                         ClassifyStrokeType(StrokeTime);
+
+                        pointer_idx++;
                     }
                 }
             }

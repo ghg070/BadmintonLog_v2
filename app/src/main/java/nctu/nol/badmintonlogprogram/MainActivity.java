@@ -1,10 +1,8 @@
 package nctu.nol.badmintonlogprogram;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -19,12 +17,12 @@ import nctu.nol.bt.devices.SoundWaveHandler;
 import nctu.nol.bt.devices.SoundWaveHandler.AudioData;
 import nctu.nol.file.SystemParameters;
 import nctu.nol.file.LogFileWriter;
+import nctu.nol.file.sqlite.DataListItem;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothClass.Device;
-import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -33,19 +31,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.view.PagerTitleStrip;
 import android.text.format.Time;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -69,32 +59,18 @@ public class MainActivity extends Activity {
     
 	/* Sound Wave Related */
 	private SoundWaveHandler sw = null;
-	private TextView tv_HeadsetConnected;
 	private Button btMicConnect;
-	private BluetoothDevice CurHeadsetDevice;
 
-	/* Beacon Related */
+	/* Beacon Connect Related */
 	private BeaconHandler bh = null;
-	private TextView tv_KoalaConnected;
 	private Button btKoalaConnect;
-	private String CurKoalaDevice;
 	private ProgressDialog WaitConnectDialog = null;
-	private TextView tv_PacketLoss;
-     
-    /* Bonded Device Related */
-	private Spinner spBondedDeviceSpinner;
-	private CustomArrayAdapter BondedDeviceNameList;
-	private List<BluetoothDevice> BondedDevices = new ArrayList<BluetoothDevice>();
-
-    /* Timer Related */
-  	private Handler timerHandler = new Handler();
-    private TextView tv_durationTime;
 
     /* Algorithm Related */
     private FrequencyBandModel fbm = null;
 	private ScoreComputing SC = null;
     
-	/*stroke*/
+	/* Stroke */
 	private TextView tv_strokeCount;
 	private TextView tv_strokeType;
 
@@ -115,7 +91,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume(){
     	super.onResume();
-    	updatedBondedDeviceSpinner();
     }
        
     @Override
@@ -154,19 +129,14 @@ public class MainActivity extends Activity {
             	Log.e(TAG,"Bluetooth is not enabled.");
                 finish();
                 return;
-            }else if(resultCode == Activity.RESULT_OK){
-            	//Get Bonded Devices
-                updatedBondedDeviceSpinner();
-            }
-        }else if(requestCode == REQUEST_OPEN_BTSETTING){
-        	//Get Bonded Devices
-            updatedBondedDeviceSpinner();
+            }else if(resultCode == Activity.RESULT_OK){}
+        }else if(requestCode == REQUEST_OPEN_BTSETTING){}
 
-        }else if(requestCode == KOALA_SCAN_PAGE_RESULT){
+		else if(requestCode == KOALA_SCAN_PAGE_RESULT){
 			if(resultCode == Activity.RESULT_OK && bh != null){
 				final String clickedMacAddress = data.getExtras().getString(KoalaScan.macAddress);
 				final String clickedDeviceName = data.getExtras().getString(KoalaScan.deviceName);
-				CurKoalaDevice = clickedDeviceName + "-" +clickedMacAddress;
+				//CurKoalaDevice = clickedDeviceName + "-" +clickedMacAddress;
 				bh.ConnectToKoala(clickedMacAddress);
 
 				WaitConnectDialog = ProgressDialog.show(this, "連線中", "請稍後...", true);
@@ -188,12 +158,8 @@ public class MainActivity extends Activity {
     
 	private void initialViewandEvent(){
 		//TextView
-		tv_durationTime = (TextView) findViewById(R.id.tv_duration);
 		tv_strokeCount = (TextView) findViewById(R.id.tv_stroke_count);
 		tv_strokeType = (TextView) findViewById(R.id.tv_stroke_type);
-		tv_HeadsetConnected = (TextView) findViewById(R.id.tv_headset);
-		tv_KoalaConnected = (TextView) findViewById(R.id.tv_koala);
-		tv_PacketLoss = (TextView) findViewById(R.id.tv_packetloss);
 
 		//Button
 		btMicConnect = (Button) findViewById(R.id.bt_micconnect);
@@ -204,13 +170,6 @@ public class MainActivity extends Activity {
 		btKoalaConnect.setOnClickListener(KoalaConnectListener);
 		btTraining.setOnClickListener(TrainingStartClickListener);
 		btTesting.setOnClickListener(TestingStartClickListener);
-
-		//Spinner
-		spBondedDeviceSpinner = (Spinner) findViewById(R.id.sp_bondeddevice);
-		BondedDeviceNameList = new CustomArrayAdapter(MainActivity.this, android.R.layout.simple_spinner_item, BondedDevices);                                     
-		spBondedDeviceSpinner.setAdapter(BondedDeviceNameList);
-		spBondedDeviceSpinner.setOnItemSelectedListener(BondedDeviceSelectedListener);
-		
 	}
 	private void initialBTManager() {
 		Log.d(TAG, "Check if BT is enable");
@@ -238,27 +197,6 @@ public class MainActivity extends Activity {
 		registerReceiver(mStrokeTypeResultReceiver, makeStrokeTypeResultIntentFilter());
 	}
 
-    public void updatedBondedDeviceSpinner() {
-    	if(sw != null && sw.getService() != null){
-			Log.d(TAG, "UpdatedBondedDeviceSpinner");
-	    	BondedDevices = sw.getService().getBondedBTDevice(Device.AUDIO_VIDEO_WEARABLE_HEADSET);
-	    	BondedDeviceNameList.clear(); 
-	        if (BondedDevices != null){
-	        	//Sort Boned Device
-	        	Collections.sort(BondedDevices, new Comparator<BluetoothDevice>() {
-	                @Override
-	                public int compare(BluetoothDevice lhs, BluetoothDevice rhs) {
-	                    return lhs.getName().compareTo(rhs.getName());   
-	                }
-	            });
-	        	
-	            for (BluetoothDevice d : BondedDevices) {
-	            	BondedDeviceNameList.insert(d, BondedDeviceNameList.getCount());
-	            }
-	        }
-	        BondedDeviceNameList.notifyDataSetChanged();
-    	}
-    }
     
     /**********************/
     /**    Broadcast Event	 **/
@@ -268,12 +206,11 @@ public class MainActivity extends Activity {
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
 			if( BeaconHandler.ACTION_BEACON_CONNECT_STATE.equals(action) ){
-				tv_KoalaConnected.setText(CurKoalaDevice);
-				btKoalaConnect.setText(R.string.Koala_Connected_State);
-
+				btKoalaConnect.setBackground(getResources().getDrawable(R.drawable.koala_connect));
 			}else if( BeaconHandler.ACTION_BEACON_DISCONNECT_STATE.equals(action) ){
-				tv_KoalaConnected.setText("disconnected");
-				btKoalaConnect.setText(R.string.Koala_Disconnected_State);
+				btKoalaConnect.setBackground(getResources().getDrawable(R.drawable.koala_disconnect));
+				if( SystemParameters.isServiceRunning.get() && isTesting)
+					btTesting.performClick();
 			}else if( BeaconHandler.ACTION_BEACON_FIRST_DATA_RECEIVE.equals(action) ){
 				WaitConnectDialog.dismiss();
 
@@ -298,12 +235,10 @@ public class MainActivity extends Activity {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
-			if( SoundWaveHandler.ACTION_SOUND_SERVICE_CONNECT_STATE.equals(action) )
-				updatedBondedDeviceSpinner();
-
+			if( SoundWaveHandler.ACTION_SOUND_SERVICE_CONNECT_STATE.equals(action) ) {}
 			else if( SoundWaveHandler.ACTION_SOUND_NOT_PREPARE_STATE.equals(action) ){
-            	tv_HeadsetConnected.setText("disconnected");
-				btMicConnect.setText(R.string.BT_Mic_Disconnected_State);
+
+				btMicConnect.setBackground(getResources().getDrawable(R.drawable.headset_disconnect));
 				btMicConnect.setEnabled(true);
 				btKoalaConnect.setEnabled(true);
 
@@ -312,14 +247,12 @@ public class MainActivity extends Activity {
 				else if( SystemParameters.isServiceRunning.get() && isTesting)
 					btTesting.performClick();
 
-			}else if( SoundWaveHandler.ACTION_SOUND_PREPARING_STATE.equals(action) ){			
-				CurHeadsetDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+			}else if( SoundWaveHandler.ACTION_SOUND_PREPARING_STATE.equals(action) ){
 				btMicConnect.setEnabled(false);
 				btKoalaConnect.setEnabled(false);
 
 			}else if( SoundWaveHandler.ACTION_SOUND_PREPARED_STATE.equals(action) ){
-            	tv_HeadsetConnected.setText(CurHeadsetDevice.getName()+"-"+CurHeadsetDevice.getAddress());
-				btMicConnect.setText(R.string.BT_Mic_Connected_State);
+				btMicConnect.setBackground(getResources().getDrawable(R.drawable.headset_connect));
 				btMicConnect.setEnabled(true);
 				btKoalaConnect.setEnabled(true);
 			}
@@ -341,11 +274,9 @@ public class MainActivity extends Activity {
 			String action = intent.getAction();
 			if( StrokeDetector.ACTION_STROKE_DETECTED_STATE.equals(action) ){
 				SystemParameters.StrokeCount++;
-				tv_strokeCount.setText(SystemParameters.StrokeCount+"");
+				tv_strokeCount.setText(SystemParameters.StrokeCount + "");
 
-				/*long StrokeTime = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
-				if(StrokeTime != 0 && SystemParameters.IsKoalaReady)
-					bh.StrokeClassifyRequest(StrokeTime);*/
+				long stroke_time = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
 			}
 		}
 	};
@@ -378,13 +309,16 @@ public class MainActivity extends Activity {
 	/********************/
 	private Button.OnClickListener MicConnectListener = new Button.OnClickListener() {
 		public void onClick(View v) {
-			if( !SystemParameters.IsBtHeadsetReady ) {
-				int idx = spBondedDeviceSpinner.getSelectedItemPosition();
-				CurHeadsetDevice = BondedDevices.get(idx);
-				sw.getService().ConnectScoBTHeadset(CurHeadsetDevice);
-			}
-			else
-				sw.getService().DisconnectAllScoBTHeadset();
+		if( !SystemParameters.IsBtHeadsetReady ) {
+			Intent BTSettingIntent = new Intent(Intent.ACTION_MAIN, null);
+			BTSettingIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+			ComponentName cn = new ComponentName("com.android.settings",
+					"com.android.settings.bluetooth.BluetoothSettings");
+			BTSettingIntent.setComponent(cn);
+			startActivityForResult(BTSettingIntent, REQUEST_OPEN_BTSETTING);
+		}
+		else
+			sw.getService().DisconnectAllScoBTHeadset();
 		}
 	};
 
@@ -408,7 +342,7 @@ public class MainActivity extends Activity {
 			if(SystemParameters.IsBtHeadsetReady && !isTraining)
 				ActiveLogging(LogFileWriter.TRAINING_TYPE);
 			else if(isTraining)
-				StopLogging(LogFileWriter.TRAINING_TYPE);
+				StopLogging();
 			else
 				Toast.makeText(MainActivity.this,"You have to connect bt headset.",Toast.LENGTH_SHORT).show();
 		}
@@ -418,10 +352,10 @@ public class MainActivity extends Activity {
 		@Override
 		public void onClick(View arg0) {
 			if(fbm != null && fbm.CheckModelHasTrained()){
-				if(SystemParameters.IsBtHeadsetReady && SystemParameters.IsKoalaReady && !isTesting)
+				if(SystemParameters.IsBtHeadsetReady/* && SystemParameters.IsKoalaReady*/ && !isTesting)
 					ActiveLogging(LogFileWriter.TESTING_TYPE);
 				else if(isTesting)
-					StopLogging(LogFileWriter.TESTING_TYPE);
+					StopLogging();
 				else
 					Toast.makeText(MainActivity.this,"You have to connect bt headset and koala.",Toast.LENGTH_SHORT).show();
 			}else{
@@ -453,40 +387,23 @@ public class MainActivity extends Activity {
 			@Override
 			public void run() {
 				try {
-					// AudioRecord Ready
+					// Trigger Sensor to Ready (wait isServiceRunning become true)
 					sw.startRecording(LogType);
+					if( isTesting ) bh.startRecording(LogType);
 
-					// Sensor Record Ready
-					if( LogType == LogFileWriter.TESTING_TYPE )
-						bh.startRecording(LogType);
-
-					//等待2sec後開始
-					sleep(2000);
-
-					//設定開始時間
-					SetMeasureStartTime();
-
-					//設定定時要執行的方法
-					timerHandler.removeCallbacks(updateTimer);
-					timerHandler.postDelayed(updateTimer, 1000); //計時用
-					timerHandler.removeCallbacks(updatePacketLoss);
-					timerHandler.postDelayed(updatePacketLoss, 1000); //計算封包遺失率用
-
-					//Service Start
+					sleep(2000); //等待2sec後開始
+					SetMeasureStartTime(); //設定開始時間
 					SystemParameters.isServiceRunning.set(true);
 
 					// if isTest == true, Testing Start
-					if(isTesting)
-						StartTestingAlgo();
+					if(isTesting) StartTestingAlgo();
 
 					runOnUiThread(new Runnable() {
 						public void run(){
-							Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
-
-							//init UI
-							tv_strokeCount.setText("0");
-							tv_PacketLoss.setText("0%");
-							tv_strokeType.setText("None");
+						Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
+						//init UI
+						tv_strokeCount.setText("0");
+						tv_strokeType.setText("None");
 						}
 					});
 				} catch (InterruptedException e) {
@@ -497,15 +414,12 @@ public class MainActivity extends Activity {
 		}.start();
 	}
 
-	private void StopLogging(final int LogType){
+	private void StopLogging(){
 		Toast.makeText(getBaseContext(), "Log Service is Stop", Toast.LENGTH_SHORT).show();
 		SystemParameters.isServiceRunning.set(false);
 		SystemParameters.Duration = (System.currentTimeMillis() - SystemParameters.StartTime)/1000.0;
 		sw.stopRecording();
-		if( LogType == LogFileWriter.TESTING_TYPE )
-			bh.stopRecording();
-		timerHandler.removeCallbacks(updateTimer);
-		timerHandler.removeCallbacks(updatePacketLoss);
+		if( isTesting ) bh.stopRecording();
 
 		final ProgressDialog dialog = ProgressDialog.show(MainActivity.this,
 				"寫檔中", "處理檔案中，請稍後",true);
@@ -517,22 +431,22 @@ public class MainActivity extends Activity {
 				if( SC != null ) while(SC.isWrittingWindowScore.get());
 				if( bh != null ) while(bh.isWrittingSensorDataLog.get());
 
-				//Training
-				if(LogType == LogFileWriter.TRAINING_TYPE)
-					StartTrainingAlgo(sw);
+				if(isTraining) StartTrainingAlgo(sw);
+
+				// Local Database Handler
+				long id = SQLiteInsertNewLoggingRecord(SystemParameters.StartDate, "ghg070", SystemParameters.StrokeCount, SystemParameters.filePath, isTesting, SystemParameters.SoundStartTime-SystemParameters.StartTime);
 
 				//Show UI
 				runOnUiThread(new Runnable() {
-					public void run(){
+					public void run() {
 						showLogInformationDialog();
 
 						//UI Button Control
-						if(LogType == LogFileWriter.TESTING_TYPE) {
+						if (isTesting) {
 							btTesting.setText(R.string.Not_Testing_State);
 							btTraining.setEnabled(true);
 							isTesting = false;
-						}
-						else{
+						} else if (isTraining) {
 							btTraining.setText(R.string.Not_Training_State);
 							btTesting.setEnabled(true);
 							isTraining = false;
@@ -546,50 +460,22 @@ public class MainActivity extends Activity {
 	
 	private void SetMeasureStartTime(){
 		//Set time
+		long currentTime = System.currentTimeMillis();
 	    Time t=new Time();
-	    t.setToNow();
+		t.set(currentTime);
 	    String year = String.valueOf(t.year);
 	    String month = String.valueOf(t.month+1);
 	    String day = String.valueOf(t.monthDay);
 	    int hour =t.hour;
 	    int minute = t.minute;
 	    int second = t.second;
-	    int millisecond = (int)(System.currentTimeMillis()%1000);
+	    int millisecond = (int)(currentTime%1000);
 	    
 	    //YYYYMMDD-HHMMSS
 	    String date = year+"-"+month+"-"+day+" "+String.format("%02d:%02d:%02d.%03d",hour, minute, second, millisecond);
 		SystemParameters.StartDate = date;
-		SystemParameters.StartTime = System.currentTimeMillis();
+		SystemParameters.StartTime = currentTime;
 	}
-    private Runnable updateTimer = new Runnable() {
-		@Override
-		public void run() {
-			//compute the passed time in millisecond
-			Long spentTime = System.currentTimeMillis() - SystemParameters.StartTime;
-			//compute the passed minutes
-			Long minutes = (spentTime/1000)/60;
-			//compute the passed seconds
-			Long seconds = (spentTime/1000) % 60;
-			//compute the passed hours
-			Long hour = minutes / 60 ;
-			//compute the passed millis
-			Long millis = spentTime%1000;
-
-			tv_durationTime.setText(String.format("%02d:%02d.%03d",minutes, seconds, millis));
-			timerHandler.postDelayed(this, 1);
-		}
-    };
-
-	private Runnable updatePacketLoss = new Runnable() {
-		@Override
-		public void run() {
-			if(SystemParameters.SensorCount_ContainLoss != 0){
-				float loss_percent = (1 - (SystemParameters.SensorCount/(float)SystemParameters.SensorCount_ContainLoss))*100;
-				tv_PacketLoss.setText(String.format("%.2f%%",loss_percent));
-			}
-			timerHandler.postDelayed(this, 1000);
-		}
-	};
 
     private void showLogInformationDialog(){//and also write readme.txt	
 		try {
@@ -612,6 +498,45 @@ public class MainActivity extends Activity {
 							public void onClick(DialogInterface dialog,int id) {}
 						}).show();
 	}
+
+	/************************
+	 *  Local Database Related
+	 ***********************/
+	private long SQLiteInsertNewLoggingRecord(String date, String subject, int stroke_num, String path, boolean is_testing, long offset){
+		DataListItem dlistDB = new DataListItem(MainActivity.this);
+		long id = dlistDB.insert(date, subject, stroke_num, path, is_testing, offset);
+		dlistDB.close();
+		return id;
+	}
+/*
+	private void SQLiteInsertAllAudioSamples(final long lid){
+		DataListItem dlistDB = new DataListItem(MainActivity.this);
+		DataListItem.DataItem list_data = dlistDB.get(lid);
+
+		// Read Wav File, store data
+		long[] time = null;
+		float[] value = null;
+		try {
+			WavReader wr = new WavReader(new FileInputStream(list_data.path+"Sound.wav"));
+			short[] samples = wr.getShortSamples();
+
+			time = new long[samples.length];
+			value = new float[samples.length];
+
+			float deltaT = (1/(float)SoundWaveHandler.SAMPLE_RATE)*1000;
+			long offset = list_data.offset;
+
+			for(int i = 0; i < samples.length; i++){
+				time[i] =  (long)(offset + deltaT*i);
+				value[i] =  (float)samples[i]/32768;
+			}
+
+		} catch (FileNotFoundException e) {
+			Log.e(TAG, e.getMessage());
+		}
+*/
+
+
 
 	/************************
 	 *  Axis Calibration Related
@@ -677,13 +602,14 @@ public class MainActivity extends Activity {
     /***********************/
     private void StartTrainingAlgo(final SoundWaveHandler sw){
     	//split time array and data array
-    	final LinkedBlockingQueue<AudioData> ads = sw.getSampleData();
+		final LinkedBlockingQueue<AudioData> ads = sw.getSampleData();
 		float times[] = new float[ads.size()],
-			  vals[] = new float[ads.size()];
+				vals[] = new float[ads.size()];
 
+		Iterator<AudioData> it = ads.iterator();
 		int count = 0;
-		while(ads.size() > 0){
-			AudioData ad = ads.poll();
+		while(it.hasNext()){
+			AudioData ad = it.next();
 			times[count] = (float)ad.time;
 			vals[count] = ad.data;
 			count++;
@@ -692,21 +618,8 @@ public class MainActivity extends Activity {
 		//Find all peak
 		PeakDetector pd = new PeakDetector(700, 350);
 		List<Integer> peaks = pd.findPeakIndex(times, vals, (float)0.35);
-		// Test File for Peak Detection
-		/*
-			LogFileWriter PeakTestWriter = new LogFileWriter("PeakIndex.txt", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
-			for(int i = 0 ; i < peaks.size(); i++){
-				int index = peaks.get(i);
-				Log.d(TAG,"peak index = "+index+", time = "+times[index]+", val = "+vals[index]);
+		SystemParameters.StrokeCount = peaks.size();
 
-				try {
-					PeakTestWriter.writePeakIndexFile(index);
-				} catch (IOException e) {
-					Log.e(TAG,e.getMessage());
-				}
-			}
-			PeakTestWriter.closefile();
-		*/
 
 		// Find top K freq band
 		fbm = new FrequencyBandModel();
@@ -750,7 +663,6 @@ public class MainActivity extends Activity {
 			}
 		}
 		TopKMainFreqTableWriter.closefile();
-
     }
     
     private void StartTestingAlgo(){
@@ -764,82 +676,6 @@ public class MainActivity extends Activity {
 		SD.StartStrokeDetector(bh);
     }
 
-    
-    /***********************************************/
-    /** Spinner Function for Select Bonded Device **/
-    /***********************************************/
-    public class CustomArrayAdapter extends ArrayAdapter<BluetoothDevice> {
-    	final List<BluetoothDevice> devices;
-    	final Context context;
-    	
-    	public CustomArrayAdapter(final Context context, final int resource, final List<BluetoothDevice> objects) {
-			super(context, resource, objects);
-			this.devices = objects;
-			this.context = context;
-		}
-
-    	@Override
-        public View getDropDownView(int position, View convertView, ViewGroup parent) {
-            if (convertView == null) {
-                LayoutInflater vi = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = vi.inflate(android.R.layout.simple_spinner_dropdown_item, parent, false);
-            }
-            ((TextView) convertView).setText(devices.get(position).getName()+"-"+devices.get(position).getAddress());
-            return convertView;
-
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-        	LayoutInflater vi = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = vi.inflate(android.R.layout.simple_spinner_item, parent, false);
-            
-            ((TextView) convertView).setText(devices.get(position).getName()+"-"+devices.get(position).getAddress());
-            return convertView;
-        }
-    }
-    
-    AdapterView.OnItemSelectedListener BondedDeviceSelectedListener = new AdapterView.OnItemSelectedListener(){
-        @Override
-        public void onItemSelected(AdapterView<?> arg0, View arg1,int position, long arg3) {}
-
-		@Override
-		public void onNothingSelected(AdapterView<?> parent) {
-			// TODO Auto-generated method stub
-			
-		}
-        
-    };
-    
-    
-    /***************************************************/
-    /** Main Item For Bluetooth Bonded Device Setting **/
-    /***************************************************/
-    private static final int group_id = 0;
-    private static final int item_id_btsetting = 0;
-    
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(group_id, item_id_btsetting, 0, "BT Setting");
-        return super.onCreateOptionsMenu(menu); 
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-        	case item_id_btsetting:
-        		Intent BTSettingIntent = new Intent(Intent.ACTION_MAIN, null);
-        		BTSettingIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-                ComponentName cn = new ComponentName("com.android.settings", 
-                        "com.android.settings.bluetooth.BluetoothSettings");
-                BTSettingIntent.setComponent(cn);
-                startActivityForResult(BTSettingIntent, REQUEST_OPEN_BTSETTING);
-        		return true;
-        	default:
-        		return super.onOptionsItemSelected(item);
-        }
-    }
-
-};
+}
 
 

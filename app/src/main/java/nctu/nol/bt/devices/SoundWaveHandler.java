@@ -166,11 +166,11 @@ public class SoundWaveHandler {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				while (mIsRecording) {	
+				while (mIsRecording) {
 					long curTime = System.currentTimeMillis();
-					
+
 					final int readSize = record.read(mAudioBuffer, 0, mBufferSize);
-									
+
 					if(SystemParameters.isServiceRunning.get()){
 						//This buffer receive before Service Start, Throw it.
 						if(curTime < SystemParameters.StartTime) continue;

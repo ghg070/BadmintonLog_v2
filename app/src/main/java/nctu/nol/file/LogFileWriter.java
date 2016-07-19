@@ -257,7 +257,7 @@ public class LogFileWriter {
 		return SystemParameters.filePath;
 	}
 	
-	public boolean isExternalStorageWritable() {
+	public static boolean isExternalStorageWritable() {
 		String state = Environment.getExternalStorageState();
 	
 		if (Environment.MEDIA_MOUNTED.equals(state)) {
