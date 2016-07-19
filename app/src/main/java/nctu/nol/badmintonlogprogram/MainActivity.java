@@ -56,6 +56,9 @@ public class MainActivity extends Activity {
   	private Button btTesting;
 	private Boolean isTraining = false;
 	private Boolean isTesting = false;
+
+	/* View History Related */
+	private Button btDataPage;
     
 	/* Sound Wave Related */
 	private SoundWaveHandler sw = null;
@@ -166,10 +169,14 @@ public class MainActivity extends Activity {
 		btKoalaConnect = (Button) findViewById(R.id.bt_koalaconnect);
 		btTraining = (Button) findViewById(R.id.bt_trainingstart);
 		btTesting = (Button) findViewById(R.id.bt_testingstart);
+		btDataPage = (Button) findViewById(R.id.bt_viewstrokedata);
+
 		btMicConnect.setOnClickListener(MicConnectListener);
 		btKoalaConnect.setOnClickListener(KoalaConnectListener);
 		btTraining.setOnClickListener(TrainingStartClickListener);
 		btTesting.setOnClickListener(TestingStartClickListener);
+		btDataPage.setOnClickListener(DataPageListener);
+
 	}
 	private void initialBTManager() {
 		Log.d(TAG, "Check if BT is enable");
@@ -302,6 +309,16 @@ public class MainActivity extends Activity {
 		intentFilter.addAction(StrokeClassifier.ACTION_OUTPUT_RESULT_STATE);
 		return intentFilter;
 	}
+
+	/*********************
+	 *    Page Change Related
+	 *********************/
+	private Button.OnClickListener DataPageListener = new Button.OnClickListener() {
+		public void onClick(View v) {
+			Intent i = new Intent(MainActivity.this, DataListPage.class);
+			startActivity(i);
+		}
+	};
 
 
 	/********************/
@@ -496,7 +513,7 @@ public class MainActivity extends Activity {
 						).setPositiveButton("OK",new DialogInterface.OnClickListener() {
 							@Override
 							public void onClick(DialogInterface dialog,int id) {}
-						}).show();
+		}).show();
 	}
 
 	/************************

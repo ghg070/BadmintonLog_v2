@@ -42,6 +42,12 @@ public class KoalaScan extends Activity{
         initialViewandEvent();
     }
 
+    @Override
+    protected void onResume(){
+        super.onResume();
+        btScan.performClick();
+    }
+
     private void initialViewandEvent(){
         //ListView
         listkoala = (ListView) findViewById(R.id.list_device);
@@ -53,40 +59,35 @@ public class KoalaScan extends Activity{
         btScan = (Button) findViewById(R.id.bt_scan);
         btScan.setOnClickListener(KoalaScanListener);
     }
-    private Button.OnClickListener KoalaScanListener;
-
-    {
-        KoalaScanListener = new Button.OnClickListener() {
-            @Override
-            public void onClick(View arg0) {
-                koala.clear();
-                bh.scanLeDevice();
-                dialog = ProgressDialog.show(KoalaScan.this, "請稍後", "藍芽設備搜尋中", true);
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Thread.sleep(bh.SCAN_PERIOD);
-                            for (int i = 0, size = bh.getScanedDevices().size(); i < size; i++) {
-                                KoalaDevice d = bh.getScanedDevices().get(i);
-                                koala.add(d.getDevice().getName() + " " + d.getDevice().getAddress());
-                            }
-                            runOnUiThread(new Runnable() {
-                                public void run() {
-                                    Adapter.notifyDataSetChanged();
-                                }
-                            });
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        } finally {
-                            dialog.dismiss();
+    private Button.OnClickListener KoalaScanListener = new Button.OnClickListener() {
+        @Override
+        public void onClick(View arg0) {
+            koala.clear();
+            bh.scanLeDevice();
+            dialog = ProgressDialog.show(KoalaScan.this, "請稍後", "藍芽設備搜尋中", true);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(bh.SCAN_PERIOD);
+                        for (int i = 0, size = bh.getScanedDevices().size(); i < size; i++) {
+                            KoalaDevice d = bh.getScanedDevices().get(i);
+                            koala.add(d.getDevice().getName() + " " + d.getDevice().getAddress());
                         }
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Adapter.notifyDataSetChanged();
+                            }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        dialog.dismiss();
                     }
-                }).start();
-
-            }
-        };
-    }
+                }
+            }).start();
+        }
+    };
 
     private ListView.OnItemClickListener ListClickListener = new ListView.OnItemClickListener() {
         @Override

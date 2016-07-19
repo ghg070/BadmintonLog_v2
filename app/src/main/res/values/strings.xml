@@ -2,11 +2,12 @@
 <resources>
 
     <string name="app_name">Badminton Logging Program</string>
-    <string name="action_settings">Settings</string>
-    <string name="BT_Mic_Connected_State">Disconnect BT Mic</string>
-    <string name="BT_Mic_Disconnected_State">Connect BT Mic</string>
-    <string name="Koala_Connected_State">Disconnect Koala</string>
-    <string name="Koala_Disconnected_State">Connect Koala</string>
+
+    <!-- List Item -->
+    <string name="TrainingData">Training</string>
+    <string name="TestingData">Testing</string>
+
+    <!-- Button -->
     <string name="Training_State">Finish\nTraining</string>
     <string name="Not_Training_State">Start\nTraining</string>
     <string name="Testing_State">Finish\nTesting</string>
