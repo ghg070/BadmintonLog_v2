@@ -525,34 +525,6 @@ public class MainActivity extends Activity {
 		dlistDB.close();
 		return id;
 	}
-/*
-	private void SQLiteInsertAllAudioSamples(final long lid){
-		DataListItem dlistDB = new DataListItem(MainActivity.this);
-		DataListItem.DataItem list_data = dlistDB.get(lid);
-
-		// Read Wav File, store data
-		long[] time = null;
-		float[] value = null;
-		try {
-			WavReader wr = new WavReader(new FileInputStream(list_data.path+"Sound.wav"));
-			short[] samples = wr.getShortSamples();
-
-			time = new long[samples.length];
-			value = new float[samples.length];
-
-			float deltaT = (1/(float)SoundWaveHandler.SAMPLE_RATE)*1000;
-			long offset = list_data.offset;
-
-			for(int i = 0; i < samples.length; i++){
-				time[i] =  (long)(offset + deltaT*i);
-				value[i] =  (float)samples[i]/32768;
-			}
-
-		} catch (FileNotFoundException e) {
-			Log.e(TAG, e.getMessage());
-		}
-*/
-
 
 
 	/************************

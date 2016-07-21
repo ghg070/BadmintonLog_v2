@@ -25,7 +25,7 @@ public class FrequencyBandModel {
 	private static final int PEAKFREQ_DELETENEIGHBOR_NUM = 5;
 	
 	//Training Setting
-	private static final int WINDOW_NUM = 5;
+	public static final int WINDOW_NUM = 5;
 	private static final int MAINFREQ_NUM = 5;
 	private List<HashMap.Entry<Float, Float>> TopKMainFreqBandTable = null;
 	private float FreqPowerMin = 0, FreqPowerMax = 0;

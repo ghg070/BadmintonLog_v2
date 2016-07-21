@@ -31,6 +31,7 @@ public class DataListPage extends Activity {
     private List<DataListItem.DataItem> stroke_dataset = new ArrayList<>();
 
     public final static String EXTRA_PATH = "DataListPage.EXTRA_PATH";
+    public final static String EXTRA_OFFSET = "DataListPage.EXTRA_OFFSET";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +61,7 @@ public class DataListPage extends Activity {
             if(d_item.is_testing == 0){
                 Intent i = new Intent(DataListPage.this, ShowTrainingData.class);
                 i.putExtra(EXTRA_PATH, d_item.path);
+                i.putExtra(EXTRA_OFFSET, d_item.offset);
                 startActivity(i);
             }
         }
