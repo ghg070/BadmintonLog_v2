@@ -46,6 +46,10 @@
             android:name=".DataListPage"
             android:screenOrientation="portrait" >
         </activity>
+        <activity
+            android:name=".ShowTrainingData"
+            android:screenOrientation="portrait" >
+        </activity>
         <service android:name="cc.nctu1210.api.koala6x.KoalaService" android:enabled="true"/>
         <service android:name="nctu.nol.bt.devices.SoundWaveService" android:enabled="true"/>
     </application>
