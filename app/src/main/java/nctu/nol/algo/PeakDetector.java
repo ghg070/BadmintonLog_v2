@@ -20,9 +20,9 @@ public class PeakDetector {
 	//Check the rule
 	private boolean IsPeak(final float []vals, int index, float threshold){
 		if(index < 1 || index > vals.length-2)
-			return false;	
-		
-		float prev = vals[index-1], 
+			return false;
+
+		float prev = vals[index-1],
 			  cur = vals[index], 
 			  next = vals[index+1];
 		

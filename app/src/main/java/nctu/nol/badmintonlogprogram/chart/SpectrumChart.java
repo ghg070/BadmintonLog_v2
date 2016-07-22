@@ -1,17 +1,12 @@
 package nctu.nol.badmintonlogprogram.chart;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.util.Log;
-import android.view.View;
-import android.widget.Button;
 import android.widget.LinearLayout;
 
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
-import org.achartengine.chart.BarChart;
 import org.achartengine.chart.CombinedXYChart;
 import org.achartengine.chart.LineChart;
 import org.achartengine.chart.PointStyle;
@@ -24,14 +19,13 @@ import org.achartengine.renderer.XYSeriesRenderer;
 import java.util.ArrayList;
 import java.util.List;
 
+import nctu.nol.bt.devices.SoundWaveHandler;
 
 /**
- * Created by user on 2016/7/21.
+ * Created by Smile on 2016/7/22.
  */
-public class AudioWaveChart {
-    private final static String TAG = AudioWaveChart.class.getSimpleName();
-    public final static String ACTION_CLICK_EVENT = "AUDIOWAVECHART.ACTION_CLICK_EVENT";
-    public final static String EXTRA_CLICK_POSITION_TIME = "AudioWaveChart.EXTRA_CLICK_POSITION_TIME";
+public class SpectrumChart {
+    private final static String TAG = SpectrumChart.class.getSimpleName();
 
     private Context context;
 
@@ -42,22 +36,14 @@ public class AudioWaveChart {
 
     // Chart
     private XYMultipleSeriesDataset XYDataset = new XYMultipleSeriesDataset();
-    private float XaxisMax = Float.NEGATIVE_INFINITY, XaxisMin = Float.POSITIVE_INFINITY;
     private GraphicalView chart;
-    private final static long ChartRangeMilliSecond = 400;
+    private final static double Y_Min = 0, Y_Max = 120;
 
-    public AudioWaveChart(Context c){
+    public SpectrumChart(Context c){
         this.context = c;
     }
 
     public void AddChartDataset(double[] time, double[] val, int color){
-        // Original data setting
-        for(int i = 0; i < time.length; i++){
-            if(XaxisMax < time[i] )
-                XaxisMax = (float)time[i];
-            if( XaxisMin > time[i] )
-                XaxisMin = (float)time[i];
-        }
         list_X_dataset.add(time);
         list_Y_dataset.add(val);
         list_color.add(color);
@@ -78,7 +64,7 @@ public class AudioWaveChart {
         XYMultipleSeriesRenderer renderer = buildRenderer(list_color, true);
 
         // Chart Render
-        setChartSettings(renderer, "Time (ms)", "", XaxisMin, XaxisMax, -1, 1);// 定義折線圖
+        setChartSettings(renderer, "Frequency (Hz)", "", 0, SoundWaveHandler.SAMPLE_RATE/2, Y_Min, Y_Max);// 定義折線圖
 
 
         CombinedXYChart.XYCombinedChartDef[] types = new CombinedXYChart.XYCombinedChartDef[list_X_dataset.size()];
@@ -89,36 +75,22 @@ public class AudioWaveChart {
                 types[i] = new CombinedXYChart.XYCombinedChartDef(LineChart.TYPE, i);
         }
         chart = ChartFactory.getCombinedXYChartView(context, XYDataset, renderer, types);
-        chart.setOnLongClickListener(ChartClickListener);
 
         layout.removeAllViews();
         layout.addView(chart);
 
     }
 
-    private View.OnLongClickListener ChartClickListener = new View.OnLongClickListener(){
-        public boolean onLongClick(View v) {
-            //Log.e(TAG, "X :" + chart.toRealPoint(0)[0]);
-            //Log.e(TAG, "Y :" + chart.toRealPoint(0)[1]);
-
-            Intent broadcast = new Intent(ACTION_CLICK_EVENT);
-            broadcast.putExtra(EXTRA_CLICK_POSITION_TIME, chart.toRealPoint(0)[0]);
-            context.sendBroadcast(broadcast);
-
-            return true;
-        }
-    };
-
 
     // 設定圖表樣式渲染
     private void setChartSettings(XYMultipleSeriesRenderer renderer, String xTitle,
-                                    String yTitle, double xMin, double xMax, double yMin, double yMax) {
+                                  String yTitle, double xMin, double xMax, double yMin, double yMax) {
         //renderer.setChartTitle(title); // 折線圖名稱
         //renderer.setChartTitleTextSize(24); // 折線圖名稱字形大小
 
         renderer.setXTitle(xTitle); // X軸名稱
         renderer.setXAxisMin(xMin); // X軸顯示最小值
-        renderer.setXAxisMax(xMin + ChartRangeMilliSecond); // X軸顯示最大值
+        renderer.setXAxisMax(xMax); // X軸顯示最大值
         renderer.setXLabelsColor(Color.BLACK); // X軸線顏色
 
         renderer.setYTitle(yTitle); // Y軸名稱
@@ -140,14 +112,13 @@ public class AudioWaveChart {
         renderer.setShowLegend(false);
         renderer.setMargins(new int[]{25, 50, 10, 50});
 
-        renderer.setZoomEnabled(false, false);
+        renderer.setZoomEnabled(true, false);
         renderer.setPanEnabled(true, false);
-        renderer.setClickEnabled(true);
 
         //限制Scrolling的範圍
         double[] PanLimits={xMin,xMax,yMin,yMax}; // [panMinimumX, panMaximumX, panMinimumY, panMaximumY]
         renderer.setPanLimits(PanLimits);
-
+        renderer.setZoomLimits(PanLimits);
     }
 
     // 定義折線、點、長條的格式
@@ -172,7 +143,7 @@ public class AudioWaveChart {
             renderer.setPointSize(5.0f);
         }
 
-        for(int i = 2; i < length; i++){
+        /*for(int i = 2; i < length; i++){
             XYSeriesRenderer r = new XYSeriesRenderer();
             r.setColor(colors.get(i));
             r.setFillPoints(true);
@@ -180,7 +151,7 @@ public class AudioWaveChart {
             fillcolor.setColor(colors.get(i));
             r.addFillOutsideLine(fillcolor);
             renderer.addSeriesRenderer(r); //將座標變成線加入圖中顯示
-        }
+        }*/
 
         return renderer;
     }
@@ -202,6 +173,4 @@ public class AudioWaveChart {
             XYDataset.addSeries(series);
         }
     }
-
-
 }

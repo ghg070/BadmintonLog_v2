@@ -612,7 +612,7 @@ public class MainActivity extends Activity {
 
 		// Find top K freq band
 		fbm = new FrequencyBandModel();
-		Vector<FrequencyBandModel.MainFreqInOneWindow> AllMainFreqBands = fbm.FindSpectrumMainFreqs(peaks, vals, FrequencyBandModel.FFT_LENGTH, SoundWaveHandler.SAMPLE_RATE);
+		Vector<FrequencyBandModel.MainFreqInOneWindow> AllMainFreqBands = fbm.FindSpectrumMainFreqs(peaks, vals, SoundWaveHandler.SAMPLE_RATE);
 		fbm.setTopKFreqBandTable(AllMainFreqBands, peaks.size());
 		List<HashMap.Entry<Float, Float>> TopKMainFreqs = fbm.getTopKMainFreqBandTable();
 
