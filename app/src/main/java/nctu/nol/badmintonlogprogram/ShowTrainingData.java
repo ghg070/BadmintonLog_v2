@@ -11,6 +11,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,10 +34,10 @@ import nctu.nol.file.WavReader;
 public class ShowTrainingData extends Activity {
     private final static String TAG = ShowTrainingData.class.getSimpleName();
 
-    private LinearLayout chart_audio;
-    private LinearLayout chart_fft;
-    final AudioWaveChart awc = new AudioWaveChart(ShowTrainingData.this);
-    final SpectrumChart sc = new SpectrumChart(ShowTrainingData.this);
+    private RelativeLayout chart_audio;
+    private RelativeLayout chart_fft;
+    private AudioWaveChart awc;
+    private SpectrumChart sc;
 
     // Extra data
     private String DataPath;
@@ -80,8 +81,11 @@ public class ShowTrainingData extends Activity {
     }
 
     private void initialViewandEvent(){
-        chart_audio = (LinearLayout)findViewById(R.id.chart_whole_audio_wave);
-        chart_fft = (LinearLayout) findViewById(R.id.chart_fft_wave);
+        chart_audio = (RelativeLayout)findViewById(R.id.chart_whole_audio_wave);
+        chart_fft = (RelativeLayout) findViewById(R.id.chart_fft_wave);
+
+        awc = new AudioWaveChart(ShowTrainingData.this, chart_audio);
+        sc = new SpectrumChart(ShowTrainingData.this, chart_fft);
     }
 
     private void Prepare(){
@@ -98,8 +102,8 @@ public class ShowTrainingData extends Activity {
 
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        awc.MakeChart(chart_audio);
-                        sc.MakeChart(chart_fft);
+                        awc.MakeChart();
+                        sc.MakeChart();
                         dialog.dismiss();
                     }
                 });
@@ -147,7 +151,6 @@ public class ShowTrainingData extends Activity {
     }
 
     private void HandlerFFTData(final SpectrumChart sc, int start_position){
-
         //Use fft
         FrequencyBandModel fbm  = new FrequencyBandModel();
         CountSpectrum cs = new CountSpectrum(FrequencyBandModel.FFT_LENGTH);
@@ -161,6 +164,17 @@ public class ShowTrainingData extends Activity {
         }
         sc.AddChartDataset(fft_freq, fft_value, Color.BLUE);
 
+        // FFT Main Freqs
+        List<Integer> mainfreqs = fbm.FindSpectrumPeakIndex(spec, FrequencyBandModel.PEAKFREQ_NUM);
+        double [] fft_mainfreq = new double[FrequencyBandModel.PEAKFREQ_NUM],
+                fft_mainvalue = new double[FrequencyBandModel.PEAKFREQ_NUM];
+        for(int i = 0; i < mainfreqs.size(); i++){
+            int idx = mainfreqs.get(i);
+            fft_mainfreq[i] = spec.get(idx).Freq;
+            fft_mainvalue[i] = spec.get(idx).Power;
+        }
+        bubbleSort(fft_mainfreq, fft_mainvalue);
+        sc.AddChartDataset(fft_mainfreq, fft_mainvalue, Color.RED);
     }
 
     private void SetAudioSamplesByPath(final String path, final long offset) {
@@ -189,6 +203,29 @@ public class ShowTrainingData extends Activity {
         }
     }
 
+    private void bubbleSort(final double[] compared_arr, final double[] other_arr) {
+        boolean swapped = true;
+        int j = 0;
+        double tmp;
+        while (swapped) {
+            swapped = false;
+            j++;
+            for (int i = 0; i < compared_arr.length - j; i++) {
+                if (compared_arr[i] > compared_arr[i + 1]) {
+                    tmp = compared_arr[i];
+                    compared_arr[i] = compared_arr[i + 1];
+                    compared_arr[i + 1] = tmp;
+
+                    tmp = other_arr[i];
+                    other_arr[i] = other_arr[i + 1];
+                    other_arr[i + 1] = tmp;
+
+                    swapped = true;
+                }
+            }
+        }
+    }
+
     /**********************/
     /**    Broadcast Event	 **/
     /**********************/
@@ -210,7 +247,7 @@ public class ShowTrainingData extends Activity {
 
                             sc.ClearAllDataset();
                             HandlerFFTData(sc, idx);
-                            sc.MakeChart(chart_fft);
+                            sc.MakeChart();
 
                             break;
                         }

@@ -1,9 +1,16 @@
 package nctu.nol.badmintonlogprogram.chart;
 
+import android.app.ActionBar;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
@@ -11,11 +18,13 @@ import org.achartengine.chart.CombinedXYChart;
 import org.achartengine.chart.LineChart;
 import org.achartengine.chart.PointStyle;
 import org.achartengine.chart.ScatterChart;
+import org.achartengine.chart.XYChart;
 import org.achartengine.model.XYMultipleSeriesDataset;
 import org.achartengine.model.XYSeries;
 import org.achartengine.renderer.XYMultipleSeriesRenderer;
 import org.achartengine.renderer.XYSeriesRenderer;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,12 +44,15 @@ public class SpectrumChart {
     private List<Integer> list_color = new ArrayList<Integer>(); // 不同資料集的代表顏色
 
     // Chart
+    private RelativeLayout layout;
     private XYMultipleSeriesDataset XYDataset = new XYMultipleSeriesDataset();
     private GraphicalView chart;
     private final static double Y_Min = 0, Y_Max = 120;
+    private TextView tv_popup = null;
 
-    public SpectrumChart(Context c){
+    public SpectrumChart(Context c, RelativeLayout l){
         this.context = c;
+        this.layout = l;
     }
 
     public void AddChartDataset(double[] time, double[] val, int color){
@@ -56,7 +68,7 @@ public class SpectrumChart {
         XYDataset.clear();
     }
 
-    public void MakeChart(LinearLayout layout){
+    public void MakeChart(){
         buildDataset(list_X_dataset, list_Y_dataset); // 儲存座標值
 
         // Line Render
@@ -78,9 +90,7 @@ public class SpectrumChart {
 
         layout.removeAllViews();
         layout.addView(chart);
-
     }
-
 
     // 設定圖表樣式渲染
     private void setChartSettings(XYMultipleSeriesRenderer renderer, String xTitle,
@@ -114,6 +124,7 @@ public class SpectrumChart {
 
         renderer.setZoomEnabled(true, false);
         renderer.setPanEnabled(true, false);
+        //renderer.setClickEnabled(true);
 
         //限制Scrolling的範圍
         double[] PanLimits={xMin,xMax,yMin,yMax}; // [panMinimumX, panMaximumX, panMinimumY, panMaximumY]
@@ -139,19 +150,14 @@ public class SpectrumChart {
             r.setPointStyle(PointStyle.CIRCLE);
             r.setColor(colors.get(1));
             r.setFillPoints(true);
+            r.setDisplayChartValues(true);
+            r.setDisplayChartValuesDistance(0);
+            r.setChartValuesFormat(new DecimalFormat("#"));
+            r.setChartValuesTextSize(24);
+            r.setChartValuesSpacing(10);
             renderer.addSeriesRenderer(r);
             renderer.setPointSize(5.0f);
         }
-
-        /*for(int i = 2; i < length; i++){
-            XYSeriesRenderer r = new XYSeriesRenderer();
-            r.setColor(colors.get(i));
-            r.setFillPoints(true);
-            XYSeriesRenderer.FillOutsideLine fillcolor = new XYSeriesRenderer.FillOutsideLine(XYSeriesRenderer.FillOutsideLine.Type.BELOW);
-            fillcolor.setColor(colors.get(i));
-            r.addFillOutsideLine(fillcolor);
-            renderer.addSeriesRenderer(r); //將座標變成線加入圖中顯示
-        }*/
 
         return renderer;
     }

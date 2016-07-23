@@ -21,7 +21,7 @@ public class FrequencyBandModel {
 	public static final int FFT_LENGTH = 512;
 	
 	//Find Spectrum Peak
-	private static final int PEAKFREQ_NUM = 5;
+	public static final int PEAKFREQ_NUM = 5;
 	private static final int PEAKFREQ_DELETENEIGHBOR_NUM = 5;
 	
 	//Training Setting

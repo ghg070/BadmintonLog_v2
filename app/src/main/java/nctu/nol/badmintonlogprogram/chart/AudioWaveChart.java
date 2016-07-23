@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
@@ -41,13 +42,15 @@ public class AudioWaveChart {
     private List<Integer> list_color = new ArrayList<Integer>(); // 不同資料集的代表顏色
 
     // Chart
+    private RelativeLayout layout;
     private XYMultipleSeriesDataset XYDataset = new XYMultipleSeriesDataset();
     private float XaxisMax = Float.NEGATIVE_INFINITY, XaxisMin = Float.POSITIVE_INFINITY;
     private GraphicalView chart;
     private final static long ChartRangeMilliSecond = 400;
 
-    public AudioWaveChart(Context c){
+    public AudioWaveChart(Context c, RelativeLayout l){
         this.context = c;
+        this.layout = l;
     }
 
     public void AddChartDataset(double[] time, double[] val, int color){
@@ -70,7 +73,7 @@ public class AudioWaveChart {
         XYDataset.clear();
     }
 
-    public void MakeChart(LinearLayout layout){
+    public void MakeChart(){
         buildDataset(list_X_dataset, list_Y_dataset); // 儲存座標值
 
         // Line Render
@@ -112,7 +115,7 @@ public class AudioWaveChart {
 
     // 設定圖表樣式渲染
     private void setChartSettings(XYMultipleSeriesRenderer renderer, String xTitle,
-                                    String yTitle, double xMin, double xMax, double yMin, double yMax) {
+                                  String yTitle, double xMin, double xMax, double yMin, double yMax) {
         //renderer.setChartTitle(title); // 折線圖名稱
         //renderer.setChartTitleTextSize(24); // 折線圖名稱字形大小
 
