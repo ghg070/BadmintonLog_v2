@@ -43,6 +43,7 @@ public class AudioWaveChart {
 
     // Chart
     private RelativeLayout layout;
+    private XYMultipleSeriesRenderer renderer = null;
     private XYMultipleSeriesDataset XYDataset = new XYMultipleSeriesDataset();
     private float XaxisMax = Float.NEGATIVE_INFINITY, XaxisMin = Float.POSITIVE_INFINITY;
     private GraphicalView chart;
@@ -73,12 +74,20 @@ public class AudioWaveChart {
         XYDataset.clear();
     }
 
+    public void MovePointToCenter(double x){
+        if(renderer != null && chart != null){
+            renderer.setXAxisMin(x-ChartRangeMilliSecond/4);
+            renderer.setXAxisMax(x+ChartRangeMilliSecond*3/4);
+            chart.repaint();
+        }
+    }
+
     public void MakeChart(){
         buildDataset(list_X_dataset, list_Y_dataset); // 儲存座標值
 
         // Line Render
         //PointStyle[] styles = new PointStyle[] { PointStyle.CIRCLE, PointStyle.DIAMOND }; // 折線點的形狀
-        XYMultipleSeriesRenderer renderer = buildRenderer(list_color, true);
+        renderer = buildRenderer(list_color, true);
 
         // Chart Render
         setChartSettings(renderer, "Time (ms)", "", XaxisMin, XaxisMax, -1, 1);// 定義折線圖

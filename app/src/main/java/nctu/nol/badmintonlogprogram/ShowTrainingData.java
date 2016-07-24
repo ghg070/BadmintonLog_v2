@@ -12,9 +12,16 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
+import org.w3c.dom.Text;
+
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.List;
 import java.util.Vector;
 
@@ -38,6 +45,10 @@ public class ShowTrainingData extends Activity {
     private RelativeLayout chart_fft;
     private AudioWaveChart awc;
     private SpectrumChart sc;
+
+    private final static int ROWCOUNT = FrequencyBandModel.PEAKFREQ_NUM;
+    private TextView[] tv_Freqs = new TextView[ROWCOUNT];
+    private TextView[] tv_Energy = new TextView[ROWCOUNT];
 
     // Extra data
     private String DataPath;
@@ -86,6 +97,18 @@ public class ShowTrainingData extends Activity {
 
         awc = new AudioWaveChart(ShowTrainingData.this, chart_audio);
         sc = new SpectrumChart(ShowTrainingData.this, chart_fft);
+
+        tv_Freqs[0] = (TextView) findViewById(R.id.tv_table_freq1);
+        tv_Freqs[1] = (TextView) findViewById(R.id.tv_table_freq2);
+        tv_Freqs[2] = (TextView) findViewById(R.id.tv_table_freq3);
+        tv_Freqs[3] = (TextView) findViewById(R.id.tv_table_freq4);
+        tv_Freqs[4] = (TextView) findViewById(R.id.tv_table_freq5);
+
+        tv_Energy[0] = (TextView) findViewById(R.id.tv_table_power1);
+        tv_Energy[1] = (TextView) findViewById(R.id.tv_table_power2);
+        tv_Energy[2] = (TextView) findViewById(R.id.tv_table_power3);
+        tv_Energy[3] = (TextView) findViewById(R.id.tv_table_power4);
+        tv_Energy[4] = (TextView) findViewById(R.id.tv_table_power5);
     }
 
     private void Prepare(){
@@ -103,7 +126,9 @@ public class ShowTrainingData extends Activity {
                 runOnUiThread(new Runnable() {
                     public void run() {
                         awc.MakeChart();
+                        awc.MovePointToCenter(peak_time[0]);
                         sc.MakeChart();
+                        SetMainFrequencyTableByPath(DataPath);
                         dialog.dismiss();
                     }
                 });
@@ -111,7 +136,9 @@ public class ShowTrainingData extends Activity {
         }.start();
     }
 
-
+    /********************
+     *  Chart Data Handling Function
+     * *********************/
     private void HandleAudioData(final AudioWaveChart awc){
         SetAudioSamplesByPath(DataPath, offset);
         awc.AddChartDataset(audio_time, audio_value, Color.argb(255, 51, 102, 0));
@@ -203,6 +230,32 @@ public class ShowTrainingData extends Activity {
         }
     }
 
+    private void SetMainFrequencyTableByPath(final String path){
+        Vector<String> rows = new Vector<>();
+        try {
+            File file = new File(path + "TopKMainFreqTable.csv");
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+            while ((line = br.readLine()) != null)
+                rows.add(line);
+            br.close();
+        }
+        catch (IOException e) {
+            //You'll need to add proper error handling here
+            Log.e(TAG,e.toString());
+        }
+
+        for(int i = 0; i < ROWCOUNT; i++){
+            String[] tokens = rows.get(i).split(",");
+            tv_Freqs[ROWCOUNT-i-1].setText(tokens[0]);
+            tv_Energy[ROWCOUNT-i-1].setText(tokens[1]);
+        }
+    }
+
+
+    /********************/
+    /**    Help Function     **/
+    /********************/
     private void bubbleSort(final double[] compared_arr, final double[] other_arr) {
         boolean swapped = true;
         int j = 0;

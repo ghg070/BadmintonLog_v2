@@ -5,52 +5,129 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical" >
 
-        <LinearLayout
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10sp"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:text="Audio Wave" />
+
+        <RelativeLayout
+            android:id="@+id/chart_whole_audio_wave"
+            android:layout_width="match_parent"
+            android:layout_height="200sp"
+            android:paddingLeft="8sp"
+            android:paddingRight="8sp"
+            android:paddingTop="@dimen/activity_vertical_margin"
+            android:paddingBottom="@dimen/activity_vertical_margin" >
+        </RelativeLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10sp"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:text="FFT Wave" />
+
+        <RelativeLayout
+            android:id="@+id/chart_fft_wave"
+            android:layout_width="match_parent"
+            android:layout_height="200sp"
+            android:paddingLeft="8sp"
+            android:paddingRight="8sp"
+            android:paddingTop="@dimen/activity_vertical_margin"
+            android:paddingBottom="@dimen/activity_vertical_margin" >
+        </RelativeLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10sp"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:text="Main Frequency Table" />
+
+        <TableLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" >
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="10sp"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:text="Audio Wave" />
-
-            <RelativeLayout
-                android:id="@+id/chart_whole_audio_wave"
-                android:layout_width="match_parent"
-                android:layout_height="200sp"
-                android:paddingLeft="8sp"
-                android:paddingRight="8sp"
-                android:paddingTop="@dimen/activity_vertical_margin"
-                android:paddingBottom="@dimen/activity_vertical_margin" >
-            </RelativeLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="10sp"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:text="FFT Wave" />
-
-            <RelativeLayout
-                android:id="@+id/chart_fft_wave"
-                android:layout_width="match_parent"
-                android:layout_height="200sp"
-                android:paddingLeft="8sp"
-                android:paddingRight="8sp"
-                android:paddingTop="@dimen/activity_vertical_margin"
-                android:paddingBottom="@dimen/activity_vertical_margin" >
-            </RelativeLayout>
-        </LinearLayout>
-
+            android:layout_marginLeft="20sp"
+            android:layout_marginBottom="20sp">
+            <TableRow>
+                <TextView
+                    android:layout_column="0"
+                    android:text="Frequency"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"/>
+                <TextView
+                    android:layout_column="1"
+                    android:text="Average Energy"
+                    android:layout_marginLeft="30sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp" />
+            </TableRow>
+            <TableRow>
+                <TextView
+                    android:id="@+id/tv_table_freq1"
+                    android:layout_column="0"
+                    android:textSize="17sp" />
+                <TextView
+                    android:id="@+id/tv_table_power1"
+                    android:layout_marginLeft="30sp"
+                    android:layout_column="1"
+                    android:textSize="17sp" />
+            </TableRow>
+            <TableRow>
+                <TextView
+                    android:id="@+id/tv_table_freq2"
+                    android:layout_column="0"
+                    android:textSize="17sp" />
+                <TextView
+                    android:id="@+id/tv_table_power2"
+                    android:layout_column="1"
+                    android:layout_marginLeft="30sp"
+                    android:textSize="17sp" />
+            </TableRow>
+            <TableRow>
+                <TextView
+                    android:id="@+id/tv_table_freq3"
+                    android:layout_column="0"
+                    android:textSize="17sp" />
+                <TextView
+                    android:id="@+id/tv_table_power3"
+                    android:layout_column="1"
+                    android:layout_marginLeft="30sp"
+                    android:textSize="17sp" />
+            </TableRow>
+            <TableRow>
+                <TextView
+                    android:id="@+id/tv_table_freq4"
+                    android:layout_column="0"
+                    android:textSize="17sp" />
+                <TextView
+                    android:id="@+id/tv_table_power4"
+                    android:layout_column="1"
+                    android:layout_marginLeft="30sp"
+                    android:textSize="17sp" />
+            </TableRow>
+            <TableRow>
+                <TextView
+                    android:id="@+id/tv_table_freq5"
+                    android:layout_column="0"
+                    android:textSize="17sp" />
+                <TextView
+                    android:id="@+id/tv_table_power5"
+                    android:layout_column="1"
+                    android:layout_marginLeft="30sp"
+                    android:textSize="17sp" />
+            </TableRow>
+        </TableLayout>
 
     </LinearLayout>
-
 </ScrollView>
