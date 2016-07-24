@@ -21,20 +21,20 @@ public class FrequencyBandModel {
 	public static final int FFT_LENGTH = 512;
 	
 	//Find Spectrum Peak
-	private static final int PEAKFREQ_NUM = 5;
+	public static final int PEAKFREQ_NUM = 5;
 	private static final int PEAKFREQ_DELETENEIGHBOR_NUM = 5;
 	
 	//Training Setting
-	private static final int WINDOW_NUM = 5;
+	public static final int WINDOW_NUM = 5;
 	private static final int MAINFREQ_NUM = 5;
 	private List<HashMap.Entry<Float, Float>> TopKMainFreqBandTable = null;
 	private float FreqPowerMin = 0, FreqPowerMax = 0;
 	private boolean ModelHasTrained = false;
 	
 	
-	public final Vector<MainFreqInOneWindow> FindSpectrumMainFreqs(final List<Integer> pos, final float[] dataset, int fft_length, int SamplingFreq) {
+	public final Vector<MainFreqInOneWindow> FindSpectrumMainFreqs(final List<Integer> pos, final float[] dataset, int SamplingFreq) {
 		//fft_length need to be 2's power
-		CountSpectrum fft_algo = new CountSpectrum(fft_length);
+		CountSpectrum fft_algo = new CountSpectrum(FFT_LENGTH);
 
 		//所有頻譜的主頻皆會存在AllSpectrumMainFreqs
 		Vector<MainFreqInOneWindow> AllSpectrumMainFreqs = new Vector<MainFreqInOneWindow>();
@@ -44,32 +44,13 @@ public class FrequencyBandModel {
 			int peak = pos.get(i);
 
 			//check if the window exceed the dataset size 
-			if (dataset.length < peak + WINDOW_NUM * fft_length)
+			if (dataset.length < peak + WINDOW_NUM * FFT_LENGTH)
 				break;
 
 			//每個波峰往後取WINDOW_NUM個window進行傅利葉分析
 			for (int j = 0; j < WINDOW_NUM; j++) {
-				double x[] = new double[fft_length]; //real
-				double y[] = new double[fft_length]; //imag
-
-				//Get window data
-				int curPos = peak + j * fft_length;
-				for (int k = 0; k < fft_length; k++) {
-					x[k] = dataset[curPos + k];
-					y[k] = 0;
-				}
-
-				//Use fft
-				fft_algo.fft(x, y);
-
-				//Store spectrum
-				Vector<FreqBand> Spectrum = new Vector<FreqBand>();
-				for (int k = 0; k < (int) (fft_length / 2); k++) {
-					float freq = (SamplingFreq / (float) fft_length) * k;
-					float power = (float) Math.sqrt(Math.pow(x[k], 2) + Math.pow(y[k], 2));
-					FreqBand fb = new FreqBand(freq, power);
-					Spectrum.add(fb);
-				}
+				int curPos = peak + j * FFT_LENGTH;
+				final Vector<FreqBand> Spectrum =  getSpectrum(fft_algo, curPos, dataset, SamplingFreq);
 
 				//Find 5-max frequency band in a spectrum, store in AllSpectrumMainFreqs
 				List<Integer> mainfreqs = FindSpectrumPeakIndex(Spectrum, PEAKFREQ_NUM);
@@ -124,6 +105,32 @@ public class FrequencyBandModel {
 		}
 	}
 
+	public final Vector<FreqBand> getSpectrum(final CountSpectrum fft_algo, int Position, final float[] dataset, int SamplingFreq){
+		double x[] = new double[FFT_LENGTH]; //real
+		double y[] = new double[FFT_LENGTH]; //imag
+
+		//Get window data
+		for (int k = 0; k < FFT_LENGTH; k++) {
+			x[k] = dataset[Position + k];
+			y[k] = 0;
+		}
+
+		//Use fft
+		fft_algo.fft(x, y);
+
+		//Store spectrum
+		Vector<FreqBand> Spectrum = new Vector<FreqBand>();
+		for (int k = 0; k < FFT_LENGTH / 2; k++) {
+			float freq = (SamplingFreq / (float) FFT_LENGTH) * k;
+			float power = (float) Math.sqrt(Math.pow(x[k], 2) + Math.pow(y[k], 2));
+			FreqBand fb = new FreqBand(freq, power);
+			Spectrum.add(fb);
+		}
+
+		return Spectrum;
+	}
+
+
 	public final List<HashMap.Entry<Float, Float>> getTopKMainFreqBandTable(){
 		return TopKMainFreqBandTable;
 	}
@@ -132,7 +139,7 @@ public class FrequencyBandModel {
 		return ModelHasTrained;
 	}
 
-	private List<Integer> FindSpectrumPeakIndex(final Vector<FreqBand> spectrum, final int PeakNum){
+	public List<Integer> FindSpectrumPeakIndex(final Vector<FreqBand> spectrum, final int PeakNum){
 		List<Integer> result = new ArrayList<Integer>();
 		Vector<FreqBand> s = new Vector<FreqBand>();
 		for(int i = 0; i < spectrum.size(); i++){//copy
