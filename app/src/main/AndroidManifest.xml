@@ -32,7 +32,7 @@
         android:theme="@style/AppTheme" >
         <activity
             android:name="nctu.nol.account.LoginPage"
-            android:label="@string/title_activity_main"
+            android:label="@string/app_name"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" >
             <intent-filter>
@@ -43,9 +43,9 @@
         </activity>
         <activity
             android:name=".MainActivity"
-            android:label="@string/app_name">
-            <!--android:screenOrientation="portrait" >
-            <intent-filter>
+            android:label="@string/app_name"
+            android:screenOrientation="portrait" >
+            <!--<intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -48,7 +48,6 @@ public class SpectrumChart {
     private XYMultipleSeriesDataset XYDataset = new XYMultipleSeriesDataset();
     private GraphicalView chart;
     private final static double Y_Min = 0, Y_Max = 120;
-    private TextView tv_popup = null;
 
     public SpectrumChart(Context c, RelativeLayout l){
         this.context = c;

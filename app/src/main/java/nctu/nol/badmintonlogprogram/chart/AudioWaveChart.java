@@ -5,10 +5,12 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
@@ -19,6 +21,7 @@ import org.achartengine.chart.PointStyle;
 import org.achartengine.chart.ScatterChart;
 import org.achartengine.model.XYMultipleSeriesDataset;
 import org.achartengine.model.XYSeries;
+import org.achartengine.renderer.SimpleSeriesRenderer;
 import org.achartengine.renderer.XYMultipleSeriesRenderer;
 import org.achartengine.renderer.XYSeriesRenderer;
 
@@ -46,6 +49,8 @@ public class AudioWaveChart {
     private XYMultipleSeriesRenderer renderer = null;
     private XYMultipleSeriesDataset XYDataset = new XYMultipleSeriesDataset();
     private float XaxisMax = Float.NEGATIVE_INFINITY, XaxisMin = Float.POSITIVE_INFINITY;
+    private int PrevIndexForChangeColor = -1;
+    private int PrevColorForChangeColor = -1;
     private GraphicalView chart;
     private final static long ChartRangeMilliSecond = 400;
 
@@ -106,6 +111,8 @@ public class AudioWaveChart {
         layout.removeAllViews();
         layout.addView(chart);
 
+        PrevIndexForChangeColor = -1;
+        PrevColorForChangeColor = -1;
     }
 
     private View.OnLongClickListener ChartClickListener = new View.OnLongClickListener(){
@@ -121,6 +128,24 @@ public class AudioWaveChart {
         }
     };
 
+    public void ChangeSeriesColor(int index, int color){
+        if(renderer != null) {
+            if (PrevIndexForChangeColor != -1) {
+                final XYSeriesRenderer r =  (XYSeriesRenderer)renderer.getSeriesRendererAt(PrevIndexForChangeColor);
+                final XYSeriesRenderer.FillOutsideLine fillcolor = r.getFillOutsideLine()[0];
+                fillcolor.setColor(PrevColorForChangeColor);
+            }
+
+            final XYSeriesRenderer r =  (XYSeriesRenderer)renderer.getSeriesRendererAt(index);
+            final XYSeriesRenderer.FillOutsideLine fillcolor = r.getFillOutsideLine()[0];
+            PrevIndexForChangeColor = index;
+            PrevColorForChangeColor = fillcolor.getColor();
+            fillcolor.setColor(color);
+
+        }
+        if(chart != null)
+            chart.repaint();
+    }
 
     // 設定圖表樣式渲染
     private void setChartSettings(XYMultipleSeriesRenderer renderer, String xTitle,
@@ -214,6 +239,4 @@ public class AudioWaveChart {
             XYDataset.addSeries(series);
         }
     }
-
-
 }

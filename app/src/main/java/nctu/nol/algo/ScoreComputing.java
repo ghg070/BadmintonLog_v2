@@ -1,7 +1,6 @@
 package nctu.nol.algo;
 
 
-import android.support.v4.util.LogWriter;
 import android.util.Log;
 
 import java.io.IOException;
