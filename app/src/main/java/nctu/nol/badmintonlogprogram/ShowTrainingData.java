@@ -9,7 +9,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -68,6 +71,9 @@ public class ShowTrainingData extends Activity {
     // FFT Data
     private double[] fft_freq = {};
     private double[] fft_value = {};
+    private Button bt_prev, bt_next;
+    private int CurBlockIdx = 0;
+
 
 
     @Override
@@ -98,6 +104,11 @@ public class ShowTrainingData extends Activity {
         awc = new AudioWaveChart(ShowTrainingData.this, chart_audio);
         sc = new SpectrumChart(ShowTrainingData.this, chart_fft);
 
+        bt_prev = (Button) findViewById(R.id.bt_block_prev);
+        bt_next = (Button) findViewById(R.id.bt_block_next);
+        bt_prev.setOnClickListener(prevListener);
+        bt_next.setOnClickListener(nextListener);
+
         tv_Freqs[0] = (TextView) findViewById(R.id.tv_table_freq1);
         tv_Freqs[1] = (TextView) findViewById(R.id.tv_table_freq2);
         tv_Freqs[2] = (TextView) findViewById(R.id.tv_table_freq3);
@@ -120,14 +131,14 @@ public class ShowTrainingData extends Activity {
                 HandlePeakData(awc);
                 HandleFreqTrainingBlock(awc);
 
-                if(peak_time.length > 0)
-                    HandlerFFTData(sc, peak_idx[0]);
-
                 runOnUiThread(new Runnable() {
                     public void run() {
                         awc.MakeChart();
-                        awc.MovePointToCenter(peak_time[0]);
-                        sc.MakeChart();
+
+                        CurBlockIdx = 0;
+                        if (peak_time.length > 0)
+                            ChangeFocusBlock(0,true);
+
                         SetMainFrequencyTableByPath(DataPath);
                         dialog.dismiss();
                     }
@@ -135,6 +146,28 @@ public class ShowTrainingData extends Activity {
             }
         }.start();
     }
+    /**************
+     *  Event Handler
+     * **************/
+    private Button.OnClickListener prevListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if(CurBlockIdx != 0){
+                CurBlockIdx--;
+                ChangeFocusBlock(CurBlockIdx,true);
+            }
+        }
+    };
+
+    private Button.OnClickListener nextListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if(CurBlockIdx != peak_idx.length*FrequencyBandModel.WINDOW_NUM-1){
+                CurBlockIdx++;
+                ChangeFocusBlock(CurBlockIdx,true);
+            }
+        }
+    };
 
     /********************
      *  Chart Data Handling Function
@@ -252,6 +285,29 @@ public class ShowTrainingData extends Activity {
         }
     }
 
+    private void ChangeFocusBlock(final int CurBlockIdx, final boolean MoveToCenter){
+        new Thread(){
+            @Override
+            public void run() {
+                final int block_idx_in_onepeak = CurBlockIdx%FrequencyBandModel.WINDOW_NUM;
+                final int p_idx = (CurBlockIdx-block_idx_in_onepeak)/FrequencyBandModel.WINDOW_NUM;
+                final int data_idx = peak_idx[p_idx] + block_idx_in_onepeak*FrequencyBandModel.FFT_LENGTH;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if(MoveToCenter)
+                            awc.MovePointToCenter(peak_time[p_idx]);
+                        awc.ChangeSeriesColor(CurBlockIdx + 2, Color.argb(60, 0, 255, 0)); // 0: Audio Wave, 1: Peak Point, 2~end: Block
+                        sc.ClearAllDataset();
+                        HandlerFFTData(sc, data_idx);
+                        sc.MakeChart();
+                    }
+                });
+            }
+        }.start();
+
+    }
+
 
     /********************/
     /**    Help Function     **/
@@ -298,9 +354,9 @@ public class ShowTrainingData extends Activity {
                                 && audio_time[idx] <= clicked_time
                                 && audio_time[idx+FrequencyBandModel.FFT_LENGTH] > clicked_time){
 
-                            sc.ClearAllDataset();
-                            HandlerFFTData(sc, idx);
-                            sc.MakeChart();
+                            int block_idx = i*FrequencyBandModel.WINDOW_NUM + j;
+                            CurBlockIdx = block_idx;
+                            ChangeFocusBlock(CurBlockIdx,false);
 
                             break;
                         }
