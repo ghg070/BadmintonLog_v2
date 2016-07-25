@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 21
+    compileSdkVersion 23
     buildToolsVersion "23.0.2"
     defaultConfig {
         applicationId "nctu.nol.badmintonlogprogram"
@@ -19,6 +19,8 @@ android {
 }
 
 dependencies {
+    compile 'com.android.support:design:23.1.1'
+    compile 'com.mcxiaoke.volley:library:1.0.19'
     compile files('libs/KoalaLib.jar')
     compile files('libs/weka.jar')
     compile files('libs/achartengine-1.3.0.jar')
