@@ -403,30 +403,25 @@ public class MainActivity extends Activity {
 		new Thread(){
 			@Override
 			public void run() {
-				try {
-					// Trigger Sensor to Ready (wait isServiceRunning become true)
-					sw.startRecording(LogType);
-					if( isTesting ) bh.startRecording(LogType);
-
-					sleep(2000); //等待2sec後開始
-					SetMeasureStartTime(); //設定開始時間
-					SystemParameters.isServiceRunning.set(true);
-
-					// if isTest == true, Testing Start
-					if(isTesting) StartTestingAlgo();
-
-					runOnUiThread(new Runnable() {
-						public void run(){
-						Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
-						//init UI
-						tv_strokeCount.setText("0");
-						tv_strokeType.setText("None");
-						}
-					});
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					Log.e(TAG,e.getMessage());
+				// Trigger Sensor to Ready (wait isServiceRunning become true)
+				sw.startRecording(LogType);
+				if( isTesting ){
+					bh.startRecording(LogType);
+					StartTestingAlgo();
 				}
+
+				SetMeasureStartTime(); //設定開始時間
+				SystemParameters.isServiceRunning.set(true);
+
+				runOnUiThread(new Runnable() {
+					public void run(){
+					Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
+					//init UI
+					tv_strokeCount.setText("0");
+					tv_strokeType.setText("None");
+					}
+				});
+
 			}
 		}.start();
 	}

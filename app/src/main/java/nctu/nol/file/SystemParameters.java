@@ -1,5 +1,6 @@
 package nctu.nol.file;
 
+import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -30,8 +31,9 @@ public class SystemParameters {
 	//for Log File
 	public static String filePath = "";
 
-	//for Stroke count;
+	//for Stroke
 	public static int StrokeCount = 0;
+	public static Vector<Long> StrokeTimes = new Vector<Long>();
 	
 	 /** Initial Function **/
 	public static void initializeSystemParameters(){
@@ -55,8 +57,9 @@ public class SystemParameters {
 		//for log file
 		filePath = "";
 
-		//for Stroke count;
+		//for Stroke
 		StrokeCount = 0;
+		StrokeTimes.clear();
 	}
 
 }

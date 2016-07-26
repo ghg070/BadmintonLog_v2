@@ -427,32 +427,32 @@ public class BeaconHandler implements SensorEventListener {
             final float values[] = new float[3];
             final int seq = (e.seq+SEQ_MAX)%SEQ_MAX;
 
-            // Set Time
-            long curTime = System.currentTimeMillis();
-            long passTime = curTime - SystemParameters.StartTime;
+            if (SystemParameters.isServiceRunning.get()) {
+                // Set Time
+                long curTime = System.currentTimeMillis();
+                long passTime = curTime - SystemParameters.StartTime;
 
 
-            switch (eventType) {
-                case SensorEvent.TYPE_ACCELEROMETER:
-                    values[0] = e.values[0];
-                    values[1] = e.values[1];
-                    values[2] = e.values[2];
+                switch (eventType) {
+                    case SensorEvent.TYPE_ACCELEROMETER:
+                        values[0] = e.values[0];
+                        values[1] = e.values[1];
+                        values[2] = e.values[2];
 
-                    if (SystemParameters.isServiceRunning.get()) {
-                        SensorData sd = new SensorData(seq, passTime,values);
-                        acc_buffer.add(sd);
-                    }
-                    break;
-                case SensorEvent.TYPE_GYROSCOPE:
-                    values[0] = e.values[0];
-                    values[1] = e.values[1];
-                    values[2] = e.values[2];
-                    //Log.d(TAG, "time=" + System.currentTimeMillis() + "wX:" + values[0] + "wY:" + values[1] + "wZ:" + values[2] + "\n");
-                    if (SystemParameters.isServiceRunning.get()) {
-                        SensorData sd = new SensorData(seq, passTime, values);
-                        gyro_buffer.add(sd);
-                    }
-                    break;
+                        SensorData asd = new SensorData(seq, passTime, values);
+                        acc_buffer.add(asd);
+                        break;
+                    case SensorEvent.TYPE_GYROSCOPE:
+                        values[0] = e.values[0];
+                        values[1] = e.values[1];
+                        values[2] = e.values[2];
+                        //Log.d(TAG, "time=" + System.currentTimeMillis() + "wX:" + values[0] + "wY:" + values[1] + "wZ:" + values[2] + "\n");
+
+                        SensorData gsd = new SensorData(seq, passTime, values);
+                        gyro_buffer.add(gsd);
+
+                        break;
+                }
             }
         }
     }
@@ -475,16 +475,20 @@ public class BeaconHandler implements SensorEventListener {
     /**  BeaconHandler Feature Extraction **/
     /***************************************/
     private void StartCheckClassifyRequest(){
+        /*
+        The Function Has Problem Now.........
+        偵測到擊球後馬上Finish後, 會留在while迴圈出不去, 等待下次開始後, 因為AccDataset_for_algo被清空了, 所以會直接死去
+
         new Thread() {
             @Override
             public void run() {
                 int pointer_idx = 0;
                 while(mIsRecording) {
-                    if (pointer_idx < StrokeDetector.StrokeTimes.size() ) {
-                        long StrokeTime = StrokeDetector.StrokeTimes.get(pointer_idx);
+                    if (pointer_idx < SystemParameters.StrokeTimes.size() ) {
+                        long StrokeTime = SystemParameters.StrokeTimes.get(pointer_idx);
 
                         // wait until get Acc get data
-                        while (AccDataset_for_algo.size() == 0 || AccDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + TimeCalibration_Period);
+                        while (AccDataset_for_algo.size() == 0 || AccDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + TimeCalibration_Period); --> Problem Here!!!!!
                         while (GyroDataset_for_algo.size() == 0 || GyroDataset_for_algo.peekLast().time < StrokeTime + StrokeClassifier.FeatureExtraction_Beta + TimeCalibration_Period);
 
                         // Get data already, start to classify
@@ -495,6 +499,7 @@ public class BeaconHandler implements SensorEventListener {
                 }
             }
         }.start();
+        */
     }
 
     private synchronized void ClassifyStrokeType(final long StrokeTime){

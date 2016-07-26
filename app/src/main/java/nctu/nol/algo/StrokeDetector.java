@@ -35,9 +35,6 @@ public class StrokeDetector {
     /* Thread Related */
     private Thread detector_t;
 
-    /* Stroke Time Related */
-    public static Vector<Long> StrokeTimes = new Vector<Long>();
-
     /* Broadcast Related */
     public final static String ACTION_STROKE_DETECTED_STATE = "STROKEDETECTOR.ACTION_STROKE_DETECTED_STATE";
     public final static String EXTRA_STROKETIME = "STROKEDETECTOR.STROKETIME";
@@ -46,10 +43,6 @@ public class StrokeDetector {
     public StrokeDetector(Activity act, ScoreComputing sc){
         this.curSC = sc;
         this.mContext = act;
-    }
-
-    private void initParameter(){
-        StrokeTimes.clear();
     }
 
     /* 根據訓練資料, 計算StrokeDetector的Score Threshold */
@@ -105,9 +98,10 @@ public class StrokeDetector {
         *   連續N個Window Score大於Threshold即稱為有擊球行為
         *   若偵測到擊球必須發送Broadcast出去(在MainActivity.java內另外實作接收端)
         * */
-        initParameter();
         detector_t = new Thread() {
             public void run() {
+                // Wait Flag to true
+                while(!SystemParameters.isServiceRunning.get());
 
                 while(SystemParameters.isServiceRunning.get()){
                     final LinkedBlockingQueue<ScoreComputing.WindowScore> w_scores = curSC.getAllWindowScores();
@@ -116,7 +110,7 @@ public class StrokeDetector {
                         long result = CheckStroke(w_scores);
 
                         Log.e(TAG, "Get Stroke!!!!");
-                        if(result != 0) StrokeTimes.add(result);
+                        if(result != 0) SystemParameters.StrokeTimes.add(result);
 
                         // if no exception occur, jump curIdx to the window position where the score is lower than threshold
                         JumpWindow(w_scores);
