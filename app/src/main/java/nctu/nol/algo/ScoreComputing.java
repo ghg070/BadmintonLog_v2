@@ -55,6 +55,9 @@ public class ScoreComputing {
                 List<Integer> FreqIdxs = new ArrayList<Integer>();
                 float FreqMax = Float.NEGATIVE_INFINITY;
 
+                // Wait Flag = true
+                while (!SystemParameters.isServiceRunning.get());
+
                 for (int i = 0; i < FreqBands.size(); i++) {
                     float freq = FreqBands.get(i).getKey();
                     float power = FreqBands.get(i).getValue();

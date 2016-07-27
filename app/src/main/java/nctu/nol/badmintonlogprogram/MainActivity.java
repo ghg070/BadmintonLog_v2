@@ -403,30 +403,25 @@ public class MainActivity extends Activity {
 		new Thread(){
 			@Override
 			public void run() {
-				try {
-					// Trigger Sensor to Ready (wait isServiceRunning become true)
-					sw.startRecording(LogType);
-					if( isTesting ) bh.startRecording(LogType);
-
-					sleep(2000); //等待2sec後開始
-					SetMeasureStartTime(); //設定開始時間
-					SystemParameters.isServiceRunning.set(true);
-
-					// if isTest == true, Testing Start
-					if(isTesting) StartTestingAlgo();
-
-					runOnUiThread(new Runnable() {
-						public void run(){
-						Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
-						//init UI
-						tv_strokeCount.setText("0");
-						tv_strokeType.setText("None");
-						}
-					});
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					Log.e(TAG,e.getMessage());
+				// Trigger Sensor to Ready (wait isServiceRunning become true)
+				sw.startRecording(LogType);
+				if( isTesting ){
+					bh.startRecording(LogType);
+					StartTestingAlgo();
 				}
+
+				SetMeasureStartTime(); //設定開始時間
+				SystemParameters.isServiceRunning.set(true);
+
+				runOnUiThread(new Runnable() {
+					public void run(){
+					Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
+					//init UI
+					tv_strokeCount.setText("0");
+					tv_strokeType.setText("None");
+					}
+				});
+
 			}
 		}.start();
 	}
@@ -448,10 +443,27 @@ public class MainActivity extends Activity {
 				if( SC != null ) while(SC.isWrittingWindowScore.get());
 				if( bh != null ) while(bh.isWrittingSensorDataLog.get());
 
-				if(isTraining) StartTrainingAlgo(sw);
+				if(isTraining) {
+					StartTrainingAlgo(sw);
 
-				// Local Database Handler
-				long id = SQLiteInsertNewLoggingRecord(SystemParameters.StartDate, "ghg070", SystemParameters.StrokeCount, SystemParameters.filePath, isTesting, SystemParameters.SoundStartTime-SystemParameters.StartTime);
+					// Local Database Handler
+					long id = SQLiteInsertNewLoggingRecord(
+							SystemParameters.StartDate,
+							"ghg070",
+							SystemParameters.StrokeCount,
+							SystemParameters.filePath,
+							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime,
+							-1 );
+					SystemParameters.TrainingId = id;
+				}else{
+					long id = SQLiteInsertNewLoggingRecord(
+							SystemParameters.StartDate,
+							"ghg070",
+							SystemParameters.StrokeCount,
+							SystemParameters.filePath,
+							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime,
+							SystemParameters.TrainingId );
+				}
 
 				//Show UI
 				runOnUiThread(new Runnable() {
@@ -519,9 +531,9 @@ public class MainActivity extends Activity {
 	/************************
 	 *  Local Database Related
 	 ***********************/
-	private long SQLiteInsertNewLoggingRecord(String date, String subject, int stroke_num, String path, boolean is_testing, long offset){
+	private long SQLiteInsertNewLoggingRecord(String date, String subject, int stroke_num, String path, boolean is_testing, long offset, long match_trainig_id){
 		DataListItem dlistDB = new DataListItem(MainActivity.this);
-		long id = dlistDB.insert(date, subject, stroke_num, path, is_testing, offset);
+		long id = dlistDB.insert(date, subject, stroke_num, path, is_testing, offset, match_trainig_id);
 		dlistDB.close();
 		return id;
 	}

@@ -95,6 +95,7 @@ public class ShowTrainingData extends Activity {
     @Override
     protected void onDestroy(){
         super.onDestroy();
+        unregisterReceiver(mChartClickEventReceiver);
     }
 
     private void initialViewandEvent(){
@@ -152,9 +153,11 @@ public class ShowTrainingData extends Activity {
     private Button.OnClickListener prevListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            if(CurBlockIdx != 0){
-                CurBlockIdx--;
-                ChangeFocusBlock(CurBlockIdx,true);
+            if(peak_idx.length > 0) {
+                if (CurBlockIdx != 0) {
+                    CurBlockIdx--;
+                    ChangeFocusBlock(CurBlockIdx, true);
+                }
             }
         }
     };
@@ -162,9 +165,11 @@ public class ShowTrainingData extends Activity {
     private Button.OnClickListener nextListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            if(CurBlockIdx != peak_idx.length*FrequencyBandModel.WINDOW_NUM-1){
-                CurBlockIdx++;
-                ChangeFocusBlock(CurBlockIdx,true);
+            if(peak_idx.length > 0) {
+                if (CurBlockIdx != peak_idx.length * FrequencyBandModel.WINDOW_NUM - 1) {
+                    CurBlockIdx++;
+                    ChangeFocusBlock(CurBlockIdx, true);
+                }
             }
         }
     };
@@ -279,9 +284,11 @@ public class ShowTrainingData extends Activity {
         }
 
         for(int i = 0; i < ROWCOUNT; i++){
-            String[] tokens = rows.get(i).split(",");
-            tv_Freqs[ROWCOUNT-i-1].setText(tokens[0]);
-            tv_Energy[ROWCOUNT-i-1].setText(tokens[1]);
+            if(rows.size() > i) {
+                String[] tokens = rows.get(i).split(",");
+                tv_Freqs[ROWCOUNT - i - 1].setText(tokens[0]);
+                tv_Energy[ROWCOUNT - i - 1].setText(tokens[1]);
+            }
         }
     }
 
@@ -356,7 +363,7 @@ public class ShowTrainingData extends Activity {
 
                             int block_idx = i*FrequencyBandModel.WINDOW_NUM + j;
                             CurBlockIdx = block_idx;
-                            ChangeFocusBlock(CurBlockIdx,false);
+                            ChangeFocusBlock(CurBlockIdx, false);
 
                             break;
                         }

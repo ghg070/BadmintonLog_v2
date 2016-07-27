@@ -167,15 +167,12 @@ public class SoundWaveHandler {
 			@Override
 			public void run() {
 				while (mIsRecording) {
-					long curTime = System.currentTimeMillis();
-
-					final int readSize = record.read(mAudioBuffer, 0, mBufferSize);
-
 					if(SystemParameters.isServiceRunning.get()){
-						//This buffer receive before Service Start, Throw it.
-						if(curTime < SystemParameters.StartTime) continue;
-						
+
+						long curTime = System.currentTimeMillis();
+						final int readSize = record.read(mAudioBuffer, 0, mBufferSize);
 						long passTime = curTime-SystemParameters.StartTime;
+
 						if(SystemParameters.SoundStartTime == 0)
 							SystemParameters.SoundStartTime = curTime;
 						long offset = SystemParameters.SoundStartTime-SystemParameters.StartTime;

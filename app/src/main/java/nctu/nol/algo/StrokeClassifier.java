@@ -20,8 +20,8 @@ import weka.core.Attribute;
 public class StrokeClassifier {
     private final static String TAG = StrokeClassifier.class.getSimpleName();
 
-    public static final long FeatureExtraction_Alpha = 600;
-    public static final long FeatureExtraction_Beta = 400;
+    public static final long FeatureExtraction_Alpha = 500;
+    public static final long FeatureExtraction_Beta = 500;
 
     // Broadcast Related
     public final static String ACTION_OUTPUT_RESULT_STATE = "STROKECLASSIFIER.ACTION_OUTPUT_RESULT_STATE";
@@ -56,6 +56,7 @@ public class StrokeClassifier {
 
         double result = -1;
         try {
+            /*
             // Single Data
             DenseInstance inst = new DenseInstance(dataset.numAttributes());
             inst.setDataset(dataset);
@@ -76,11 +77,11 @@ public class StrokeClassifier {
             Intent broadcast = new Intent(ACTION_OUTPUT_RESULT_STATE);
             broadcast.putExtra(EXTRA_TYPE, type);
             mActivity.sendBroadcast(broadcast);
-
+*/
             // Log File
             try {
                 long offset = SystemParameters.SoundStartTime-SystemParameters.StartTime;
-                StrokeWriter.writeStroke( MillisecToString(stroke_time-offset), type);
+                StrokeWriter.writeStroke( MillisecToString(stroke_time-offset), "None");
             } catch (IOException e) {
                 Log.e(TAG,e.getMessage());
             }
@@ -93,493 +94,255 @@ public class StrokeClassifier {
         return result;
     }
 
-    public final ArrayList<Float> FeatureExtraction(final ArrayList<float[]> L_AccData,
-                                                    final ArrayList<float[]> R_AccData,
-                                                    final ArrayList<float[]> L_AccData_Without_Gravity,
-                                                    final ArrayList<float[]> R_AccData_Without_Gravity,
-                                                    final ArrayList<float[]> L_GyroData,
-                                                    final ArrayList<float[]> R_GyroData) {
+    public final ArrayList<Float> FeatureExtraction(final ArrayList<float[]> AccData,
+                                                    final ArrayList<float[]> AccData_Without_Gravity,
+                                                    final ArrayList<float[]> GyroData) {
 
-        /*LogFileWriter lg, la, lw;
-        LogFileWriter rg, ra, rw;
-        lg = new LogFileWriter(test+"_lg.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
-        la = new LogFileWriter(test+"_la.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
-        lw = new LogFileWriter(test+"_lw.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
-        rg = new LogFileWriter(test+"_rg.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
-        ra = new LogFileWriter(test+"_ra.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
-        rw = new LogFileWriter(test+"_rw.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        /*LogFileWriter g, a, w;
+
+        g = new LogFileWriter(test+"_g.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        a = new LogFileWriter(test+"_a.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
+        w = new LogFileWriter(test+"_w.csv", LogFileWriter.ACCELEROMETER_DATA_TYPE, LogFileWriter.TESTING_TYPE);
         test++;
 
-        for(int i = 0; i < L_AccData.size(); i++){
-            float []vals = L_AccData.get(i);
+        for(int i = 0; i < AccData.size(); i++){
+            float []vals = AccData.get(i);
             try {
-                lg.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
+                g.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        for(int i = 0; i < R_AccData.size(); i++){
-            float []vals = R_AccData.get(i);
+        for(int i = 0; i < AccData_Without_Gravity.size(); i++){
+            float []vals = AccData_Without_Gravity.get(i);
             try {
-                rg.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
+                a.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        for(int i = 0; i < L_AccData_Without_Gravity.size(); i++){
-            float []vals = L_AccData_Without_Gravity.get(i);
+        for(int i = 0; i < GyroData.size(); i++){
+            float []vals = GyroData.get(i);
             try {
-                la.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        for(int i = 0; i < R_AccData_Without_Gravity.size(); i++){
-            float []vals = R_AccData_Without_Gravity.get(i);
-            try {
-                ra.writeInertialDataFile(1, 1, vals[0],vals[1],vals[2]);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        for(int i = 0; i < L_GyroData.size(); i++){
-            float []vals = L_GyroData.get(i);
-            try {
-                lw.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        for(int i = 0; i < R_GyroData.size(); i++){
-            float []vals = R_GyroData.get(i);
-            try {
-                rw.writeInertialDataFile(1, 1, vals[0], vals[1], vals[2]);
+                w.writeInertialDataFile(1,1,vals[0],vals[1],vals[2]);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        lg.closefile();
-        la.closefile();
-        lw.closefile();
-        rg.closefile();
-        ra.closefile();
-        rw.closefile();*/
+        g.closefile();
+        a.closefile();
+        w.closefile();*/
 
         // Preprocessing
-        double[] l_gx_dataset = new double[L_AccData.size()],
-                l_gy_dataset = new double[L_AccData.size()],
-                l_gz_dataset = new double[L_AccData.size()],
-                r_gx_dataset = new double[R_AccData.size()],
-                r_gy_dataset = new double[R_AccData.size()],
-                r_gz_dataset = new double[R_AccData.size()],
-                l_ax_dataset = new double[L_AccData_Without_Gravity.size()],
-                l_ay_dataset = new double[L_AccData_Without_Gravity.size()],
-                l_az_dataset = new double[L_AccData_Without_Gravity.size()],
-                r_ax_dataset = new double[R_AccData_Without_Gravity.size()],
-                r_ay_dataset = new double[R_AccData_Without_Gravity.size()],
-                r_az_dataset = new double[R_AccData_Without_Gravity.size()],
-                l_force_dataset = new double[L_AccData_Without_Gravity.size()],
-                r_force_dataset = new double[R_AccData_Without_Gravity.size()],
-                l_gravX_dataset = new double[L_AccData.size()],
-                l_gravY_dataset = new double[L_AccData.size()],
-                l_gravZ_dataset = new double[L_AccData.size()],
-                r_gravX_dataset = new double[R_AccData.size()],
-                r_gravY_dataset = new double[R_AccData.size()],
-                r_gravZ_dataset = new double[R_AccData.size()],
-                l_wx_dataset = new double[L_GyroData.size()],
-                l_wy_dataset = new double[L_GyroData.size()],
-                l_wz_dataset = new double[L_GyroData.size()],
-                r_wx_dataset = new double[R_GyroData.size()],
-                r_wy_dataset = new double[R_GyroData.size()],
-                r_wz_dataset = new double[R_GyroData.size()];
-        for (int i = 0; i < L_AccData.size(); i++) {
-            l_gx_dataset[i] = L_AccData.get(i)[0];
-            l_gy_dataset[i] = L_AccData.get(i)[1];
-            l_gz_dataset[i] = L_AccData.get(i)[2];
+        double[] gx_dataset = new double[AccData.size()],
+                gy_dataset = new double[AccData.size()],
+                gz_dataset = new double[AccData.size()],
+                ax_dataset = new double[AccData_Without_Gravity.size()],
+                ay_dataset = new double[AccData_Without_Gravity.size()],
+                az_dataset = new double[AccData_Without_Gravity.size()],
+                force_dataset = new double[AccData_Without_Gravity.size()],
+                gravX_dataset = new double[AccData.size()],
+                gravY_dataset = new double[AccData.size()],
+                gravZ_dataset = new double[AccData.size()],
+                wx_dataset = new double[GyroData.size()],
+                wy_dataset = new double[GyroData.size()],
+                wz_dataset = new double[GyroData.size()];
+
+        for (int i = 0; i < AccData.size(); i++) {
+            gx_dataset[i] = AccData.get(i)[0];
+            gy_dataset[i] = AccData.get(i)[1];
+            gz_dataset[i] = AccData.get(i)[2];
         }
-        for (int i = 0; i < R_AccData.size(); i++) {
-            r_gx_dataset[i] = R_AccData.get(i)[0];
-            r_gy_dataset[i] = R_AccData.get(i)[1];
-            r_gz_dataset[i] = R_AccData.get(i)[2];
+        for (int i = 0; i < AccData_Without_Gravity.size(); i++) {
+            ax_dataset[i] = AccData_Without_Gravity.get(i)[0];
+            ay_dataset[i] = AccData_Without_Gravity.get(i)[1];
+            az_dataset[i] = AccData_Without_Gravity.get(i)[2];
+            force_dataset[i] = Math.sqrt(Math.pow(ax_dataset[i], 2) + Math.pow(ay_dataset[i], 2) + Math.pow(az_dataset[i], 2));
         }
-        for (int i = 0; i < L_AccData_Without_Gravity.size(); i++) {
-            l_ax_dataset[i] = L_AccData_Without_Gravity.get(i)[0];
-            l_ay_dataset[i] = L_AccData_Without_Gravity.get(i)[1];
-            l_az_dataset[i] = L_AccData_Without_Gravity.get(i)[2];
-            l_force_dataset[i] = Math.sqrt(Math.pow(l_ax_dataset[i], 2) + Math.pow(l_ay_dataset[i], 2) + Math.pow(l_az_dataset[i], 2));
+        for (int i = 0; i < AccData.size(); i++) {
+            gravX_dataset[i] = AccData.get(i)[0]-AccData_Without_Gravity.get(i)[0];
+            gravY_dataset[i] = AccData.get(i)[1]-AccData_Without_Gravity.get(i)[1];
+            gravZ_dataset[i] = AccData.get(i)[2]-AccData_Without_Gravity.get(i)[2];
         }
-        for (int i = 0; i < R_AccData_Without_Gravity.size(); i++) {
-            r_ax_dataset[i] = R_AccData_Without_Gravity.get(i)[0];
-            r_ay_dataset[i] = R_AccData_Without_Gravity.get(i)[1];
-            r_az_dataset[i] = R_AccData_Without_Gravity.get(i)[2];
-            r_force_dataset[i] = Math.sqrt(Math.pow(r_ax_dataset[i], 2) + Math.pow(r_ay_dataset[i], 2) + Math.pow(r_az_dataset[i], 2));
-        }
-        for (int i = 0; i < L_AccData.size(); i++) {
-            l_gravX_dataset[i] = L_AccData.get(i)[0]-L_AccData_Without_Gravity.get(i)[0];
-            l_gravY_dataset[i] = L_AccData.get(i)[1]-L_AccData_Without_Gravity.get(i)[1];
-            l_gravZ_dataset[i] = L_AccData.get(i)[2]-L_AccData_Without_Gravity.get(i)[2];
-        }
-        for (int i = 0; i < R_AccData.size(); i++) {
-            r_gravX_dataset[i] = R_AccData.get(i)[0]-R_AccData_Without_Gravity.get(i)[0];
-            r_gravY_dataset[i] = R_AccData.get(i)[1]-R_AccData_Without_Gravity.get(i)[1];
-            r_gravZ_dataset[i] = R_AccData.get(i)[2]-R_AccData_Without_Gravity.get(i)[2];
-        }
-        for (int i = 0; i < L_GyroData.size(); i++) {
-            l_wx_dataset[i] = L_GyroData.get(i)[0];
-            l_wy_dataset[i] = L_GyroData.get(i)[1];
-            l_wz_dataset[i] = L_GyroData.get(i)[2];
-        }
-        for (int i = 0; i < R_GyroData.size(); i++) {
-            r_wx_dataset[i] = R_GyroData.get(i)[0];
-            r_wy_dataset[i] = R_GyroData.get(i)[1];
-            r_wz_dataset[i] = R_GyroData.get(i)[2];
+        for (int i = 0; i < GyroData.size(); i++) {
+            wx_dataset[i] = GyroData.get(i)[0];
+            wy_dataset[i] = GyroData.get(i)[1];
+            wz_dataset[i] = GyroData.get(i)[2];
         }
 
         ArrayList<Float> allValues = new ArrayList<Float>();
-        
-        double max_val = max(l_gx_dataset), rms_val = rms(l_gx_dataset);
+
+        double max_val = max(gx_dataset), rms_val = rms(gx_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(l_gx_dataset));
-        allValues.add((float)mean(l_gx_dataset));
-        allValues.add((float)std(l_gx_dataset));
-        allValues.add((float)rms(l_gx_dataset));
+        allValues.add((float)min(gx_dataset));
+        allValues.add((float)mean(gx_dataset));
+        allValues.add((float)std(gx_dataset));
+        allValues.add((float)rms(gx_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_gx_dataset));
-        allValues.add((float)skewness(l_gx_dataset));
-        allValues.add((float)kurtosis(l_gx_dataset));
+        allValues.add((float)iqr(gx_dataset));
+        allValues.add((float)skewness(gx_dataset));
+        allValues.add((float)kurtosis(gx_dataset));
 
-        max_val = max(r_gx_dataset);
-        rms_val = rms(r_gx_dataset);
+        max_val = max(gy_dataset);
+        rms_val = rms(gy_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(r_gx_dataset));
-        allValues.add((float)mean(r_gx_dataset));
-        allValues.add((float)std(r_gx_dataset));
-        allValues.add((float)rms(r_gx_dataset));
+        allValues.add((float)min(gy_dataset));
+        allValues.add((float)mean(gy_dataset));
+        allValues.add((float)std(gy_dataset));
+        allValues.add((float)rms(gy_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_gx_dataset));
-        allValues.add((float)skewness(r_gx_dataset));
-        allValues.add((float)kurtosis(r_gx_dataset));
+        allValues.add((float)iqr(gy_dataset));
+        allValues.add((float)skewness(gy_dataset));
+        allValues.add((float)kurtosis(gy_dataset));
 
-        max_val = max(l_gy_dataset);
-        rms_val = rms(l_gy_dataset);
+        max_val = max(gz_dataset);
+        rms_val = rms(gz_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(l_gy_dataset));
-        allValues.add((float)mean(l_gy_dataset));
-        allValues.add((float)std(l_gy_dataset));
-        allValues.add((float)rms(l_gy_dataset));
+        allValues.add((float)min(gz_dataset));
+        allValues.add((float)mean(gz_dataset));
+        allValues.add((float)std(gz_dataset));
+        allValues.add((float)rms(gz_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_gy_dataset));
-        allValues.add((float)skewness(l_gy_dataset));
-        allValues.add((float)kurtosis(l_gy_dataset));
+        allValues.add((float)iqr(gz_dataset));
+        allValues.add((float)skewness(gz_dataset));
+        allValues.add((float)kurtosis(gz_dataset));
 
-        max_val = max(r_gy_dataset);
-        rms_val = rms(r_gy_dataset);
+        allValues.add((float)corrcoef(gx_dataset, gy_dataset));
+        allValues.add((float)corrcoef(gx_dataset, gz_dataset));
+        allValues.add((float)corrcoef(gy_dataset, gz_dataset));
+
+        max_val = max(ax_dataset);
+        rms_val = rms(ax_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(r_gy_dataset));
-        allValues.add((float)mean(r_gy_dataset));
-        allValues.add((float)std(r_gy_dataset));
-        allValues.add((float)rms(r_gy_dataset));
+        allValues.add((float)min(ax_dataset));
+        allValues.add((float)mean(ax_dataset));
+        allValues.add((float)std(ax_dataset));
+        allValues.add((float)rms(ax_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_gy_dataset));
-        allValues.add((float)skewness(r_gy_dataset));
-        allValues.add((float)kurtosis(r_gy_dataset));
+        allValues.add((float)iqr(ax_dataset));
+        allValues.add((float)skewness(ax_dataset));
+        allValues.add((float)kurtosis(ax_dataset));
 
-        max_val = max(l_gz_dataset);
-        rms_val = rms(l_gz_dataset);
+        max_val = max(ay_dataset);
+        rms_val = rms(ay_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(l_gz_dataset));
-        allValues.add((float)mean(l_gz_dataset));
-        allValues.add((float)std(l_gz_dataset));
-        allValues.add((float)rms(l_gz_dataset));
+        allValues.add((float)min(ay_dataset));
+        allValues.add((float)mean(ay_dataset));
+        allValues.add((float)std(ay_dataset));
+        allValues.add((float)rms(ay_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_gz_dataset));
-        allValues.add((float)skewness(l_gz_dataset));
-        allValues.add((float)kurtosis(l_gz_dataset));
+        allValues.add((float)iqr(ay_dataset));
+        allValues.add((float)skewness(ay_dataset));
+        allValues.add((float)kurtosis(ay_dataset));
 
-        max_val = max(r_gz_dataset);
-        rms_val = rms(r_gz_dataset);
+        max_val = max(az_dataset);
+        rms_val = rms(az_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(r_gz_dataset));
-        allValues.add((float)mean(r_gz_dataset));
-        allValues.add((float)std(r_gz_dataset));
-        allValues.add((float)rms(r_gz_dataset));
+        allValues.add((float)min(az_dataset));
+        allValues.add((float)mean(az_dataset));
+        allValues.add((float)std(az_dataset));
+        allValues.add((float)rms(az_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_gz_dataset));
-        allValues.add((float)skewness(r_gz_dataset));
-        allValues.add((float)kurtosis(r_gz_dataset));
+        allValues.add((float)iqr(az_dataset));
+        allValues.add((float)skewness(az_dataset));
+        allValues.add((float)kurtosis(az_dataset));
 
-        allValues.add((float)corrcoef(l_gx_dataset, l_gy_dataset));
-        allValues.add((float)corrcoef(l_gx_dataset, l_gz_dataset));
-        allValues.add((float)corrcoef(l_gy_dataset, l_gz_dataset));
+        allValues.add((float)corrcoef(ax_dataset, ay_dataset));
+        allValues.add((float)corrcoef(ax_dataset, az_dataset));
+        allValues.add((float)corrcoef(ay_dataset, az_dataset));
 
-        allValues.add((float)corrcoef(r_gx_dataset, r_gy_dataset));
-        allValues.add((float)corrcoef(r_gx_dataset, r_gz_dataset));
-        allValues.add((float)corrcoef(r_gy_dataset, r_gz_dataset));
-
-        max_val = max(l_ax_dataset);
-        rms_val = rms(l_ax_dataset);
+        max_val = max(force_dataset);
+        rms_val = rms(force_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(l_ax_dataset));
-        allValues.add((float)mean(l_ax_dataset));
-        allValues.add((float)std(l_ax_dataset));
-        allValues.add((float)rms(l_ax_dataset));
+        allValues.add((float)min(force_dataset));
+        allValues.add((float)mean(force_dataset));
+        allValues.add((float)std(force_dataset));
+        allValues.add((float)rms(force_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_ax_dataset));
-        allValues.add((float)skewness(l_ax_dataset));
-        allValues.add((float)kurtosis(l_ax_dataset));
+        allValues.add((float)iqr(force_dataset));
+        allValues.add((float)skewness(force_dataset));
+        allValues.add((float)kurtosis(force_dataset));
 
-        max_val = max(r_ax_dataset);
-        rms_val = rms(r_ax_dataset);
+        max_val = max(gravX_dataset);
+        rms_val = rms(gravX_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(r_ax_dataset));
-        allValues.add((float)mean(r_ax_dataset));
-        allValues.add((float)std(r_ax_dataset));
-        allValues.add((float)rms(r_ax_dataset));
+        allValues.add((float)min(gravX_dataset));
+        allValues.add((float)mean(gravX_dataset));
+        allValues.add((float)std(gravX_dataset));
+        allValues.add((float)rms(gravX_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_ax_dataset));
-        allValues.add((float)skewness(r_ax_dataset));
-        allValues.add((float)kurtosis(r_ax_dataset));
+        allValues.add((float)iqr(gravX_dataset));
+        allValues.add((float)skewness(gravX_dataset));
+        allValues.add((float)kurtosis(gravX_dataset));
 
-        max_val = max(l_ay_dataset);
-        rms_val = rms(l_ay_dataset);
+        max_val = max(gravY_dataset);
+        rms_val = rms(gravY_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(l_ay_dataset));
-        allValues.add((float)mean(l_ay_dataset));
-        allValues.add((float)std(l_ay_dataset));
-        allValues.add((float)rms(l_ay_dataset));
+        allValues.add((float)min(gravY_dataset));
+        allValues.add((float)mean(gravY_dataset));
+        allValues.add((float)std(gravY_dataset));
+        allValues.add((float)rms(gravY_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_ay_dataset));
-        allValues.add((float)skewness(l_ay_dataset));
-        allValues.add((float)kurtosis(l_ay_dataset));
+        allValues.add((float)iqr(gravY_dataset));
+        allValues.add((float)skewness(gravY_dataset));
+        allValues.add((float)kurtosis(gravY_dataset));
 
-        max_val = max(r_ay_dataset);
-        rms_val = rms(r_ay_dataset);
+        max_val = max(gravZ_dataset);
+        rms_val = rms(gravZ_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(r_ay_dataset));
-        allValues.add((float)mean(r_ay_dataset));
-        allValues.add((float)std(r_ay_dataset));
-        allValues.add((float)rms(r_ay_dataset));
+        allValues.add((float)min(gravZ_dataset));
+        allValues.add((float)mean(gravZ_dataset));
+        allValues.add((float)std(gravZ_dataset));
+        allValues.add((float)rms(gravZ_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_ay_dataset));
-        allValues.add((float)skewness(r_ay_dataset));
-        allValues.add((float)kurtosis(r_ay_dataset));
+        allValues.add((float)iqr(gravZ_dataset));
+        allValues.add((float)skewness(gravZ_dataset));
+        allValues.add((float)kurtosis(gravZ_dataset));
 
-        max_val = max(l_az_dataset);
-        rms_val = rms(l_az_dataset);
+        allValues.add((float)corrcoef(gravX_dataset, gravY_dataset));
+        allValues.add((float)corrcoef(gravX_dataset, gravZ_dataset));
+        allValues.add((float)corrcoef(gravY_dataset, gravZ_dataset));
+
+        max_val = max(wx_dataset);
+        rms_val = rms(wx_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(l_az_dataset));
-        allValues.add((float)mean(l_az_dataset));
-        allValues.add((float)std(l_az_dataset));
-        allValues.add((float)rms(l_az_dataset));
+        allValues.add((float)min(wx_dataset));
+        allValues.add((float)mean(wx_dataset));
+        allValues.add((float)std(wx_dataset));
+        allValues.add((float)rms(wx_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_az_dataset));
-        allValues.add((float)skewness(l_az_dataset));
-        allValues.add((float)kurtosis(l_az_dataset));
+        allValues.add((float)iqr(wx_dataset));
+        allValues.add((float)skewness(wx_dataset));
+        allValues.add((float)kurtosis(wx_dataset));
 
-        max_val = max(r_az_dataset);
-        rms_val = rms(r_az_dataset);
+        max_val = max(wy_dataset);
+        rms_val = rms(wy_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(r_az_dataset));
-        allValues.add((float)mean(r_az_dataset));
-        allValues.add((float)std(r_az_dataset));
-        allValues.add((float)rms(r_az_dataset));
+        allValues.add((float)min(wy_dataset));
+        allValues.add((float)mean(wy_dataset));
+        allValues.add((float)std(wy_dataset));
+        allValues.add((float)rms(wy_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_az_dataset));
-        allValues.add((float)skewness(r_az_dataset));
-        allValues.add((float)kurtosis(r_az_dataset));
+        allValues.add((float)iqr(wy_dataset));
+        allValues.add((float)skewness(wy_dataset));
+        allValues.add((float)kurtosis(wy_dataset));
 
-        allValues.add((float)corrcoef(l_ax_dataset, l_ay_dataset));
-        allValues.add((float)corrcoef(l_ax_dataset, l_az_dataset));
-        allValues.add((float)corrcoef(l_ay_dataset, l_az_dataset));
-
-        allValues.add((float)corrcoef(r_ax_dataset, r_ay_dataset));
-        allValues.add((float)corrcoef(r_ax_dataset, r_az_dataset));
-        allValues.add((float)corrcoef(r_ay_dataset, r_az_dataset));
-
-        max_val = max(l_force_dataset);
-        rms_val = rms(l_force_dataset);
+        max_val = max(wz_dataset);
+        rms_val = rms(wz_dataset);
         allValues.add((float)max_val);
-        allValues.add((float)min(l_force_dataset));
-        allValues.add((float)mean(l_force_dataset));
-        allValues.add((float)std(l_force_dataset));
-        allValues.add((float)rms(l_force_dataset));
+        allValues.add((float)min(wz_dataset));
+        allValues.add((float)mean(wz_dataset));
+        allValues.add((float)std(wz_dataset));
+        allValues.add((float)rms(wz_dataset));
         allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_force_dataset));
-        allValues.add((float)skewness(l_force_dataset));
-        allValues.add((float)kurtosis(l_force_dataset));
+        allValues.add((float)iqr(wz_dataset));
+        allValues.add((float)skewness(wz_dataset));
+        allValues.add((float)kurtosis(wz_dataset));
 
-        max_val = max(r_force_dataset);
-        rms_val = rms(r_force_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(r_force_dataset));
-        allValues.add((float)mean(r_force_dataset));
-        allValues.add((float)std(r_force_dataset));
-        allValues.add((float)rms(r_force_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_force_dataset));
-        allValues.add((float)skewness(r_force_dataset));
-        allValues.add((float)kurtosis(r_force_dataset));
-
-        max_val = max(l_gravX_dataset);
-        rms_val = rms(l_gravX_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(l_gravX_dataset));
-        allValues.add((float)mean(l_gravX_dataset));
-        allValues.add((float)std(l_gravX_dataset));
-        allValues.add((float)rms(l_gravX_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_gravX_dataset));
-        allValues.add((float)skewness(l_gravX_dataset));
-        allValues.add((float)kurtosis(l_gravX_dataset));
-
-        max_val = max(r_gravX_dataset);
-        rms_val = rms(r_gravX_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(r_gravX_dataset));
-        allValues.add((float)mean(r_gravX_dataset));
-        allValues.add((float)std(r_gravX_dataset));
-        allValues.add((float)rms(r_gravX_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_gravX_dataset));
-        allValues.add((float)skewness(r_gravX_dataset));
-        allValues.add((float)kurtosis(r_gravX_dataset));
-
-        max_val = max(l_gravY_dataset);
-        rms_val = rms(l_gravY_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(l_gravY_dataset));
-        allValues.add((float)mean(l_gravY_dataset));
-        allValues.add((float)std(l_gravY_dataset));
-        allValues.add((float)rms(l_gravY_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_gravY_dataset));
-        allValues.add((float)skewness(l_gravY_dataset));
-        allValues.add((float)kurtosis(l_gravY_dataset));
-
-        max_val = max(r_gravY_dataset);
-        rms_val = rms(r_gravY_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(r_gravY_dataset));
-        allValues.add((float)mean(r_gravY_dataset));
-        allValues.add((float)std(r_gravY_dataset));
-        allValues.add((float)rms(r_gravY_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_gravY_dataset));
-        allValues.add((float)skewness(r_gravY_dataset));
-        allValues.add((float)kurtosis(r_gravY_dataset));
-
-        max_val = max(l_gravZ_dataset);
-        rms_val = rms(l_gravZ_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(l_gravZ_dataset));
-        allValues.add((float)mean(l_gravZ_dataset));
-        allValues.add((float)std(l_gravZ_dataset));
-        allValues.add((float)rms(l_gravZ_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_gravZ_dataset));
-        allValues.add((float)skewness(l_gravZ_dataset));
-        allValues.add((float)kurtosis(l_gravZ_dataset));
-
-        max_val = max(r_gravZ_dataset);
-        rms_val = rms(r_gravZ_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(r_gravZ_dataset));
-        allValues.add((float)mean(r_gravZ_dataset));
-        allValues.add((float)std(r_gravZ_dataset));
-        allValues.add((float)rms(r_gravZ_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_gravZ_dataset));
-        allValues.add((float)skewness(r_gravZ_dataset));
-        allValues.add((float)kurtosis(r_gravZ_dataset));
-
-        allValues.add((float)corrcoef(l_gravX_dataset, l_gravY_dataset));
-        allValues.add((float)corrcoef(l_gravX_dataset, l_gravZ_dataset));
-        allValues.add((float)corrcoef(l_gravY_dataset, l_gravZ_dataset));
-
-        allValues.add((float)corrcoef(r_gravX_dataset, r_gravY_dataset));
-        allValues.add((float)corrcoef(r_gravX_dataset, r_gravZ_dataset));
-        allValues.add((float)corrcoef(r_gravY_dataset, r_gravZ_dataset));
-
-        max_val = max(l_wx_dataset);
-        rms_val = rms(l_wx_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(l_wx_dataset));
-        allValues.add((float)mean(l_wx_dataset));
-        allValues.add((float)std(l_wx_dataset));
-        allValues.add((float)rms(l_wx_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_wx_dataset));
-        allValues.add((float)skewness(l_wx_dataset));
-        allValues.add((float)kurtosis(l_wx_dataset));
-
-        max_val = max(r_wx_dataset);
-        rms_val = rms(r_wx_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(r_wx_dataset));
-        allValues.add((float)mean(r_wx_dataset));
-        allValues.add((float)std(r_wx_dataset));
-        allValues.add((float)rms(r_wx_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_wx_dataset));
-        allValues.add((float)skewness(r_wx_dataset));
-        allValues.add((float)kurtosis(r_wx_dataset));
-
-        max_val = max(l_wy_dataset);
-        rms_val = rms(l_wy_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(l_wy_dataset));
-        allValues.add((float)mean(l_wy_dataset));
-        allValues.add((float)std(l_wy_dataset));
-        allValues.add((float)rms(l_wy_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_wy_dataset));
-        allValues.add((float)skewness(l_wy_dataset));
-        allValues.add((float)kurtosis(l_wy_dataset));
-
-        max_val = max(r_wy_dataset);
-        rms_val = rms(r_wy_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(r_wy_dataset));
-        allValues.add((float)mean(r_wy_dataset));
-        allValues.add((float)std(r_wy_dataset));
-        allValues.add((float)rms(r_wy_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_wy_dataset));
-        allValues.add((float)skewness(r_wy_dataset));
-        allValues.add((float)kurtosis(r_wy_dataset));
-
-        max_val = max(l_wz_dataset);
-        rms_val = rms(l_wz_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(l_wz_dataset));
-        allValues.add((float)mean(l_wz_dataset));
-        allValues.add((float)std(l_wz_dataset));
-        allValues.add((float)rms(l_wz_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(l_wz_dataset));
-        allValues.add((float)skewness(l_wz_dataset));
-        allValues.add((float)kurtosis(l_wz_dataset));
-
-        max_val = max(r_wz_dataset);
-        rms_val = rms(r_wz_dataset);
-        allValues.add((float)max_val);
-        allValues.add((float)min(r_wz_dataset));
-        allValues.add((float)mean(r_wz_dataset));
-        allValues.add((float)std(r_wz_dataset));
-        allValues.add((float)rms(r_wz_dataset));
-        allValues.add((float)CF(max_val, rms_val));
-        allValues.add((float)iqr(r_wz_dataset));
-        allValues.add((float)skewness(r_wz_dataset));
-        allValues.add((float)kurtosis(r_wz_dataset));
-
-        allValues.add((float)corrcoef(l_wx_dataset, l_wy_dataset));
-        allValues.add((float)corrcoef(l_wx_dataset, l_wz_dataset));
-        allValues.add((float)corrcoef(l_wy_dataset, l_wz_dataset));
-
-        allValues.add((float)corrcoef(r_wx_dataset, r_wy_dataset));
-        allValues.add((float)corrcoef(r_wx_dataset, r_wz_dataset));
-        allValues.add((float)corrcoef(r_wy_dataset, r_wz_dataset));
+        allValues.add((float)corrcoef(wx_dataset, wy_dataset));
+        allValues.add((float)corrcoef(wx_dataset, wz_dataset));
+        allValues.add((float)corrcoef(wy_dataset, wz_dataset));
 
         return allValues;
     }
