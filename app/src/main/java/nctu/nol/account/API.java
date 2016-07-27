@@ -118,7 +118,7 @@ public class API {
         VolleyController.getInstance().addToRequestQueue(createrequest);
     }
 
-    public  static  void upload_file(final String filepath,final String token,final String CarType,final String CarAge,final String filename,final String account, final ResponseListener res)
+    public  static  void upload_file(final String filepath,final String token,final String filename,final String account, final ResponseListener res)
     {
         FileInputStream file_acc_in = null;
         try {
@@ -139,12 +139,10 @@ public class API {
         JSONObject meta_data=new JSONObject();
         JSONObject params=new JSONObject();
         try {
-            meta_data.put("CarAge",CarAge);
-            meta_data.put("CarType",CarType);
             meta_data.put("account",account);
             params.put("data", filecontent);
             params.put("meta",meta_data);
-            params.put("filename", filename);
+            params.put("filename", filepath.substring(filepath.length()-27)+filename);
 
         } catch (JSONException e) {
             e.printStackTrace();
