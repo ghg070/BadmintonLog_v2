@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
-import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -102,8 +101,8 @@ public class NetworkCheckService extends Service {
                             startActivity(i);
                         }
                     });
-                    String path = Environment.getExternalStorageDirectory().getPath()+"/Sensorlogger/";
-                    find_all(new File(path));
+                    //String path = Environment.getExternalStorageDirectory().getPath()+"/Sensorlogger/";
+                    //find_all(new File(path));
                 }
                 NetworkBroadcastRepeat++;
             }
@@ -138,8 +137,6 @@ public class NetworkCheckService extends Service {
                     //Log.d("Tag", "name"+file.getName());
 
                     API.upload_file(file.getParent(), sharedPreferences.getString("token", null),
-                            sharedPreferences.getString(parent+"_type", null),
-                            sharedPreferences.getString(parent+"_age" , null),
                             file.getName(),
                             sharedPreferences.getString(parent+"_account",null),
                             new ResponseListener() {
