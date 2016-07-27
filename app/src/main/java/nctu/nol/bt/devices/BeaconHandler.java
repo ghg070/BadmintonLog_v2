@@ -66,7 +66,6 @@ public class BeaconHandler implements SensorEventListener {
     private LinkedBlockingDeque<SensorData> AccDataset_GravityReduced_for_algo = null;
     private LinkedBlockingDeque<SensorData> GyroDataset_for_algo = null;
     public static final long Abandon_Time = 10000; // 決定多久以前的資料要捨去, 需大於Correct_Corrdinate_Time
-    private AtomicBoolean IsFeatureExtracting = new AtomicBoolean(false);
 
     // Classifcation
     private StrokeClassifier StrokeTypeClassifier = null;
@@ -313,7 +312,7 @@ public class BeaconHandler implements SensorEventListener {
         initParameters();
         initLogFile(uType);
         if(uType == LogFileWriter.TESTING_TYPE)
-            StrokeTypeClassifier.initLogFile();
+            StrokeTypeClassifier.initial();
 
         mIsRecording = true;
 
@@ -327,7 +326,7 @@ public class BeaconHandler implements SensorEventListener {
     public void stopRecording(){
         mIsRecording = false;
         StopTimeCalibrationTask();
-        StrokeTypeClassifier.closeLogFile();
+        StrokeTypeClassifier.close();
     }
 
     // 將時間過久的感測器資料捨棄, 避免佔用記憶體空間
@@ -336,19 +335,17 @@ public class BeaconHandler implements SensorEventListener {
             @Override
             public void run() {
                 while(mIsRecording) {
-                    if ( !IsFeatureExtracting.get() ) {
-                        // Check AccDataset
-                        if (AccDataset_for_algo.size() > 0 && SystemParameters.SensorEndTime - AccDataset_for_algo.peek().time > Abandon_Time)
-                            AccDataset_for_algo.poll();
+                    // Check AccDataset
+                    if (AccDataset_for_algo.size() > 0 && SystemParameters.SensorEndTime - AccDataset_for_algo.peek().time > Abandon_Time)
+                        AccDataset_for_algo.poll();
 
-                        // Check AccDataset(Gravity Reduced)
-                        if (AccDataset_GravityReduced_for_algo.size() > 0 && SystemParameters.SensorEndTime - AccDataset_GravityReduced_for_algo.peek().time > Abandon_Time)
-                            AccDataset_GravityReduced_for_algo.poll();
+                    // Check AccDataset(Gravity Reduced)
+                    if (AccDataset_GravityReduced_for_algo.size() > 0 && SystemParameters.SensorEndTime - AccDataset_GravityReduced_for_algo.peek().time > Abandon_Time)
+                        AccDataset_GravityReduced_for_algo.poll();
 
-                        // Check GyroDataset
-                        if (GyroDataset_for_algo.size() > 0 && SystemParameters.SensorEndTime - GyroDataset_for_algo.peek().time > Abandon_Time)
-                            GyroDataset_for_algo.poll();
-                    }
+                    // Check GyroDataset
+                    if (GyroDataset_for_algo.size() > 0 && SystemParameters.SensorEndTime - GyroDataset_for_algo.peek().time > Abandon_Time)
+                        GyroDataset_for_algo.poll();
                 }
             }
         }).start();
@@ -486,22 +483,15 @@ public class BeaconHandler implements SensorEventListener {
         }.start();
     }
 
-    private synchronized void ClassifyStrokeType(final long StrokeTime){
-
-        /** Feature Extraction* */
-        IsFeatureExtracting.set(true);
-
-
+    private void ClassifyStrokeType(final long StrokeTime){
         ArrayList<float[]> AccData = GetSensorDataInStrokeWindow(AccDataset_for_algo, StrokeTime, true);
         ArrayList<float[]> AccData_ReduceGravity = GetSensorDataInStrokeWindow(AccDataset_GravityReduced_for_algo, StrokeTime, true);
         ArrayList<float[]> GyroData = GetSensorDataInStrokeWindow(GyroDataset_for_algo, StrokeTime, false);
-
 
         final ArrayList<Float> stroke_features =  StrokeTypeClassifier.FeatureExtraction(
                 AccData,
                 AccData_ReduceGravity,
                 GyroData);
-        IsFeatureExtracting.set(false);
 
         /** Classification **/
        StrokeTypeClassifier.Classify(StrokeTime, stroke_features);

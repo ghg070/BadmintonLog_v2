@@ -46,7 +46,7 @@ public class StrokeDetector {
     }
 
     /* 根據訓練資料, 計算StrokeDetector的Score Threshold */
-    public static void ComputeScoreThreshold(final List<HashMap.Entry<Float, Float>> FreqBands, final float[] audio_samples, final int SamplingRate, final int w_size){
+    public static double ComputeScoreThreshold(final List<HashMap.Entry<Float, Float>> FreqBands, final float[] audio_samples, final int SamplingRate, final int w_size){
         // Initial Parameter
         List<Integer> FreqIdxs = new ArrayList<Integer>();
         float FreqMax = Float.NEGATIVE_INFINITY;
@@ -89,6 +89,8 @@ public class StrokeDetector {
         SCORETHRESHOLD = score_mean + alpha * score_std;
 
         Log.d(TAG, "Score Threshold = "+SCORETHRESHOLD);
+
+        return SCORETHRESHOLD;
     }
 
     /* 啟動Thread持續偵測Window分數是否連續達標 */

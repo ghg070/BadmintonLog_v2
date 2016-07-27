@@ -37,6 +37,7 @@ public class SystemParameters {
 
 	//for Local DB
 	public static long TrainingId = -1;
+	public static long TestingId = -1;
 	
 	 /** Initial Function **/
 	public static void initializeSystemParameters(){

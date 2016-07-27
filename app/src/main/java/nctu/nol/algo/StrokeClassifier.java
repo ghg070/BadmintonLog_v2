@@ -2,6 +2,7 @@ package nctu.nol.algo;
 
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
@@ -9,9 +10,11 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Vector;
 
 import nctu.nol.file.LogFileWriter;
 import nctu.nol.file.SystemParameters;
+import nctu.nol.file.sqlite.StrokeListItem;
 import weka.classifiers.Classifier;
 import weka.core.DenseInstance;
 import weka.core.Instances;
@@ -31,21 +34,34 @@ public class StrokeClassifier {
     public LogFileWriter StrokeWriter;
     public LogFileWriter StrokeFeature;
 
-    private Activity mActivity;
+    // SQLite Related
+    private Vector<StrokeRecord> strokes = new Vector<>();
+
+    private Context mContext;
 
     public Instances dataset = null;
     public ArrayList<Attribute> attributeList = new ArrayList<Attribute>();
 
-    public StrokeClassifier(Activity act) {
-        this.mActivity = act;
+    public StrokeClassifier(Context c) {
+        this.mContext = c;
         BuildDataset();
     }
 
-    public void initLogFile(){
+    public void initial(){
+        strokes.clear();
+        initLogFile();
+    }
+
+    public void close(){
+        SQLiteInsertStroke(strokes,SystemParameters.TestingId);
+        closeLogFile();
+    }
+
+    private void initLogFile(){
         StrokeWriter = new LogFileWriter("StrokeType.csv", LogFileWriter.STROKE_TYPE, LogFileWriter.TESTING_TYPE);
         StrokeFeature = new LogFileWriter("StrokeFeature.csv", LogFileWriter.STROKE_TYPE, LogFileWriter.TESTING_TYPE);
     }
-    public void closeLogFile(){
+    private void closeLogFile(){
         if(StrokeWriter != null)
             StrokeWriter.closefile();
         if(StrokeFeature != null)
@@ -53,6 +69,8 @@ public class StrokeClassifier {
     }
 
     public double Classify(final long stroke_time, final ArrayList<Float> allVals) {
+
+        String type = "None";
 
         double result = -1;
         try {
@@ -78,10 +96,13 @@ public class StrokeClassifier {
             broadcast.putExtra(EXTRA_TYPE, type);
             mActivity.sendBroadcast(broadcast);
 */
+
+            StrokeRecord sr = new StrokeRecord(stroke_time, type);
+            strokes.add(sr);
+
             // Log File
             try {
-                long offset = SystemParameters.SoundStartTime-SystemParameters.StartTime;
-                StrokeWriter.writeStroke( MillisecToString(stroke_time-offset), "None");
+                StrokeWriter.writeStroke( MillisecToString(stroke_time), type);
             } catch (IOException e) {
                 Log.e(TAG,e.getMessage());
             }
@@ -92,6 +113,23 @@ public class StrokeClassifier {
             e.printStackTrace();
         }
         return result;
+    }
+
+    private void SQLiteInsertStroke(final Vector<StrokeRecord> strokes, long matching_testing_id){
+
+        StrokeListItem slistDB = new StrokeListItem(mContext);
+        for(int i = 0 ; i < strokes.size(); i++)
+            slistDB.insert(strokes.get(i).strokeTime, strokes.get(i).strokeType, matching_testing_id);
+        slistDB.close();
+    }
+
+    public class StrokeRecord{
+        public long strokeTime;
+        public String strokeType;
+        public StrokeRecord(long time, String type){
+            this.strokeTime = time;
+            this.strokeType = type;
+        }
     }
 
     public final ArrayList<Float> FeatureExtraction(final ArrayList<float[]> AccData,

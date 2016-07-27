@@ -37,6 +37,7 @@ import nctu.nol.bt.devices.BeaconHandler;
 import nctu.nol.bt.devices.SoundWaveHandler;
 import nctu.nol.file.SystemParameters;
 import nctu.nol.file.WavReader;
+import nctu.nol.file.sqlite.MainFreqListItem;
 
 /**
  * Created by Smile on 2016/7/21.
@@ -56,6 +57,7 @@ public class ShowTrainingData extends Activity {
     // Extra data
     private String DataPath;
     private long offset;
+    private long DataID;
 
     // Audio Data
     private double[] audio_time = {};
@@ -84,6 +86,7 @@ public class ShowTrainingData extends Activity {
         initialViewandEvent();
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
+            DataID = extras.getLong(DataListPage.EXTRA_ID);
             DataPath = extras.getString(DataListPage.EXTRA_PATH);
             offset = extras.getLong(DataListPage.EXTRA_OFFSET);
             Prepare();
@@ -140,7 +143,7 @@ public class ShowTrainingData extends Activity {
                         if (peak_time.length > 0)
                             ChangeFocusBlock(0,true);
 
-                        SetMainFrequencyTableByPath(DataPath);
+                        HandleFrequencyTable(DataID);
                         dialog.dismiss();
                     }
                 });
@@ -242,6 +245,21 @@ public class ShowTrainingData extends Activity {
         sc.AddChartDataset(fft_mainfreq, fft_mainvalue, Color.RED);
     }
 
+    private void HandleFrequencyTable(long id){
+        MainFreqListItem mflistDB = new MainFreqListItem(ShowTrainingData.this);
+        MainFreqListItem.FreqModel result = mflistDB.GetFreqModel(id);
+        mflistDB.close();
+
+        if(result != null){
+            for(int i = 0; i < ROWCOUNT; i++){
+                if(result.freqs.length > i) {
+                    tv_Freqs[ROWCOUNT - i - 1].setText(String.valueOf(result.freqs[i]));
+                    tv_Energy[ROWCOUNT - i - 1].setText(String.valueOf(result.vals[i]));
+                }
+            }
+        }
+    }
+
     private void SetAudioSamplesByPath(final String path, final long offset) {
         // Read Wav File, store data
         try {
@@ -265,30 +283,6 @@ public class ShowTrainingData extends Activity {
 
         } catch (FileNotFoundException e) {
             Log.e(TAG, e.getMessage());
-        }
-    }
-
-    private void SetMainFrequencyTableByPath(final String path){
-        Vector<String> rows = new Vector<>();
-        try {
-            File file = new File(path + "TopKMainFreqTable.csv");
-            BufferedReader br = new BufferedReader(new FileReader(file));
-            String line;
-            while ((line = br.readLine()) != null)
-                rows.add(line);
-            br.close();
-        }
-        catch (IOException e) {
-            //You'll need to add proper error handling here
-            Log.e(TAG,e.toString());
-        }
-
-        for(int i = 0; i < ROWCOUNT; i++){
-            if(rows.size() > i) {
-                String[] tokens = rows.get(i).split(",");
-                tv_Freqs[ROWCOUNT - i - 1].setText(tokens[0]);
-                tv_Energy[ROWCOUNT - i - 1].setText(tokens[1]);
-            }
         }
     }
 

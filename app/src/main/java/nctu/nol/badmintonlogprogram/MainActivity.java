@@ -18,6 +18,7 @@ import nctu.nol.bt.devices.SoundWaveHandler.AudioData;
 import nctu.nol.file.SystemParameters;
 import nctu.nol.file.LogFileWriter;
 import nctu.nol.file.sqlite.DataListItem;
+import nctu.nol.file.sqlite.MainFreqListItem;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -427,33 +428,23 @@ public class MainActivity extends Activity {
 	}
 
 	private void StopLogging(){
-		Toast.makeText(getBaseContext(), "Log Service is Stop", Toast.LENGTH_SHORT).show();
-		SystemParameters.isServiceRunning.set(false);
-		SystemParameters.Duration = (System.currentTimeMillis() - SystemParameters.StartTime)/1000.0;
-		sw.stopRecording();
-		if( isTesting ) bh.stopRecording();
-
 		final ProgressDialog dialog = ProgressDialog.show(MainActivity.this,
 				"寫檔中", "處理檔案中，請稍後",true);
 
+		Toast.makeText(getBaseContext(), "Log Service is Stop", Toast.LENGTH_SHORT).show();
+		SystemParameters.isServiceRunning.set(false);
+		SystemParameters.Duration = (System.currentTimeMillis() - SystemParameters.StartTime)/1000.0;
+
 		new Thread(){
 			public void run(){
-				//Wait log file write done
-				if( sw != null ) while(sw.isWrittingAudioDataLog.get());
-				if( SC != null ) while(SC.isWrittingWindowScore.get());
-				if( bh != null ) while(bh.isWrittingSensorDataLog.get());
-
-				if(isTraining) {
-					StartTrainingAlgo(sw);
-
+				if(!isTesting) {
 					// Local Database Handler
 					long id = SQLiteInsertNewLoggingRecord(
 							SystemParameters.StartDate,
 							"ghg070",
 							SystemParameters.StrokeCount,
 							SystemParameters.filePath,
-							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime,
-							-1 );
+							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime);
 					SystemParameters.TrainingId = id;
 				}else{
 					long id = SQLiteInsertNewLoggingRecord(
@@ -461,9 +452,20 @@ public class MainActivity extends Activity {
 							"ghg070",
 							SystemParameters.StrokeCount,
 							SystemParameters.filePath,
-							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime,
-							SystemParameters.TrainingId );
+							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime);
+					SystemParameters.TestingId = id;
 				}
+
+				sw.stopRecording();
+				if( isTesting ) bh.stopRecording();
+
+
+				//Wait log file write done
+				if( sw != null ) while(sw.isWrittingAudioDataLog.get());
+				if( SC != null ) while(SC.isWrittingWindowScore.get());
+				if( bh != null ) while(bh.isWrittingSensorDataLog.get());
+
+				if(isTraining) StartTrainingAlgo(sw);
 
 				//Show UI
 				runOnUiThread(new Runnable() {
@@ -531,11 +533,17 @@ public class MainActivity extends Activity {
 	/************************
 	 *  Local Database Related
 	 ***********************/
-	private long SQLiteInsertNewLoggingRecord(String date, String subject, int stroke_num, String path, boolean is_testing, long offset, long match_trainig_id){
+	private long SQLiteInsertNewLoggingRecord(String date, String subject, int stroke_num, String path, boolean is_testing, long offset){
 		DataListItem dlistDB = new DataListItem(MainActivity.this);
-		long id = dlistDB.insert(date, subject, stroke_num, path, is_testing, offset, match_trainig_id);
+		long id = dlistDB.insert(date, subject, stroke_num, path, is_testing, offset);
 		dlistDB.close();
 		return id;
+	}
+
+	private void SQLiteInsertFreqModel(final List<HashMap.Entry<Float, Float>> freq_model, double threshold, long matching_training_id){
+		MainFreqListItem mflistDB = new MainFreqListItem(MainActivity.this);
+		mflistDB.insert(freq_model, threshold, matching_training_id);
+		mflistDB.close();
 	}
 
 
@@ -628,9 +636,12 @@ public class MainActivity extends Activity {
 		fbm.setTopKFreqBandTable(AllMainFreqBands, peaks.size());
 		List<HashMap.Entry<Float, Float>> TopKMainFreqs = fbm.getTopKMainFreqBandTable();
 
-		//Count Stroke Detector's Threshold
-		StrokeDetector.ComputeScoreThreshold(TopKMainFreqs,vals,SoundWaveHandler.SAMPLE_RATE, FrequencyBandModel.FFT_LENGTH);
+		// Count Stroke Detector's Threshold
+		double threshold = StrokeDetector.ComputeScoreThreshold(TopKMainFreqs,vals,SoundWaveHandler.SAMPLE_RATE, FrequencyBandModel.FFT_LENGTH);
 
+		// SQLite
+		if(TopKMainFreqs.size() > 0)
+			SQLiteInsertFreqModel(TopKMainFreqs, threshold, SystemParameters.TrainingId);
 
 		// Test File for All Spectrum Main Freq Bands
 		LogFileWriter AllSpectrumMainFreqsTestWriter = new LogFileWriter("AllSpectrumMainFreqs.csv", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);

@@ -43,6 +43,7 @@ public class DataListPage extends Activity {
     private DataItemAdapter Adapter;
     private List<DataListItem.DataItem> stroke_dataset = new ArrayList<>();
 
+    public final static String EXTRA_ID = "DataListPage.EXTRA_ID";
     public final static String EXTRA_PATH = "DataListPage.EXTRA_PATH";
     public final static String EXTRA_OFFSET = "DataListPage.EXTRA_OFFSET";
 
@@ -82,6 +83,7 @@ public class DataListPage extends Activity {
             DataListItem.DataItem d_item = stroke_dataset.get(arg2);
             if(d_item.is_testing == 0){
                 Intent i = new Intent(DataListPage.this, ShowTrainingData.class);
+                i.putExtra(EXTRA_ID, d_item.id);
                 i.putExtra(EXTRA_PATH, d_item.path);
                 i.putExtra(EXTRA_OFFSET, d_item.offset);
                 startActivity(i);
@@ -258,7 +260,7 @@ public class DataListPage extends Activity {
             holder.DateTime.setText(rowItem.date.substring(0,rowItem.date.length()-4)); // subtract milli sec
             holder.DataType.setText(getResources().getString((rowItem.is_testing == 1) ? R.string.TestingData : R.string.TrainingData ));
             holder.imageView.setImageResource((rowItem.isupdated == 1) ? R.drawable.uploaded : R.drawable.upload);
-            holder.StrokeNum.setText("Stroke: " + String.valueOf(rowItem.stroke_num));
+            holder.StrokeNum.setText((rowItem.is_testing == 1) ? "Stroke: " + String.valueOf(rowItem.stroke_num) : "");
 
             return convertView;
         }
