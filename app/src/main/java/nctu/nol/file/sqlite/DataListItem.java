@@ -8,6 +8,8 @@ import android.database.sqlite.SQLiteDatabase;
 import java.util.ArrayList;
 import java.util.List;
 
+import nctu.nol.badmintonlogprogram.MainActivity;
+
 /**
  * Created by user on 2016/7/19.
  */
@@ -27,6 +29,7 @@ public class DataListItem {
     public static final String ISTESTING_COLUMN = "is_testing";
     public static final String ISUPDATED_COLUMN = "is_updated";
     public static final String OFFSET_COLUMN = "offset";
+    public static final String MATCH_TRAINING_FILE = "match_training_id";
 
 
     // 使用上面宣告的變數建立表格的SQL指令
@@ -39,7 +42,8 @@ public class DataListItem {
                     DATAPATH_COLUMN + " TEXT NOT NULL, " +
                     ISTESTING_COLUMN + " INTEGER NOT NULL, " +
                     ISUPDATED_COLUMN + " INTEGER NOT NULL, " +
-                    OFFSET_COLUMN + " INTEGER NOT NULL )";
+                    OFFSET_COLUMN + " INTEGER NOT NULL, " +
+                    MATCH_TRAINING_FILE +" INTEGER )";
 
     // 資料庫物件
     private SQLiteDatabase db;
@@ -55,7 +59,7 @@ public class DataListItem {
     }
 
     // 新增參數指定的物件
-    public long insert(String date, String subject, int stroke_num, String dataPath, boolean is_testing, long offset) {
+    public long insert(String date, String subject, int stroke_num, String dataPath, boolean is_testing, long offset, long match_training_id) {
         // 建立準備新增資料的ContentValues物件
         ContentValues cv = new ContentValues();
 
@@ -71,6 +75,7 @@ public class DataListItem {
             cv.put(ISTESTING_COLUMN, 0);
         cv.put(ISUPDATED_COLUMN, 0);
         cv.put(OFFSET_COLUMN, offset);
+        cv.put(MATCH_TRAINING_FILE, match_training_id);
 
         // 新增一筆資料並取得編號
         // 第一個參數是表格名稱
@@ -157,6 +162,7 @@ public class DataListItem {
         result.is_testing = cursor.getInt(5);
         result.isupdated = cursor.getInt(6);
         result.offset = cursor.getLong(7);
+        result.match_training_id = cursor.getLong(8);
 
         // 回傳結果
         return result;
@@ -183,6 +189,7 @@ public class DataListItem {
         public int is_testing; // 0 for false, 1 for true
         public int isupdated; // 0 for false, 1 for true
         public long offset;
+        public long match_training_id;
     }
 }
 

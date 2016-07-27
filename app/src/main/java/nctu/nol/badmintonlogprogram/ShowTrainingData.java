@@ -95,6 +95,7 @@ public class ShowTrainingData extends Activity {
     @Override
     protected void onDestroy(){
         super.onDestroy();
+        unregisterReceiver(mChartClickEventReceiver);
     }
 
     private void initialViewandEvent(){

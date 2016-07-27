@@ -443,10 +443,27 @@ public class MainActivity extends Activity {
 				if( SC != null ) while(SC.isWrittingWindowScore.get());
 				if( bh != null ) while(bh.isWrittingSensorDataLog.get());
 
-				if(isTraining) StartTrainingAlgo(sw);
+				if(isTraining) {
+					StartTrainingAlgo(sw);
 
-				// Local Database Handler
-				long id = SQLiteInsertNewLoggingRecord(SystemParameters.StartDate, "ghg070", SystemParameters.StrokeCount, SystemParameters.filePath, isTesting, SystemParameters.SoundStartTime-SystemParameters.StartTime);
+					// Local Database Handler
+					long id = SQLiteInsertNewLoggingRecord(
+							SystemParameters.StartDate,
+							"ghg070",
+							SystemParameters.StrokeCount,
+							SystemParameters.filePath,
+							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime,
+							-1 );
+					SystemParameters.TrainingId = id;
+				}else{
+					long id = SQLiteInsertNewLoggingRecord(
+							SystemParameters.StartDate,
+							"ghg070",
+							SystemParameters.StrokeCount,
+							SystemParameters.filePath,
+							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime,
+							SystemParameters.TrainingId );
+				}
 
 				//Show UI
 				runOnUiThread(new Runnable() {
@@ -514,9 +531,9 @@ public class MainActivity extends Activity {
 	/************************
 	 *  Local Database Related
 	 ***********************/
-	private long SQLiteInsertNewLoggingRecord(String date, String subject, int stroke_num, String path, boolean is_testing, long offset){
+	private long SQLiteInsertNewLoggingRecord(String date, String subject, int stroke_num, String path, boolean is_testing, long offset, long match_trainig_id){
 		DataListItem dlistDB = new DataListItem(MainActivity.this);
-		long id = dlistDB.insert(date, subject, stroke_num, path, is_testing, offset);
+		long id = dlistDB.insert(date, subject, stroke_num, path, is_testing, offset, match_trainig_id);
 		dlistDB.close();
 		return id;
 	}
