@@ -1,25 +1,5 @@
 package nctu.nol.badmintonlogprogram;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.LinkedBlockingQueue;
-
-import nctu.nol.algo.FrequencyBandModel;
-import nctu.nol.algo.PeakDetector;
-import nctu.nol.algo.ScoreComputing;
-import nctu.nol.algo.StrokeClassifier;
-import nctu.nol.algo.StrokeDetector;
-import nctu.nol.bt.devices.BeaconHandler;
-import nctu.nol.bt.devices.SoundWaveHandler;
-import nctu.nol.bt.devices.SoundWaveHandler.AudioData;
-import nctu.nol.file.SystemParameters;
-import nctu.nol.file.LogFileWriter;
-import nctu.nol.file.sqlite.DataListItem;
-import nctu.nol.file.sqlite.MainFreqListItem;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -39,6 +19,27 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import nctu.nol.account.NetworkCheckService;
+import nctu.nol.algo.FrequencyBandModel;
+import nctu.nol.algo.PeakDetector;
+import nctu.nol.algo.ScoreComputing;
+import nctu.nol.algo.StrokeClassifier;
+import nctu.nol.algo.StrokeDetector;
+import nctu.nol.bt.devices.BeaconHandler;
+import nctu.nol.bt.devices.SoundWaveHandler;
+import nctu.nol.bt.devices.SoundWaveHandler.AudioData;
+import nctu.nol.file.LogFileWriter;
+import nctu.nol.file.SystemParameters;
+import nctu.nol.file.sqlite.DataListItem;
+import nctu.nol.file.sqlite.MainFreqListItem;
 
 
 public class MainActivity extends Activity {
@@ -120,6 +121,9 @@ public class MainActivity extends Activity {
 		unregisterReceiver(mKoalaStateUpdateReceiver);
 		unregisterReceiver(mStrokeCountUpdateReceiver);
 		unregisterReceiver(mStrokeTypeResultReceiver);
+
+        Intent intent = new Intent(MainActivity.this,NetworkCheckService.class);
+        stopService(intent);
 
 		System.exit(0);
 		return;
@@ -687,7 +691,6 @@ public class MainActivity extends Activity {
 		StrokeDetector SD = new StrokeDetector(MainActivity.this, SC);
 		SD.StartStrokeDetector(bh);
     }
-
 }
 
 
