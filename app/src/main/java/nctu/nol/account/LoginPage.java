@@ -80,8 +80,8 @@ public class LoginPage extends Activity {
     boolean offline_login()
     {
         String account = sharedPreferences.getString("account",null);
-        String passwd=sharedPreferences.getString("passwd",null);
-        Log.d("Tag","fake login");
+        String passwd=sharedPreferences.getString("passwd", null);
+        Log.d("Tag", "fake login");
         return !((account==null)||(passwd==null));
     }
 
@@ -104,7 +104,7 @@ public class LoginPage extends Activity {
         final String encry_pw=passwd;
         //sent to server
 
-        login(account,encry_pw);
+        login(account, encry_pw);
     }
 
     public void create_click(View view) {
@@ -115,7 +115,7 @@ public class LoginPage extends Activity {
 
     void login(final String account, final String passwd)
     {//auto jump to mainactivity if success,if fail pops out a toast and clears the passwd textbox
-        Log.d("Tag","login btn click");
+        Log.d("Tag", "login btn click");
         API.login(account, passwd, new ResponseListener() {
             public void onResponse(JSONObject response) {
                 try {
@@ -127,8 +127,8 @@ public class LoginPage extends Activity {
                         editor.putString("account", account);
                         editor.putString("passwd", passwd);
                         editor.commit();
-                        Log.d("Tag","login success");
-                        Intent i = new Intent(getApplicationContext(),MainActivity.class);
+                        Log.d("Tag", "login success");
+                        Intent i = new Intent(getApplicationContext(), MainActivity.class);
                         startActivity(i);
                     } else {
                         Toast.makeText(getApplicationContext(), "login fail, error code" + result, Toast.LENGTH_LONG).show();
