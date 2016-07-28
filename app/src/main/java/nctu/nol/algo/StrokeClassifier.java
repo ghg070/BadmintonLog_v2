@@ -848,7 +848,7 @@ public class StrokeClassifier {
             quickSort(arr, index, right);
     }
 
-    public String MillisecToString(long timestamp){
+    public static String MillisecToString(long timestamp){
 
         //compute the passed minutes
         Long minutes = (timestamp/1000)/60;

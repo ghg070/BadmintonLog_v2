@@ -484,18 +484,29 @@ public class BeaconHandler implements SensorEventListener {
     }
 
     private void ClassifyStrokeType(final long StrokeTime){
-        ArrayList<float[]> AccData = GetSensorDataInStrokeWindow(AccDataset_for_algo, StrokeTime, true);
-        ArrayList<float[]> AccData_ReduceGravity = GetSensorDataInStrokeWindow(AccDataset_GravityReduced_for_algo, StrokeTime, true);
-        ArrayList<float[]> GyroData = GetSensorDataInStrokeWindow(GyroDataset_for_algo, StrokeTime, false);
+        Thread work = new Thread(){
+            @Override
+            public void run(){
+                ArrayList<float[]> AccData = GetSensorDataInStrokeWindow(AccDataset_for_algo, StrokeTime, true);
+                ArrayList<float[]> AccData_ReduceGravity = GetSensorDataInStrokeWindow(AccDataset_GravityReduced_for_algo, StrokeTime, true);
+                ArrayList<float[]> GyroData = GetSensorDataInStrokeWindow(GyroDataset_for_algo, StrokeTime, false);
 
-        final ArrayList<Float> stroke_features =  StrokeTypeClassifier.FeatureExtraction(
-                AccData,
-                AccData_ReduceGravity,
-                GyroData);
+                final ArrayList<Float> stroke_features =  StrokeTypeClassifier.FeatureExtraction(
+                        AccData,
+                        AccData_ReduceGravity,
+                        GyroData);
 
-        /** Classification **/
-       StrokeTypeClassifier.Classify(StrokeTime, stroke_features);
+                /** Classification **/
+                StrokeTypeClassifier.Classify(StrokeTime, stroke_features);
+            }
+        };
 
+        try {
+            work.start();
+            work.join();
+        } catch (InterruptedException e) {
+            Log.e(TAG,e.getMessage());
+        }
     }
 
     private final ArrayList<float[]> GetSensorDataInStrokeWindow(final LinkedBlockingDeque<SensorData> deque, final long StrokeTime, boolean isAccData){
