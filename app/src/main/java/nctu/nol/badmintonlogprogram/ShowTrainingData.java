@@ -210,7 +210,7 @@ public class ShowTrainingData extends Activity {
 
                 block_time[0] = audio_time[idx];
                 block_value[0] = 1;
-                block_time[1] = audio_time[idx+512];
+                block_time[1] = audio_time[idx+FrequencyBandModel.FFT_LENGTH];
                 block_value[1] = 1;
                 idx += FrequencyBandModel.FFT_LENGTH;
                 awc.AddChartDataset(block_time, block_value, Color.argb(60, 255, 0, 0));
@@ -297,7 +297,7 @@ public class ShowTrainingData extends Activity {
                     @Override
                     public void run() {
                         if(MoveToCenter)
-                            awc.MovePointToCenter(peak_time[p_idx]);
+                            awc.MovePointToCenter(peak_time[p_idx], 0.25, 0.75);
                         awc.ChangeSeriesColor(CurBlockIdx + 2, Color.argb(60, 0, 255, 0)); // 0: Audio Wave, 1: Peak Point, 2~end: Block
                         sc.ClearAllDataset();
                         HandlerFFTData(sc, data_idx);

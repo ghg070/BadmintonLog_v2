@@ -79,10 +79,18 @@ public class AudioWaveChart {
         XYDataset.clear();
     }
 
-    public void MovePointToCenter(double x){
+    public void MovePointToCenter(double x, double left_percent, double right_percent){
         if(renderer != null && chart != null){
-            renderer.setXAxisMin(x-ChartRangeMilliSecond/4);
-            renderer.setXAxisMax(x+ChartRangeMilliSecond*3/4);
+            if( x-ChartRangeMilliSecond*left_percent < XaxisMin ){
+                renderer.setXAxisMin(XaxisMin);
+                renderer.setXAxisMax(XaxisMin + ChartRangeMilliSecond);
+            }else if( x+ChartRangeMilliSecond*right_percent > XaxisMax ){
+                renderer.setXAxisMin(XaxisMax - ChartRangeMilliSecond);
+                renderer.setXAxisMax(XaxisMax);
+            }else {
+                renderer.setXAxisMin(x - ChartRangeMilliSecond * left_percent);
+                renderer.setXAxisMax(x + ChartRangeMilliSecond * right_percent);
+            }
             chart.repaint();
         }
     }

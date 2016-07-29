@@ -94,6 +94,8 @@ public class DataListPage extends Activity {
                 } else {
                     Intent i = new Intent(DataListPage.this, StrokeListPage.class);
                     i.putExtra(EXTRA_ID, d_item.id);
+                    i.putExtra(EXTRA_PATH, d_item.path);
+                    i.putExtra(EXTRA_OFFSET, d_item.offset);
                     startActivity(i);
                 }
             }else{
