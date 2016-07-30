@@ -448,7 +448,9 @@ public class MainActivity extends Activity {
 							"ghg070",
 							SystemParameters.StrokeCount,
 							SystemParameters.filePath,
-							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime);
+							isTesting,
+							SystemParameters.SoundStartTime - SystemParameters.StartTime,
+							-1);
 					SystemParameters.TrainingId = id;
 				}else{
 					long id = SQLiteInsertNewLoggingRecord(
@@ -456,7 +458,8 @@ public class MainActivity extends Activity {
 							"ghg070",
 							SystemParameters.StrokeCount,
 							SystemParameters.filePath,
-							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime);
+							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime,
+							SystemParameters.TrainingId);
 					SystemParameters.TestingId = id;
 				}
 
@@ -537,9 +540,9 @@ public class MainActivity extends Activity {
 	/************************
 	 *  Local Database Related
 	 ***********************/
-	private long SQLiteInsertNewLoggingRecord(String date, String subject, int stroke_num, String path, boolean is_testing, long offset){
+	private long SQLiteInsertNewLoggingRecord(String date, String subject, int stroke_num, String path, boolean is_testing, long offset, long match_id){
 		DataListItem dlistDB = new DataListItem(MainActivity.this);
-		long id = dlistDB.insert(date, subject, stroke_num, path, is_testing, offset);
+		long id = dlistDB.insert(date, subject, stroke_num, path, is_testing, offset, match_id);
 		dlistDB.close();
 		return id;
 	}

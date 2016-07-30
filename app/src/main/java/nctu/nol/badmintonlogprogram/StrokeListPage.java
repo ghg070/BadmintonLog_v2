@@ -175,18 +175,18 @@ public class StrokeListPage extends Activity {
 
     private void BuildStrokeTable(final List<StrokeListItem.StrokeItem> dataset, final double[] audio_time){
         int curStrokeCount = 0;
-        int left = -1, right = -1;
+        int left = -1, right;
         for(int i = 0; i < audio_time.length; i++){
             if(curStrokeCount >= dataset.size())
                 break;
 
             long curStrokeTime = dataset.get(curStrokeCount).stroke_time;
-            if(left == -1 && audio_time[i] >= curStrokeTime-SHOWRANGE/2)
+            if(left == -1 && audio_time[i] >= curStrokeTime-SHOWRANGE/2) {
                 left = i;
-            else if(right == -1 && audio_time[i] >= curStrokeTime+SHOWRANGE/2)
-                right = i;
+                right = left;
+                while(right < audio_time.length &&  audio_time[right] < curStrokeTime+SHOWRANGE/2)
+                    right++;
 
-            if(left != -1 && right != -1){
                 StrokeInfo info = new StrokeInfo();
                 info.left_idx = left;
                 info.right_idx = right;
@@ -197,7 +197,6 @@ public class StrokeListPage extends Activity {
                 StrokeTable.add(info);
 
                 left = -1;
-                right = -1;
                 curStrokeCount++;
             }
         }

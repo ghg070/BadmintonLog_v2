@@ -14,18 +14,13 @@ import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.util.List;
 import java.util.Vector;
 
 import nctu.nol.algo.CountSpectrum;
 import nctu.nol.algo.FrequencyBandModel;
-import nctu.nol.algo.PeakDetector;
 import nctu.nol.badmintonlogprogram.chart.AudioWaveChart;
 import nctu.nol.badmintonlogprogram.chart.SpectrumChart;
 import nctu.nol.bt.devices.SoundWaveHandler;
-import nctu.nol.file.WavReader;
 import nctu.nol.file.sqlite.DataListItem;
 import nctu.nol.file.sqlite.MainFreqListItem;
 
@@ -43,6 +38,8 @@ public class ShowTestingData extends Activity {
     private final static int ROWCOUNT = FrequencyBandModel.PEAKFREQ_NUM;
     private TextView[] tv_Freqs = new TextView[ROWCOUNT];
     private TextView[] tv_Weight = new TextView[ROWCOUNT];
+    private TextView tv_WeightTotal;
+    private TextView tv_Threshold;
 
     // Extra data
     private long StrokeTime;
@@ -58,6 +55,9 @@ public class ShowTestingData extends Activity {
     // FFT Data
     private double[] fft_freq = {};
     private double[] fft_value = {};
+    private double [] fft_mainfreq = new double[FrequencyBandModel.PEAKFREQ_NUM],
+                fft_mainfreq_score = new double[FrequencyBandModel.PEAKFREQ_NUM];
+    private double Threshold = 0;
     private Button bt_prev, bt_next;
     private int CurBlockIdx = 0;
     private int BlockNum = 0;
@@ -101,17 +101,20 @@ public class ShowTestingData extends Activity {
         bt_prev.setOnClickListener(prevListener);
         bt_next.setOnClickListener(nextListener);
 
-        tv_Freqs[0] = (TextView) findViewById(R.id.tv_table_freq1);
-        tv_Freqs[1] = (TextView) findViewById(R.id.tv_table_freq2);
-        tv_Freqs[2] = (TextView) findViewById(R.id.tv_table_freq3);
-        tv_Freqs[3] = (TextView) findViewById(R.id.tv_table_freq4);
-        tv_Freqs[4] = (TextView) findViewById(R.id.tv_table_freq5);
+        tv_Freqs[0] = (TextView) findViewById(R.id.tv_table_onestroke_freq1);
+        tv_Freqs[1] = (TextView) findViewById(R.id.tv_table_onestroke_freq2);
+        tv_Freqs[2] = (TextView) findViewById(R.id.tv_table_onestroke_freq3);
+        tv_Freqs[3] = (TextView) findViewById(R.id.tv_table_onestroke_freq4);
+        tv_Freqs[4] = (TextView) findViewById(R.id.tv_table_onestroke_freq5);
 
-        tv_Weight[0] = (TextView) findViewById(R.id.tv_table_power1);
-        tv_Weight[1] = (TextView) findViewById(R.id.tv_table_power2);
-        tv_Weight[2] = (TextView) findViewById(R.id.tv_table_power3);
-        tv_Weight[3] = (TextView) findViewById(R.id.tv_table_power4);
-        tv_Weight[4] = (TextView) findViewById(R.id.tv_table_power5);
+        tv_Weight[0] = (TextView) findViewById(R.id.tv_table_onestroke_weight1);
+        tv_Weight[1] = (TextView) findViewById(R.id.tv_table_onestroke_weight2);
+        tv_Weight[2] = (TextView) findViewById(R.id.tv_table_onestroke_weight3);
+        tv_Weight[3] = (TextView) findViewById(R.id.tv_table_onestroke_weight4);
+        tv_Weight[4] = (TextView) findViewById(R.id.tv_table_onestroke_weight5);
+
+        tv_WeightTotal = (TextView) findViewById(R.id.tv_table_onestroke_weight_total);
+        tv_Threshold = (TextView) findViewById(R.id.tv_table_onestroke_threshold);
     }
 
     private void Prepare(){
@@ -126,8 +129,7 @@ public class ShowTestingData extends Activity {
                 runOnUiThread(new Runnable() {
                     public void run() {
                         awc.MakeChart();
-                        ChangeFocusBlock(CurBlockIdx, true);
-                        //HandleFrequencyTable(DataID);
+                        ChangeFocusBlock(CurBlockIdx, true, DataID);
                         dialog.dismiss();
                     }
                 });
@@ -142,7 +144,7 @@ public class ShowTestingData extends Activity {
         public void onClick(View v) {
             if (CurBlockIdx != 0) {
                 CurBlockIdx--;
-                ChangeFocusBlock(CurBlockIdx, true);
+                ChangeFocusBlock(CurBlockIdx, true, DataID);
             }
         }
     };
@@ -152,7 +154,7 @@ public class ShowTestingData extends Activity {
         public void onClick(View v) {
             if (CurBlockIdx != BlockNum - 1) {
                 CurBlockIdx++;
-                ChangeFocusBlock(CurBlockIdx, true);
+                ChangeFocusBlock(CurBlockIdx, true, DataID);
             }
         }
     };
@@ -178,7 +180,6 @@ public class ShowTestingData extends Activity {
         double max = Double.NEGATIVE_INFINITY;
         for(int i = 0; i < audio_value.length; i++){
             long time = (long) audio_time[i];
-
             if(time == StrokeTime && max < Math.abs(audio_value[i])){
                 max = Math.abs(audio_value[i]);
                 s_idx = i;
@@ -211,7 +212,7 @@ public class ShowTestingData extends Activity {
         }
     }
 
-    private void HandlerFFTData(final SpectrumChart sc, int start_position){
+    private void HandlerFFTData(final SpectrumChart sc, int start_position, long testing_id){
         //Use fft
         FrequencyBandModel fbm  = new FrequencyBandModel();
         CountSpectrum cs = new CountSpectrum(FrequencyBandModel.FFT_LENGTH);
@@ -226,48 +227,67 @@ public class ShowTestingData extends Activity {
         sc.AddChartDataset(fft_freq, fft_value, Color.BLUE);
 
         // FFT Main Freqs
-        List<Integer> mainfreqs = fbm.FindSpectrumPeakIndex(spec, FrequencyBandModel.PEAKFREQ_NUM);
-        double [] fft_mainfreq = new double[FrequencyBandModel.PEAKFREQ_NUM],
-                fft_mainvalue = new double[FrequencyBandModel.PEAKFREQ_NUM];
-        for(int i = 0; i < mainfreqs.size(); i++){
-            int idx = mainfreqs.get(i);
-            fft_mainfreq[i] = spec.get(idx).Freq;
-            fft_mainvalue[i] = spec.get(idx).Power;
-        }
-        bubbleSort(fft_mainfreq, fft_mainvalue);
-        sc.AddChartDataset(fft_mainfreq, fft_mainvalue, Color.RED);
-    }
+        DataListItem dlistDB = new DataListItem(ShowTestingData.this);
+        DataListItem.DataItem fileinfo = dlistDB.get(testing_id);
+        dlistDB.close();
 
-    private void HandleFrequencyTable(long id){
-        /*MainFreqListItem mflistDB = new MainFreqListItem(ShowTestingData.this);
-        MainFreqListItem.FreqModel result = mflistDB.GetFreqModel(id);
+        long match_traing_id = fileinfo.match_id;
+        MainFreqListItem mflistDB = new MainFreqListItem(ShowTestingData.this);
+        MainFreqListItem.FreqModel model = mflistDB.GetFreqModel(match_traing_id);
         mflistDB.close();
 
-        if(result != null){
-            for(int i = 0; i < ROWCOUNT; i++){
-                if(result.freqs.length > i) {
-                    tv_Freqs[ROWCOUNT - i - 1].setText(String.valueOf(result.freqs[i]));
-                    tv_Weight[ROWCOUNT - i - 1].setText(String.valueOf(result.vals[i]));
-                }
+        Threshold = model.threshold;
+        double maxValue = Double.NEGATIVE_INFINITY;
+        for(int i = 0 ; i < model.vals.length; i++){
+            if(model.vals[i] > maxValue)
+                maxValue = model.vals[i];
+        }
+
+        double[] mFreq = new double[FrequencyBandModel.PEAKFREQ_NUM];
+        double[] mValue = new double[FrequencyBandModel.PEAKFREQ_NUM];
+        for(int i = 0; i < FrequencyBandModel.PEAKFREQ_NUM; i++){
+            int f_idx = (int)Math.round(model.freqs[i] / ((double) SoundWaveHandler.SAMPLE_RATE / FrequencyBandModel.FFT_LENGTH));
+            mFreq[i] = fft_freq[f_idx];
+            mValue[i] = fft_value[f_idx];
+
+            fft_mainfreq[i] = fft_freq[f_idx];
+            fft_mainfreq_score[i] = fft_value[f_idx]/maxValue;
+        }
+        bubbleSort(mFreq, mValue);
+        sc.AddChartDataset(mFreq, mValue, Color.RED);
+    }
+
+    private void HandleFrequencyTable(){
+        double sum = 0;
+        for(int i = 0; i < ROWCOUNT; i++){
+            if(fft_mainfreq.length > i) {
+                tv_Freqs[ROWCOUNT - i - 1].setText(String.format("%.3f",fft_mainfreq[i]));
+                tv_Weight[ROWCOUNT - i - 1].setText(String.format("%.3f",fft_mainfreq_score[i]));
+                sum += fft_mainfreq_score[i];
             }
-        }*/
+        }
+        tv_WeightTotal.setText(String.format("%.3f", sum));
+        tv_Threshold.setText(String.format("%.3f", Threshold));
     }
 
 
-    private void ChangeFocusBlock(final int CurBlockIdx, final boolean MoveToCenter){
+    private void ChangeFocusBlock(final int CurBlockIdx, final boolean MoveToCenter, final long testing_id){
         new Thread(){
             @Override
             public void run() {
                 final int data_idx = CurBlockIdx*FrequencyBandModel.FFT_LENGTH + BlockStartIndex;
+
+                sc.ClearAllDataset();
+                HandlerFFTData(sc, data_idx, testing_id);
+
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         if(MoveToCenter)
                             awc.MovePointToCenter(audio_time[data_idx], 0.5, 0.5);
                         awc.ChangeSeriesColor(CurBlockIdx + 2, Color.argb(60, 0, 255, 0)); // 0: Audio Wave, 1: Peak Point, 2~end: Block
-                        sc.ClearAllDataset();
-                        HandlerFFTData(sc, data_idx);
                         sc.MakeChart();
+                        HandleFrequencyTable();
                     }
                 });
             }
@@ -322,7 +342,7 @@ public class ShowTestingData extends Activity {
 
                             int block_idx = i;
                             CurBlockIdx = block_idx;
-                            ChangeFocusBlock(CurBlockIdx, false);
+                            ChangeFocusBlock(CurBlockIdx, false, DataID);
                             break;
                     }
                 }

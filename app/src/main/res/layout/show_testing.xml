@@ -149,6 +149,32 @@
                     android:layout_marginLeft="30sp"
                     android:textSize="17sp" />
             </TableRow>
+            <TableRow>
+                <TextView
+                    android:layout_column="0"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:textAlignment="center"
+                    android:text="Total"/>
+                <TextView
+                    android:id="@+id/tv_table_onestroke_weight_total"
+                    android:layout_column="1"
+                    android:layout_marginLeft="30sp"
+                    android:textSize="17sp" />
+            </TableRow>
+            <TableRow>
+                <TextView
+                    android:layout_column="0"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:textAlignment="center"
+                    android:text="Threshold"/>
+                <TextView
+                    android:id="@+id/tv_table_onestroke_threshold"
+                    android:layout_column="1"
+                    android:layout_marginLeft="30sp"
+                    android:textSize="17sp" />
+            </TableRow>
         </TableLayout>
 
     </LinearLayout>
