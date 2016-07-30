@@ -1,6 +1,7 @@
 package nctu.nol.badmintonlogprogram;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -81,12 +82,28 @@ public class DataListPage extends Activity {
         @Override
         public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
             DataListItem.DataItem d_item = stroke_dataset.get(arg2);
-            if(d_item.is_testing == 0){
-                Intent i = new Intent(DataListPage.this, ShowTrainingData.class);
-                i.putExtra(EXTRA_ID, d_item.id);
-                i.putExtra(EXTRA_PATH, d_item.path);
-                i.putExtra(EXTRA_OFFSET, d_item.offset);
-                startActivity(i);
+
+            File dir = new File(d_item.path);
+            if(dir.isDirectory()) {
+                if (d_item.is_testing == 0) {
+                    Intent i = new Intent(DataListPage.this, ShowTrainingData.class);
+                    i.putExtra(EXTRA_ID, d_item.id);
+                    i.putExtra(EXTRA_PATH, d_item.path);
+                    i.putExtra(EXTRA_OFFSET, d_item.offset);
+                    startActivity(i);
+                } else {
+                    Intent i = new Intent(DataListPage.this, StrokeListPage.class);
+                    i.putExtra(EXTRA_ID, d_item.id);
+                    i.putExtra(EXTRA_PATH, d_item.path);
+                    i.putExtra(EXTRA_OFFSET, d_item.offset);
+                    startActivity(i);
+                }
+            }else{
+                new AlertDialog.Builder(DataListPage.this)
+                        .setTitle("檔案遺失")
+                        .setMessage("無法進行資料分析")
+                        .setNegativeButton("確認",null)
+                        .show();
             }
         }
     };

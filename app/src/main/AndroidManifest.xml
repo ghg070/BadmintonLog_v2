@@ -63,6 +63,14 @@
             android:name=".ShowTrainingData"
             android:screenOrientation="portrait" >
         </activity>
+        <activity
+            android:name=".StrokeListPage"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name=".ShowTestingData"
+            android:screenOrientation="portrait" >
+        </activity>
         <activity android:name="nctu.nol.account.AgreementPage" />
         <activity android:name="nctu.nol.account.RegisterPage" />
         <activity
