@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Vector;
 
+import nctu.nol.bt.devices.BeaconHandler;
 import nctu.nol.file.LogFileWriter;
 import nctu.nol.file.SystemParameters;
 import nctu.nol.file.sqlite.StrokeListItem;
@@ -70,11 +71,10 @@ public class StrokeClassifier {
 
     public double Classify(final long stroke_time, final ArrayList<Float> allVals) {
 
-        String type = "None";
 
         double result = -1;
         try {
-            /*
+
             // Single Data
             DenseInstance inst = new DenseInstance(dataset.numAttributes());
             inst.setDataset(dataset);
@@ -85,7 +85,7 @@ public class StrokeClassifier {
             StrokeFeature.writeFeatures(allVals);
 
             // load classifier from file
-            InputStream in_stream = mActivity.getResources().openRawResource( mActivity.getResources().getIdentifier("smo", "raw", mActivity.getPackageName()));
+            InputStream in_stream = mContext.getResources().openRawResource( mContext.getResources().getIdentifier("smo", "raw", mContext.getPackageName()));
             Classifier clf = (Classifier) weka.core.SerializationHelper.read(in_stream);
             result = clf.classifyInstance(inst);
             String type = dataset.classAttribute().value((int)result);
@@ -94,8 +94,8 @@ public class StrokeClassifier {
             Log.d(TAG, dataset.classAttribute().value((int)result));
             Intent broadcast = new Intent(ACTION_OUTPUT_RESULT_STATE);
             broadcast.putExtra(EXTRA_TYPE, type);
-            mActivity.sendBroadcast(broadcast);
-*/
+            mContext.sendBroadcast(broadcast);
+
 
             StrokeRecord sr = new StrokeRecord(stroke_time, type);
             strokes.add(sr);
@@ -132,9 +132,9 @@ public class StrokeClassifier {
         }
     }
 
-    public final ArrayList<Float> FeatureExtraction(final ArrayList<float[]> AccData,
-                                                    final ArrayList<float[]> AccData_Without_Gravity,
-                                                    final ArrayList<float[]> GyroData) {
+    public final ArrayList<Float> FeatureExtraction(final ArrayList<BeaconHandler.SensorData> AccData,
+                                                    final ArrayList<BeaconHandler.SensorData> AccData_Without_Gravity,
+                                                    final ArrayList<BeaconHandler.SensorData> GyroData) {
 
         /*LogFileWriter g, a, w;
 
@@ -185,28 +185,85 @@ public class StrokeClassifier {
                 gravZ_dataset = new double[AccData.size()],
                 wx_dataset = new double[GyroData.size()],
                 wy_dataset = new double[GyroData.size()],
-                wz_dataset = new double[GyroData.size()];
+                wz_dataset = new double[GyroData.size()],
+                angleX_dataset = new double[GyroData.size()],
+                angleY_dataset = new double[GyroData.size()],
+                angleZ_dataset = new double[GyroData.size()],
+                abs_gx_dataset = new double[AccData.size()],
+                abs_gy_dataset = new double[AccData.size()],
+                abs_gz_dataset = new double[AccData.size()],
+                abs_ax_dataset = new double[AccData.size()],
+                abs_ay_dataset = new double[AccData.size()],
+                abs_az_dataset = new double[AccData.size()],
+                abs_gravX_dataset = new double[AccData.size()],
+                abs_gravY_dataset = new double[AccData.size()],
+                abs_gravZ_dataset = new double[AccData.size()],
+                abs_wx_dataset = new double[GyroData.size()],
+                abs_wy_dataset = new double[GyroData.size()],
+                abs_wz_dataset = new double[GyroData.size()],
+                abs_angleX_dataset = new double[GyroData.size()],
+                abs_angleY_dataset = new double[GyroData.size()],
+                abs_angleZ_dataset = new double[GyroData.size()];
 
         for (int i = 0; i < AccData.size(); i++) {
-            gx_dataset[i] = AccData.get(i)[0];
-            gy_dataset[i] = AccData.get(i)[1];
-            gz_dataset[i] = AccData.get(i)[2];
+            gx_dataset[i] = AccData.get(i).values[0];
+            gy_dataset[i] = AccData.get(i).values[1];
+            gz_dataset[i] = AccData.get(i).values[2];
+
+            abs_gx_dataset[i] = Math.abs(gx_dataset[i]);
+            abs_gy_dataset[i] = Math.abs(gy_dataset[i]);
+            abs_gz_dataset[i] = Math.abs(gz_dataset[i]);
         }
         for (int i = 0; i < AccData_Without_Gravity.size(); i++) {
-            ax_dataset[i] = AccData_Without_Gravity.get(i)[0];
-            ay_dataset[i] = AccData_Without_Gravity.get(i)[1];
-            az_dataset[i] = AccData_Without_Gravity.get(i)[2];
+            ax_dataset[i] = AccData_Without_Gravity.get(i).values[0];
+            ay_dataset[i] = AccData_Without_Gravity.get(i).values[1];
+            az_dataset[i] = AccData_Without_Gravity.get(i).values[2];
             force_dataset[i] = Math.sqrt(Math.pow(ax_dataset[i], 2) + Math.pow(ay_dataset[i], 2) + Math.pow(az_dataset[i], 2));
+
+            abs_ax_dataset[i] = Math.abs(ax_dataset[i]);
+            abs_ay_dataset[i] = Math.abs(ay_dataset[i]);
+            abs_az_dataset[i] = Math.abs(az_dataset[i]);
         }
         for (int i = 0; i < AccData.size(); i++) {
-            gravX_dataset[i] = AccData.get(i)[0]-AccData_Without_Gravity.get(i)[0];
-            gravY_dataset[i] = AccData.get(i)[1]-AccData_Without_Gravity.get(i)[1];
-            gravZ_dataset[i] = AccData.get(i)[2]-AccData_Without_Gravity.get(i)[2];
+            gravX_dataset[i] = AccData.get(i).values[0]-AccData_Without_Gravity.get(i).values[0];
+            gravY_dataset[i] = AccData.get(i).values[1]-AccData_Without_Gravity.get(i).values[1];
+            gravZ_dataset[i] = AccData.get(i).values[2]-AccData_Without_Gravity.get(i).values[2];
+
+            abs_gravX_dataset[i] = Math.abs(gravX_dataset[i]);
+            abs_gravY_dataset[i] = Math.abs(gravY_dataset[i]);
+            abs_gravZ_dataset[i] = Math.abs(gravZ_dataset[i]);
         }
         for (int i = 0; i < GyroData.size(); i++) {
-            wx_dataset[i] = GyroData.get(i)[0];
-            wy_dataset[i] = GyroData.get(i)[1];
-            wz_dataset[i] = GyroData.get(i)[2];
+            wx_dataset[i] = GyroData.get(i).values[0];
+            wy_dataset[i] = GyroData.get(i).values[1];
+            wz_dataset[i] = GyroData.get(i).values[2];
+
+            abs_wx_dataset[i] = Math.abs(wx_dataset[i]);
+            abs_wy_dataset[i] = Math.abs(wy_dataset[i]);
+            abs_wz_dataset[i] = Math.abs(wz_dataset[i]);
+        }
+
+        // Count Angle
+        double sum[] = {0,0,0};
+        angleX_dataset[0] = sum[0];
+        angleY_dataset[0] = sum[1];
+        angleZ_dataset[0] = sum[2];
+        abs_angleX_dataset[0] = Math.abs(angleX_dataset[0]);
+        abs_angleY_dataset[0] = Math.abs(angleY_dataset[0]);
+        abs_angleZ_dataset[0] = Math.abs(angleZ_dataset[0]);
+        for (int i = 1; i < GyroData.size(); i++) {
+            double interval = (double)(GyroData.get(i).time - GyroData.get(i-1).time)/1000;
+            sum[0] = sum[0] + interval*GyroData.get(i).values[0];
+            sum[1] = sum[1] + interval*GyroData.get(i).values[1];
+            sum[2] = sum[2] + interval*GyroData.get(i).values[2];
+
+            angleX_dataset[i] = sum[0];
+            angleY_dataset[i] = sum[1];
+            angleZ_dataset[i] = sum[2];
+
+            abs_angleX_dataset[i] = Math.abs(angleX_dataset[i]);
+            abs_angleY_dataset[i] = Math.abs(angleY_dataset[i]);
+            abs_angleZ_dataset[i] = Math.abs(angleZ_dataset[i]);
         }
 
         ArrayList<Float> allValues = new ArrayList<Float>();
@@ -382,269 +439,560 @@ public class StrokeClassifier {
         allValues.add((float)corrcoef(wx_dataset, wz_dataset));
         allValues.add((float)corrcoef(wy_dataset, wz_dataset));
 
+        max_val = max(angleX_dataset);
+        rms_val = rms(angleX_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(angleX_dataset));
+        allValues.add((float)mean(angleX_dataset));
+        allValues.add((float)std(angleX_dataset));
+        allValues.add((float)rms(angleX_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(angleX_dataset));
+        allValues.add((float)skewness(angleX_dataset));
+        allValues.add((float)kurtosis(angleX_dataset));
+
+        max_val = max(angleY_dataset);
+        rms_val = rms(angleY_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(angleY_dataset));
+        allValues.add((float)mean(angleY_dataset));
+        allValues.add((float)std(angleY_dataset));
+        allValues.add((float)rms(angleY_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(angleY_dataset));
+        allValues.add((float)skewness(angleY_dataset));
+        allValues.add((float)kurtosis(angleY_dataset));
+
+        max_val = max(angleZ_dataset);
+        rms_val = rms(angleZ_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(angleZ_dataset));
+        allValues.add((float)mean(angleZ_dataset));
+        allValues.add((float)std(angleZ_dataset));
+        allValues.add((float)rms(angleZ_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(angleZ_dataset));
+        allValues.add((float)skewness(angleZ_dataset));
+        allValues.add((float)kurtosis(angleZ_dataset));
+
+        allValues.add((float)corrcoef(angleX_dataset, angleY_dataset));
+        allValues.add((float)corrcoef(angleX_dataset, angleZ_dataset));
+        allValues.add((float)corrcoef(angleY_dataset, angleZ_dataset));
+
+        max_val = max(abs_gx_dataset);
+        rms_val = rms(abs_gx_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_gx_dataset));
+        allValues.add((float)mean(abs_gx_dataset));
+        allValues.add((float)std(abs_gx_dataset));
+        allValues.add((float)rms(abs_gx_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_gx_dataset));
+        allValues.add((float)skewness(abs_gx_dataset));
+        allValues.add((float)kurtosis(abs_gx_dataset));
+
+        max_val = max(abs_gy_dataset);
+        rms_val = rms(abs_gy_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_gy_dataset));
+        allValues.add((float)mean(abs_gy_dataset));
+        allValues.add((float)std(abs_gy_dataset));
+        allValues.add((float)rms(abs_gy_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_gy_dataset));
+        allValues.add((float)skewness(abs_gy_dataset));
+        allValues.add((float)kurtosis(abs_gy_dataset));
+
+        max_val = max(abs_gz_dataset);
+        rms_val = rms(abs_gz_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_gz_dataset));
+        allValues.add((float)mean(abs_gz_dataset));
+        allValues.add((float)std(abs_gz_dataset));
+        allValues.add((float)rms(abs_gz_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_gz_dataset));
+        allValues.add((float)skewness(abs_gz_dataset));
+        allValues.add((float)kurtosis(abs_gz_dataset));
+
+        allValues.add((float)corrcoef(abs_gx_dataset, abs_gy_dataset));
+        allValues.add((float)corrcoef(abs_gx_dataset, abs_gz_dataset));
+        allValues.add((float)corrcoef(abs_gy_dataset, abs_gz_dataset));
+
+        max_val = max(abs_ax_dataset);
+        rms_val = rms(abs_ax_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_ax_dataset));
+        allValues.add((float)mean(abs_ax_dataset));
+        allValues.add((float)std(abs_ax_dataset));
+        allValues.add((float)rms(abs_ax_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_ax_dataset));
+        allValues.add((float)skewness(abs_ax_dataset));
+        allValues.add((float)kurtosis(abs_ax_dataset));
+
+        max_val = max(abs_ay_dataset);
+        rms_val = rms(abs_ay_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_ay_dataset));
+        allValues.add((float)mean(abs_ay_dataset));
+        allValues.add((float)std(abs_ay_dataset));
+        allValues.add((float)rms(abs_ay_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_ay_dataset));
+        allValues.add((float)skewness(abs_ay_dataset));
+        allValues.add((float)kurtosis(abs_ay_dataset));
+
+        max_val = max(abs_az_dataset);
+        rms_val = rms(abs_az_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_az_dataset));
+        allValues.add((float)mean(abs_az_dataset));
+        allValues.add((float)std(abs_az_dataset));
+        allValues.add((float)rms(abs_az_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_az_dataset));
+        allValues.add((float)skewness(abs_az_dataset));
+        allValues.add((float)kurtosis(abs_az_dataset));
+
+        allValues.add((float)corrcoef(abs_ax_dataset, abs_ay_dataset));
+        allValues.add((float)corrcoef(abs_ax_dataset, abs_az_dataset));
+        allValues.add((float)corrcoef(abs_ay_dataset, abs_az_dataset));
+
+        max_val = max(abs_gravX_dataset);
+        rms_val = rms(abs_gravX_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_gravX_dataset));
+        allValues.add((float)mean(abs_gravX_dataset));
+        allValues.add((float)std(abs_gravX_dataset));
+        allValues.add((float)rms(abs_gravX_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_gravX_dataset));
+        allValues.add((float)skewness(abs_gravX_dataset));
+        allValues.add((float)kurtosis(abs_gravX_dataset));
+
+        max_val = max(abs_gravY_dataset);
+        rms_val = rms(abs_gravY_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_gravY_dataset));
+        allValues.add((float)mean(abs_gravY_dataset));
+        allValues.add((float)std(abs_gravY_dataset));
+        allValues.add((float)rms(abs_gravY_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_gravY_dataset));
+        allValues.add((float)skewness(abs_gravY_dataset));
+        allValues.add((float)kurtosis(abs_gravY_dataset));
+
+        max_val = max(abs_gravZ_dataset);
+        rms_val = rms(abs_gravZ_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_gravZ_dataset));
+        allValues.add((float)mean(abs_gravZ_dataset));
+        allValues.add((float)std(abs_gravZ_dataset));
+        allValues.add((float)rms(abs_gravZ_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_gravZ_dataset));
+        allValues.add((float)skewness(abs_gravZ_dataset));
+        allValues.add((float)kurtosis(abs_gravZ_dataset));
+
+        allValues.add((float)corrcoef(abs_gravX_dataset, abs_gravY_dataset));
+        allValues.add((float)corrcoef(abs_gravX_dataset, abs_gravZ_dataset));
+        allValues.add((float)corrcoef(abs_gravY_dataset, abs_gravZ_dataset));
+
+        max_val = max(abs_wx_dataset);
+        rms_val = rms(abs_wx_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_wx_dataset));
+        allValues.add((float)mean(abs_wx_dataset));
+        allValues.add((float)std(abs_wx_dataset));
+        allValues.add((float)rms(abs_wx_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_wx_dataset));
+        allValues.add((float)skewness(abs_wx_dataset));
+        allValues.add((float)kurtosis(abs_wx_dataset));
+
+        max_val = max(abs_wy_dataset);
+        rms_val = rms(abs_wy_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_wy_dataset));
+        allValues.add((float)mean(abs_wy_dataset));
+        allValues.add((float)std(abs_wy_dataset));
+        allValues.add((float)rms(abs_wy_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_wy_dataset));
+        allValues.add((float)skewness(abs_wy_dataset));
+        allValues.add((float)kurtosis(abs_wy_dataset));
+
+        max_val = max(abs_wz_dataset);
+        rms_val = rms(abs_wz_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_wz_dataset));
+        allValues.add((float)mean(abs_wz_dataset));
+        allValues.add((float)std(abs_wz_dataset));
+        allValues.add((float)rms(abs_wz_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_wz_dataset));
+        allValues.add((float)skewness(abs_wz_dataset));
+        allValues.add((float)kurtosis(abs_wz_dataset));
+
+        allValues.add((float)corrcoef(abs_wx_dataset, abs_wy_dataset));
+        allValues.add((float)corrcoef(abs_wx_dataset, abs_wz_dataset));
+        allValues.add((float)corrcoef(abs_wy_dataset, abs_wz_dataset));
+
+        max_val = max(abs_angleX_dataset);
+        rms_val = rms(abs_angleX_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_angleX_dataset));
+        allValues.add((float)mean(abs_angleX_dataset));
+        allValues.add((float)std(abs_angleX_dataset));
+        allValues.add((float)rms(abs_angleX_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_angleX_dataset));
+        allValues.add((float)skewness(abs_angleX_dataset));
+        allValues.add((float)kurtosis(abs_angleX_dataset));
+
+        max_val = max(abs_angleY_dataset);
+        rms_val = rms(abs_angleY_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_angleY_dataset));
+        allValues.add((float)mean(abs_angleY_dataset));
+        allValues.add((float)std(abs_angleY_dataset));
+        allValues.add((float)rms(abs_angleY_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_angleY_dataset));
+        allValues.add((float)skewness(abs_angleY_dataset));
+        allValues.add((float)kurtosis(abs_angleY_dataset));
+
+        max_val = max(abs_angleZ_dataset);
+        rms_val = rms(abs_angleZ_dataset);
+        allValues.add((float)max_val);
+        allValues.add((float)min(abs_angleZ_dataset));
+        allValues.add((float)mean(abs_angleZ_dataset));
+        allValues.add((float)std(abs_angleZ_dataset));
+        allValues.add((float)rms(abs_angleZ_dataset));
+        allValues.add((float)CF(max_val, rms_val));
+        allValues.add((float)iqr(abs_angleZ_dataset));
+        allValues.add((float)skewness(abs_angleZ_dataset));
+        allValues.add((float)kurtosis(abs_angleZ_dataset));
+
+        allValues.add((float)corrcoef(abs_angleX_dataset, abs_angleY_dataset));
+        allValues.add((float)corrcoef(abs_angleX_dataset, abs_angleZ_dataset));
+        allValues.add((float)corrcoef(abs_angleY_dataset, abs_angleZ_dataset));
+
         return allValues;
     }
 
     private void BuildDataset() {
         // Create attributes to be used with classifiers
-        attributeList.add( new Attribute("l_gx_Max") );
-        attributeList.add( new Attribute("l_gx_Min") );
-        attributeList.add( new Attribute("l_gx_Avg") );
-        attributeList.add( new Attribute("l_gx_Std") );
-        attributeList.add( new Attribute("l_gx_RMS") );
-        attributeList.add( new Attribute("l_gx_CF") );
-        attributeList.add( new Attribute("l_gx_Iqr") );
-        attributeList.add( new Attribute("l_gx_Skewness") );
-        attributeList.add( new Attribute("l_gx_Kurtosis") );
-        attributeList.add( new Attribute("r_gx_Max") );
-        attributeList.add( new Attribute("r_gx_Min") );
-        attributeList.add( new Attribute("r_gx_Avg") );
-        attributeList.add( new Attribute("r_gx_Std") );
-        attributeList.add( new Attribute("r_gx_RMS") );
-        attributeList.add( new Attribute("r_gx_CF") );
-        attributeList.add( new Attribute("r_gx_Iqr") );
-        attributeList.add( new Attribute("r_gx_Skewness") );
-        attributeList.add( new Attribute("r_gx_Kurtosis") );
-        attributeList.add( new Attribute("l_gy_Max") );
-        attributeList.add( new Attribute("l_gy_Min") );
-        attributeList.add( new Attribute("l_gy_Avg") );
-        attributeList.add( new Attribute("l_gy_Std") );
-        attributeList.add( new Attribute("l_gy_RMS") );
-        attributeList.add( new Attribute("l_gy_CF") );
-        attributeList.add( new Attribute("l_gy_Iqr") );
-        attributeList.add( new Attribute("l_gy_Skewness") );
-        attributeList.add( new Attribute("l_gy_Kurtosis") );
-        attributeList.add( new Attribute("r_gy_Max") );
-        attributeList.add( new Attribute("r_gy_Min") );
-        attributeList.add( new Attribute("r_gy_Avg") );
-        attributeList.add( new Attribute("r_gy_Std") );
-        attributeList.add( new Attribute("r_gy_RMS") );
-        attributeList.add( new Attribute("r_gy_CF") );
-        attributeList.add( new Attribute("r_gy_Iqr") );
-        attributeList.add( new Attribute("r_gy_Skewness") );
-        attributeList.add( new Attribute("r_gy_Kurtosis") );
-        attributeList.add( new Attribute("l_gz_Max") );
-        attributeList.add( new Attribute("l_gz_Min") );
-        attributeList.add( new Attribute("l_gz_Avg") );
-        attributeList.add( new Attribute("l_gz_Std") );
-        attributeList.add( new Attribute("l_gz_RMS") );
-        attributeList.add( new Attribute("l_gz_CF") );
-        attributeList.add( new Attribute("l_gz_Iqr") );
-        attributeList.add( new Attribute("l_gz_Skewness") );
-        attributeList.add( new Attribute("l_gz_Kurtosis") );
-        attributeList.add( new Attribute("r_gz_Max") );
-        attributeList.add( new Attribute("r_gz_Min") );
-        attributeList.add( new Attribute("r_gz_Avg") );
-        attributeList.add( new Attribute("r_gz_Std") );
-        attributeList.add( new Attribute("r_gz_RMS") );
-        attributeList.add( new Attribute("r_gz_CF") );
-        attributeList.add( new Attribute("r_gz_Iqr") );
-        attributeList.add( new Attribute("r_gz_Skewness") );
-        attributeList.add( new Attribute("r_gz_Kurtosis") );
-        attributeList.add( new Attribute("l_gxgy_Corr") );
-        attributeList.add( new Attribute("l_gxgz_Corr") );
-        attributeList.add( new Attribute("l_gygz_Corr") );
-        attributeList.add( new Attribute("r_gxgy_Corr") );
-        attributeList.add( new Attribute("r_gxgz_Corr") );
-        attributeList.add( new Attribute("r_gygz_Corr") );
-        attributeList.add( new Attribute("l_ax_Max") );
-        attributeList.add( new Attribute("l_ax_Min") );
-        attributeList.add( new Attribute("l_ax_Avg") );
-        attributeList.add( new Attribute("l_ax_Std") );
-        attributeList.add( new Attribute("l_ax_RMS") );
-        attributeList.add( new Attribute("l_ax_CF") );
-        attributeList.add( new Attribute("l_ax_Iqr") );
-        attributeList.add( new Attribute("l_ax_Skewness") );
-        attributeList.add( new Attribute("l_ax_Kurtosis") );
-        attributeList.add( new Attribute("r_ax_Max") );
-        attributeList.add( new Attribute("r_ax_Min") );
-        attributeList.add( new Attribute("r_ax_Avg") );
-        attributeList.add( new Attribute("r_ax_Std") );
-        attributeList.add( new Attribute("r_ax_RMS") );
-        attributeList.add( new Attribute("r_ax_CF") );
-        attributeList.add( new Attribute("r_ax_Iqr") );
-        attributeList.add( new Attribute("r_ax_Skewness") );
-        attributeList.add( new Attribute("r_ax_Kurtosis") );
-        attributeList.add( new Attribute("l_ay_Max") );
-        attributeList.add( new Attribute("l_ay_Min") );
-        attributeList.add( new Attribute("l_ay_Avg") );
-        attributeList.add( new Attribute("l_ay_Std") );
-        attributeList.add( new Attribute("l_ay_RMS") );
-        attributeList.add( new Attribute("l_ay_CF") );
-        attributeList.add( new Attribute("l_ay_Iqr") );
-        attributeList.add( new Attribute("l_ay_Skewness") );
-        attributeList.add( new Attribute("l_ay_Kurtosis") );
-        attributeList.add( new Attribute("r_ay_Max") );
-        attributeList.add( new Attribute("r_ay_Min") );
-        attributeList.add( new Attribute("r_ay_Avg") );
-        attributeList.add( new Attribute("r_ay_Std") );
-        attributeList.add( new Attribute("r_ay_RMS") );
-        attributeList.add( new Attribute("r_ay_CF") );
-        attributeList.add( new Attribute("r_ay_Iqr") );
-        attributeList.add( new Attribute("r_ay_Skewness") );
-        attributeList.add( new Attribute("r_ay_Kurtosis") );
-        attributeList.add( new Attribute("l_az_Max") );
-        attributeList.add( new Attribute("l_az_Min") );
-        attributeList.add( new Attribute("l_az_Avg") );
-        attributeList.add( new Attribute("l_az_Std") );
-        attributeList.add( new Attribute("l_az_RMS") );
-        attributeList.add( new Attribute("l_az_CF") );
-        attributeList.add( new Attribute("l_az_Iqr") );
-        attributeList.add( new Attribute("l_az_Skewness") );
-        attributeList.add( new Attribute("l_az_Kurtosis") );
-        attributeList.add( new Attribute("r_az_Max") );
-        attributeList.add( new Attribute("r_az_Min") );
-        attributeList.add( new Attribute("r_az_Avg") );
-        attributeList.add( new Attribute("r_az_Std") );
-        attributeList.add( new Attribute("r_az_RMS") );
-        attributeList.add( new Attribute("r_az_CF") );
-        attributeList.add( new Attribute("r_az_Iqr") );
-        attributeList.add( new Attribute("r_az_Skewness") );
-        attributeList.add( new Attribute("r_az_Kurtosis") );
-        attributeList.add( new Attribute("l_axay_Corr") );
-        attributeList.add( new Attribute("l_axaz_Corr") );
-        attributeList.add( new Attribute("l_ayaz_Corr") );
-        attributeList.add( new Attribute("r_axay_Corr") );
-        attributeList.add( new Attribute("r_axaz_Corr") );
-        attributeList.add( new Attribute("r_ayaz_Corr") );
-        attributeList.add( new Attribute("l_force_Max") );
-        attributeList.add( new Attribute("l_force_Min") );
-        attributeList.add( new Attribute("l_force_Avg") );
-        attributeList.add( new Attribute("l_force_Std") );
-        attributeList.add( new Attribute("l_force_RMS") );
-        attributeList.add( new Attribute("l_force_CF") );
-        attributeList.add( new Attribute("l_force_Iqr") );
-        attributeList.add( new Attribute("l_force_Skewness") );
-        attributeList.add( new Attribute("l_force_Kurtosis") );
-        attributeList.add( new Attribute("r_force_Max") );
-        attributeList.add( new Attribute("r_force_Min") );
-        attributeList.add( new Attribute("r_force_Avg") );
-        attributeList.add( new Attribute("r_force_Std") );
-        attributeList.add( new Attribute("r_force_RMS") );
-        attributeList.add( new Attribute("r_force_CF") );
-        attributeList.add( new Attribute("r_force_Iqr") );
-        attributeList.add( new Attribute("r_force_Skewness") );
-        attributeList.add( new Attribute("r_force_Kurtosis") );
-        attributeList.add( new Attribute("l_gravX_Max") );
-        attributeList.add( new Attribute("l_gravX_Min") );
-        attributeList.add( new Attribute("l_gravX_Avg") );
-        attributeList.add( new Attribute("l_gravX_Std") );
-        attributeList.add( new Attribute("l_gravX_RMS") );
-        attributeList.add( new Attribute("l_gravX_CF") );
-        attributeList.add( new Attribute("l_gravX_Iqr") );
-        attributeList.add( new Attribute("l_gravX_Skewness") );
-        attributeList.add( new Attribute("l_gravX_Kurtosis") );
-        attributeList.add( new Attribute("r_gravX_Max") );
-        attributeList.add( new Attribute("r_gravX_Min") );
-        attributeList.add( new Attribute("r_gravX_Avg") );
-        attributeList.add( new Attribute("r_gravX_Std") );
-        attributeList.add( new Attribute("r_gravX_RMS") );
-        attributeList.add( new Attribute("r_gravX_CF") );
-        attributeList.add( new Attribute("r_gravX_Iqr") );
-        attributeList.add( new Attribute("r_gravX_Skewness") );
-        attributeList.add( new Attribute("r_gravX_Kurtosis") );
-        attributeList.add( new Attribute("l_gravY_Max") );
-        attributeList.add( new Attribute("l_gravY_Min") );
-        attributeList.add( new Attribute("l_gravY_Avg") );
-        attributeList.add( new Attribute("l_gravY_Std") );
-        attributeList.add( new Attribute("l_gravY_RMS") );
-        attributeList.add( new Attribute("l_gravY_CF") );
-        attributeList.add( new Attribute("l_gravY_Iqr") );
-        attributeList.add( new Attribute("l_gravY_Skewness") );
-        attributeList.add( new Attribute("l_gravY_Kurtosis") );
-        attributeList.add( new Attribute("r_gravY_Max") );
-        attributeList.add( new Attribute("r_gravY_Min") );
-        attributeList.add( new Attribute("r_gravY_Avg") );
-        attributeList.add( new Attribute("r_gravY_Std") );
-        attributeList.add( new Attribute("r_gravY_RMS") );
-        attributeList.add( new Attribute("r_gravY_CF") );
-        attributeList.add( new Attribute("r_gravY_Iqr") );
-        attributeList.add( new Attribute("r_gravY_Skewness") );
-        attributeList.add( new Attribute("r_gravY_Kurtosis") );
-        attributeList.add( new Attribute("l_gravZ_Max") );
-        attributeList.add( new Attribute("l_gravZ_Min") );
-        attributeList.add( new Attribute("l_gravZ_Avg") );
-        attributeList.add( new Attribute("l_gravZ_Std") );
-        attributeList.add( new Attribute("l_gravZ_RMS") );
-        attributeList.add( new Attribute("l_gravZ_CF") );
-        attributeList.add( new Attribute("l_gravZ_Iqr") );
-        attributeList.add( new Attribute("l_gravZ_Skewness") );
-        attributeList.add( new Attribute("l_gravZ_Kurtosis") );
-        attributeList.add( new Attribute("r_gravZ_Max") );
-        attributeList.add( new Attribute("r_gravZ_Min") );
-        attributeList.add( new Attribute("r_gravZ_Avg") );
-        attributeList.add( new Attribute("r_gravZ_Std") );
-        attributeList.add( new Attribute("r_gravZ_RMS") );
-        attributeList.add( new Attribute("r_gravZ_CF") );
-        attributeList.add( new Attribute("r_gravZ_Iqr") );
-        attributeList.add( new Attribute("r_gravZ_Skewness") );
-        attributeList.add( new Attribute("r_gravZ_Kurtosis") );
-        attributeList.add( new Attribute("l_gravXgravY_Corr") );
-        attributeList.add( new Attribute("l_gravXgravZ_Corr") );
-        attributeList.add( new Attribute("l_gravYgravZ_Corr") );
-        attributeList.add( new Attribute("r_gravXgravY_Corr") );
-        attributeList.add( new Attribute("r_gravXgravZ_Corr") );
-        attributeList.add( new Attribute("r_gravYgravZ_Corr") );
-        attributeList.add( new Attribute("l_wx_Max") );
-        attributeList.add( new Attribute("l_wx_Min") );
-        attributeList.add( new Attribute("l_wx_Avg") );
-        attributeList.add( new Attribute("l_wx_Std") );
-        attributeList.add( new Attribute("l_wx_RMS") );
-        attributeList.add( new Attribute("l_wx_CF") );
-        attributeList.add( new Attribute("l_wx_Iqr") );
-        attributeList.add( new Attribute("l_wx_Skewness") );
-        attributeList.add( new Attribute("l_wx_Kurtosis") );
-        attributeList.add( new Attribute("r_wx_Max") );
-        attributeList.add( new Attribute("r_wx_Min") );
-        attributeList.add( new Attribute("r_wx_Avg") );
-        attributeList.add( new Attribute("r_wx_Std") );
-        attributeList.add( new Attribute("r_wx_RMS") );
-        attributeList.add( new Attribute("r_wx_CF") );
-        attributeList.add( new Attribute("r_wx_Iqr") );
-        attributeList.add( new Attribute("r_wx_Skewness") );
-        attributeList.add( new Attribute("r_wx_Kurtosis") );
-        attributeList.add( new Attribute("l_wy_Max") );
-        attributeList.add( new Attribute("l_wy_Min") );
-        attributeList.add( new Attribute("l_wy_Avg") );
-        attributeList.add( new Attribute("l_wy_Std") );
-        attributeList.add( new Attribute("l_wy_RMS") );
-        attributeList.add( new Attribute("l_wy_CF") );
-        attributeList.add( new Attribute("l_wy_Iqr") );
-        attributeList.add( new Attribute("l_wy_Skewness") );
-        attributeList.add( new Attribute("l_wy_Kurtosis") );
-        attributeList.add( new Attribute("r_wy_Max") );
-        attributeList.add( new Attribute("r_wy_Min") );
-        attributeList.add( new Attribute("r_wy_Avg") );
-        attributeList.add( new Attribute("r_wy_Std") );
-        attributeList.add( new Attribute("r_wy_RMS") );
-        attributeList.add( new Attribute("r_wy_CF") );
-        attributeList.add( new Attribute("r_wy_Iqr") );
-        attributeList.add( new Attribute("r_wy_Skewness") );
-        attributeList.add( new Attribute("r_wy_Kurtosis") );
-        attributeList.add( new Attribute("l_wz_Max") );
-        attributeList.add( new Attribute("l_wz_Min") );
-        attributeList.add( new Attribute("l_wz_Avg") );
-        attributeList.add( new Attribute("l_wz_Std") );
-        attributeList.add( new Attribute("l_wz_RMS") );
-        attributeList.add( new Attribute("l_wz_CF") );
-        attributeList.add( new Attribute("l_wz_Iqr") );
-        attributeList.add( new Attribute("l_wz_Skewness") );
-        attributeList.add( new Attribute("l_wz_Kurtosis") );
-        attributeList.add( new Attribute("r_wz_Max") );
-        attributeList.add( new Attribute("r_wz_Min") );
-        attributeList.add( new Attribute("r_wz_Avg") );
-        attributeList.add( new Attribute("r_wz_Std") );
-        attributeList.add( new Attribute("r_wz_RMS") );
-        attributeList.add( new Attribute("r_wz_CF") );
-        attributeList.add( new Attribute("r_wz_Iqr") );
-        attributeList.add( new Attribute("r_wz_Skewness") );
-        attributeList.add( new Attribute("r_wz_Kurtosis") );
-        attributeList.add( new Attribute("l_wxwy_Corr") );
-        attributeList.add( new Attribute("l_wxwz_Corr") );
-        attributeList.add( new Attribute("l_wywz_Corr") );
-        attributeList.add( new Attribute("r_wxwy_Corr") );
-        attributeList.add( new Attribute("r_wxwz_Corr") );
-        attributeList.add( new Attribute("r_wywz_Corr") );
+        attributeList.add( new Attribute("gx_Max") );
+        attributeList.add( new Attribute("gx_Min") );
+        attributeList.add( new Attribute("gx_Avg") );
+        attributeList.add( new Attribute("gx_Std") );
+        attributeList.add( new Attribute("gx_RMS") );
+        attributeList.add( new Attribute("gx_CF") );
+        attributeList.add( new Attribute("gx_Iqr") );
+        attributeList.add( new Attribute("gx_Skewness") );
+        attributeList.add( new Attribute("gx_Kurtosis") );
+        attributeList.add( new Attribute("gy_Max") );
+        attributeList.add( new Attribute("gy_Min") );
+        attributeList.add( new Attribute("gy_Avg") );
+        attributeList.add( new Attribute("gy_Std") );
+        attributeList.add( new Attribute("gy_RMS") );
+        attributeList.add( new Attribute("gy_CF") );
+        attributeList.add( new Attribute("gy_Iqr") );
+        attributeList.add( new Attribute("gy_Skewness") );
+        attributeList.add( new Attribute("gy_Kurtosis") );
+        attributeList.add( new Attribute("gz_Max") );
+        attributeList.add( new Attribute("gz_Min") );
+        attributeList.add( new Attribute("gz_Avg") );
+        attributeList.add( new Attribute("gz_Std") );
+        attributeList.add( new Attribute("gz_RMS") );
+        attributeList.add( new Attribute("gz_CF") );
+        attributeList.add( new Attribute("gz_Iqr") );
+        attributeList.add( new Attribute("gz_Skewness") );
+        attributeList.add( new Attribute("gz_Kurtosis") );
+        attributeList.add( new Attribute("gxgy_Corr") );
+        attributeList.add( new Attribute("gxgz_Corr") );
+        attributeList.add( new Attribute("gygz_Corr") );
+        attributeList.add( new Attribute("ax_Max") );
+        attributeList.add( new Attribute("ax_Min") );
+        attributeList.add( new Attribute("ax_Avg") );
+        attributeList.add( new Attribute("ax_Std") );
+        attributeList.add( new Attribute("ax_RMS") );
+        attributeList.add( new Attribute("ax_CF") );
+        attributeList.add( new Attribute("ax_Iqr") );
+        attributeList.add( new Attribute("ax_Skewness") );
+        attributeList.add( new Attribute("ax_Kurtosis") );
+        attributeList.add( new Attribute("ay_Max") );
+        attributeList.add( new Attribute("ay_Min") );
+        attributeList.add( new Attribute("ay_Avg") );
+        attributeList.add( new Attribute("ay_Std") );
+        attributeList.add( new Attribute("ay_RMS") );
+        attributeList.add( new Attribute("ay_CF") );
+        attributeList.add( new Attribute("ay_Iqr") );
+        attributeList.add( new Attribute("ay_Skewness") );
+        attributeList.add( new Attribute("ay_Kurtosis") );
+        attributeList.add( new Attribute("az_Max") );
+        attributeList.add( new Attribute("az_Min") );
+        attributeList.add( new Attribute("az_Avg") );
+        attributeList.add( new Attribute("az_Std") );
+        attributeList.add( new Attribute("az_RMS") );
+        attributeList.add( new Attribute("az_CF") );
+        attributeList.add( new Attribute("az_Iqr") );
+        attributeList.add( new Attribute("az_Skewness") );
+        attributeList.add( new Attribute("az_Kurtosis") );
+        attributeList.add( new Attribute("axay_Corr") );
+        attributeList.add( new Attribute("axaz_Corr") );
+        attributeList.add( new Attribute("ayaz_Corr") );
+        attributeList.add( new Attribute("force_Max") );
+        attributeList.add( new Attribute("force_Min") );
+        attributeList.add( new Attribute("force_Avg") );
+        attributeList.add( new Attribute("force_Std") );
+        attributeList.add( new Attribute("force_RMS") );
+        attributeList.add( new Attribute("force_CF") );
+        attributeList.add( new Attribute("force_Iqr") );
+        attributeList.add( new Attribute("force_Skewness") );
+        attributeList.add( new Attribute("force_Kurtosis") );
+        attributeList.add( new Attribute("gravX_Max") );
+        attributeList.add( new Attribute("gravX_Min") );
+        attributeList.add( new Attribute("gravX_Avg") );
+        attributeList.add( new Attribute("gravX_Std") );
+        attributeList.add( new Attribute("gravX_RMS") );
+        attributeList.add( new Attribute("gravX_CF") );
+        attributeList.add( new Attribute("gravX_Iqr") );
+        attributeList.add( new Attribute("gravX_Skewness") );
+        attributeList.add( new Attribute("gravX_Kurtosis") );
+        attributeList.add( new Attribute("gravY_Max") );
+        attributeList.add( new Attribute("gravY_Min") );
+        attributeList.add( new Attribute("gravY_Avg") );
+        attributeList.add( new Attribute("gravY_Std") );
+        attributeList.add( new Attribute("gravY_RMS") );
+        attributeList.add( new Attribute("gravY_CF") );
+        attributeList.add( new Attribute("gravY_Iqr") );
+        attributeList.add( new Attribute("gravY_Skewness") );
+        attributeList.add( new Attribute("gravY_Kurtosis") );
+        attributeList.add( new Attribute("gravZ_Max") );
+        attributeList.add( new Attribute("gravZ_Min") );
+        attributeList.add( new Attribute("gravZ_Avg") );
+        attributeList.add( new Attribute("gravZ_Std") );
+        attributeList.add( new Attribute("gravZ_RMS") );
+        attributeList.add( new Attribute("gravZ_CF") );
+        attributeList.add( new Attribute("gravZ_Iqr") );
+        attributeList.add( new Attribute("gravZ_Skewness") );
+        attributeList.add( new Attribute("gravZ_Kurtosis") );
+        attributeList.add( new Attribute("gravXgravY_Corr") );
+        attributeList.add( new Attribute("gravXgravZ_Corr") );
+        attributeList.add( new Attribute("gravYgravZ_Corr") );
+        attributeList.add( new Attribute("wx_Max") );
+        attributeList.add( new Attribute("wx_Min") );
+        attributeList.add( new Attribute("wx_Avg") );
+        attributeList.add( new Attribute("wx_Std") );
+        attributeList.add( new Attribute("wx_RMS") );
+        attributeList.add( new Attribute("wx_CF") );
+        attributeList.add( new Attribute("wx_Iqr") );
+        attributeList.add( new Attribute("wx_Skewness") );
+        attributeList.add( new Attribute("wx_Kurtosis") );
+        attributeList.add( new Attribute("wy_Max") );
+        attributeList.add( new Attribute("wy_Min") );
+        attributeList.add( new Attribute("wy_Avg") );
+        attributeList.add( new Attribute("wy_Std") );
+        attributeList.add( new Attribute("wy_RMS") );
+        attributeList.add( new Attribute("wy_CF") );
+        attributeList.add( new Attribute("wy_Iqr") );
+        attributeList.add( new Attribute("wy_Skewness") );
+        attributeList.add( new Attribute("wy_Kurtosis") );
+        attributeList.add( new Attribute("wz_Max") );
+        attributeList.add( new Attribute("wz_Min") );
+        attributeList.add( new Attribute("wz_Avg") );
+        attributeList.add( new Attribute("wz_Std") );
+        attributeList.add( new Attribute("wz_RMS") );
+        attributeList.add( new Attribute("wz_CF") );
+        attributeList.add( new Attribute("wz_Iqr") );
+        attributeList.add( new Attribute("wz_Skewness") );
+        attributeList.add( new Attribute("wz_Kurtosis") );
+        attributeList.add( new Attribute("wxwy_Corr") );
+        attributeList.add( new Attribute("wxwz_Corr") );
+        attributeList.add( new Attribute("wywz_Corr") );
+        attributeList.add( new Attribute("angleX_Max") );
+        attributeList.add( new Attribute("angleX_Min") );
+        attributeList.add( new Attribute("angleX_Avg") );
+        attributeList.add( new Attribute("angleX_Std") );
+        attributeList.add( new Attribute("angleX_RMS") );
+        attributeList.add( new Attribute("angleX_CF") );
+        attributeList.add( new Attribute("angleX_Iqr") );
+        attributeList.add( new Attribute("angleX_Skewness") );
+        attributeList.add( new Attribute("angleX_Kurtosis") );
+        attributeList.add( new Attribute("angleY_Max") );
+        attributeList.add( new Attribute("angleY_Min") );
+        attributeList.add( new Attribute("angleY_Avg") );
+        attributeList.add( new Attribute("angleY_Std") );
+        attributeList.add( new Attribute("angleY_RMS") );
+        attributeList.add( new Attribute("angleY_CF") );
+        attributeList.add( new Attribute("angleY_Iqr") );
+        attributeList.add( new Attribute("angleY_Skewness") );
+        attributeList.add( new Attribute("angleY_Kurtosis") );
+        attributeList.add( new Attribute("angleZ_Max") );
+        attributeList.add( new Attribute("angleZ_Min") );
+        attributeList.add( new Attribute("angleZ_Avg") );
+        attributeList.add( new Attribute("angleZ_Std") );
+        attributeList.add( new Attribute("angleZ_RMS") );
+        attributeList.add( new Attribute("angleZ_CF") );
+        attributeList.add( new Attribute("angleZ_Iqr") );
+        attributeList.add( new Attribute("angleZ_Skewness") );
+        attributeList.add( new Attribute("angleZ_Kurtosis") );
+        attributeList.add( new Attribute("angleXangleY_Corr") );
+        attributeList.add( new Attribute("angleXangleZ_Corr") );
+        attributeList.add( new Attribute("angleYangleZ_Corr") );
+        attributeList.add( new Attribute("abs_gx_Max") );
+        attributeList.add( new Attribute("abs_gx_Min") );
+        attributeList.add( new Attribute("abs_gx_Avg") );
+        attributeList.add( new Attribute("abs_gx_Std") );
+        attributeList.add( new Attribute("abs_gx_RMS") );
+        attributeList.add( new Attribute("abs_gx_CF") );
+        attributeList.add( new Attribute("abs_gx_Iqr") );
+        attributeList.add( new Attribute("abs_gx_Skewness") );
+        attributeList.add( new Attribute("abs_gx_Kurtosis") );
+        attributeList.add( new Attribute("abs_gy_Max") );
+        attributeList.add( new Attribute("abs_gy_Min") );
+        attributeList.add( new Attribute("abs_gy_Avg") );
+        attributeList.add( new Attribute("abs_gy_Std") );
+        attributeList.add( new Attribute("abs_gy_RMS") );
+        attributeList.add( new Attribute("abs_gy_CF") );
+        attributeList.add( new Attribute("abs_gy_Iqr") );
+        attributeList.add( new Attribute("abs_gy_Skewness") );
+        attributeList.add( new Attribute("abs_gy_Kurtosis") );
+        attributeList.add( new Attribute("abs_gz_Max") );
+        attributeList.add( new Attribute("abs_gz_Min") );
+        attributeList.add( new Attribute("abs_gz_Avg") );
+        attributeList.add( new Attribute("abs_gz_Std") );
+        attributeList.add( new Attribute("abs_gz_RMS") );
+        attributeList.add( new Attribute("abs_gz_CF") );
+        attributeList.add( new Attribute("abs_gz_Iqr") );
+        attributeList.add( new Attribute("abs_gz_Skewness") );
+        attributeList.add( new Attribute("abs_gz_Kurtosis") );
+        attributeList.add( new Attribute("abs_gxgy_Corr") );
+        attributeList.add( new Attribute("abs_gxgz_Corr") );
+        attributeList.add( new Attribute("abs_gygz_Corr") );
+        attributeList.add( new Attribute("abs_ax_Max") );
+        attributeList.add( new Attribute("abs_ax_Min") );
+        attributeList.add( new Attribute("abs_ax_abs_avg") );
+        attributeList.add( new Attribute("abs_ax_Std") );
+        attributeList.add( new Attribute("abs_ax_RMS") );
+        attributeList.add( new Attribute("abs_ax_CF") );
+        attributeList.add( new Attribute("abs_ax_Iqr") );
+        attributeList.add( new Attribute("abs_ax_Skewness") );
+        attributeList.add( new Attribute("abs_ax_Kurtosis") );
+        attributeList.add( new Attribute("abs_ay_Max") );
+        attributeList.add( new Attribute("abs_ay_Min") );
+        attributeList.add( new Attribute("abs_ay_abs_avg") );
+        attributeList.add( new Attribute("abs_ay_Std") );
+        attributeList.add( new Attribute("abs_ay_RMS") );
+        attributeList.add( new Attribute("abs_ay_CF") );
+        attributeList.add( new Attribute("abs_ay_Iqr") );
+        attributeList.add( new Attribute("abs_ay_Skewness") );
+        attributeList.add( new Attribute("abs_ay_Kurtosis") );
+        attributeList.add( new Attribute("abs_az_Max") );
+        attributeList.add( new Attribute("abs_az_Min") );
+        attributeList.add( new Attribute("abs_az_abs_avg") );
+        attributeList.add( new Attribute("abs_az_Std") );
+        attributeList.add( new Attribute("abs_az_RMS") );
+        attributeList.add( new Attribute("abs_az_CF") );
+        attributeList.add( new Attribute("abs_az_Iqr") );
+        attributeList.add( new Attribute("abs_az_Skewness") );
+        attributeList.add( new Attribute("abs_az_Kurtosis") );
+        attributeList.add( new Attribute("abs_axay_Corr") );
+        attributeList.add( new Attribute("abs_axaz_Corr") );
+        attributeList.add( new Attribute("abs_ayaz_Corr") );
+        attributeList.add( new Attribute("abs_gravX_Max") );
+        attributeList.add( new Attribute("abs_gravX_Min") );
+        attributeList.add( new Attribute("abs_gravX_Avg") );
+        attributeList.add( new Attribute("abs_gravX_Std") );
+        attributeList.add( new Attribute("abs_gravX_RMS") );
+        attributeList.add( new Attribute("abs_gravX_CF") );
+        attributeList.add( new Attribute("abs_gravX_Iqr") );
+        attributeList.add( new Attribute("abs_gravX_Skewness") );
+        attributeList.add( new Attribute("abs_gravX_Kurtosis") );
+        attributeList.add( new Attribute("abs_gravY_Max") );
+        attributeList.add( new Attribute("abs_gravY_Min") );
+        attributeList.add( new Attribute("abs_gravY_Avg") );
+        attributeList.add( new Attribute("abs_gravY_Std") );
+        attributeList.add( new Attribute("abs_gravY_RMS") );
+        attributeList.add( new Attribute("abs_gravY_CF") );
+        attributeList.add( new Attribute("abs_gravY_Iqr") );
+        attributeList.add( new Attribute("abs_gravY_Skewness") );
+        attributeList.add( new Attribute("abs_gravY_Kurtosis") );
+        attributeList.add( new Attribute("abs_gravZ_Max") );
+        attributeList.add( new Attribute("abs_gravZ_Min") );
+        attributeList.add( new Attribute("abs_gravZ_Avg") );
+        attributeList.add( new Attribute("abs_gravZ_Std") );
+        attributeList.add( new Attribute("abs_gravZ_RMS") );
+        attributeList.add( new Attribute("abs_gravZ_CF") );
+        attributeList.add( new Attribute("abs_gravZ_Iqr") );
+        attributeList.add( new Attribute("abs_gravZ_Skewness") );
+        attributeList.add( new Attribute("abs_gravZ_Kurtosis") );
+        attributeList.add( new Attribute("abs_gravXgravY_Corr") );
+        attributeList.add( new Attribute("abs_gravXgravZ_Corr") );
+        attributeList.add( new Attribute("abs_gravYgravZ_Corr") );
+        attributeList.add( new Attribute("abs_wx_Max") );
+        attributeList.add( new Attribute("abs_wx_Min") );
+        attributeList.add( new Attribute("abs_wx_Avg") );
+        attributeList.add( new Attribute("abs_wx_Std") );
+        attributeList.add( new Attribute("abs_wx_RMS") );
+        attributeList.add( new Attribute("abs_wx_CF") );
+        attributeList.add( new Attribute("abs_wx_Iqr") );
+        attributeList.add( new Attribute("abs_wx_Skewness") );
+        attributeList.add( new Attribute("abs_wx_Kurtosis") );
+        attributeList.add( new Attribute("abs_wy_Max") );
+        attributeList.add( new Attribute("abs_wy_Min") );
+        attributeList.add( new Attribute("abs_wy_Avg") );
+        attributeList.add( new Attribute("abs_wy_Std") );
+        attributeList.add( new Attribute("abs_wy_RMS") );
+        attributeList.add( new Attribute("abs_wy_CF") );
+        attributeList.add( new Attribute("abs_wy_Iqr") );
+        attributeList.add( new Attribute("abs_wy_Skewness") );
+        attributeList.add( new Attribute("abs_wy_Kurtosis") );
+        attributeList.add( new Attribute("abs_wz_Max") );
+        attributeList.add( new Attribute("abs_wz_Min") );
+        attributeList.add( new Attribute("abs_wz_Avg") );
+        attributeList.add( new Attribute("abs_wz_Std") );
+        attributeList.add( new Attribute("abs_wz_RMS") );
+        attributeList.add( new Attribute("abs_wz_CF") );
+        attributeList.add( new Attribute("abs_wz_Iqr") );
+        attributeList.add( new Attribute("abs_wz_Skewness") );
+        attributeList.add( new Attribute("abs_wz_Kurtosis") );
+        attributeList.add( new Attribute("abs_wxwy_Corr") );
+        attributeList.add( new Attribute("abs_wxwz_Corr") );
+        attributeList.add( new Attribute("abs_wywz_Corr") );
+        attributeList.add( new Attribute("abs_angleX_Max") );
+        attributeList.add( new Attribute("abs_angleX_Min") );
+        attributeList.add( new Attribute("abs_angleX_Avg") );
+        attributeList.add( new Attribute("abs_angleX_Std") );
+        attributeList.add( new Attribute("abs_angleX_RMS") );
+        attributeList.add( new Attribute("abs_angleX_CF") );
+        attributeList.add( new Attribute("abs_angleX_Iqr") );
+        attributeList.add( new Attribute("abs_angleX_Skewness") );
+        attributeList.add( new Attribute("abs_angleX_Kurtosis") );
+        attributeList.add( new Attribute("abs_angleY_Max") );
+        attributeList.add( new Attribute("abs_angleY_Min") );
+        attributeList.add( new Attribute("abs_angleY_Avg") );
+        attributeList.add( new Attribute("abs_angleY_Std") );
+        attributeList.add( new Attribute("abs_angleY_RMS") );
+        attributeList.add( new Attribute("abs_angleY_CF") );
+        attributeList.add( new Attribute("abs_angleY_Iqr") );
+        attributeList.add( new Attribute("abs_angleY_Skewness") );
+        attributeList.add( new Attribute("abs_angleY_Kurtosis") );
+        attributeList.add( new Attribute("abs_angleZ_Max") );
+        attributeList.add( new Attribute("abs_angleZ_Min") );
+        attributeList.add( new Attribute("abs_angleZ_Avg") );
+        attributeList.add( new Attribute("abs_angleZ_Std") );
+        attributeList.add( new Attribute("abs_angleZ_RMS") );
+        attributeList.add( new Attribute("abs_angleZ_CF") );
+        attributeList.add( new Attribute("abs_angleZ_Iqr") );
+        attributeList.add( new Attribute("abs_angleZ_Skewness") );
+        attributeList.add( new Attribute("abs_angleZ_Kurtosis") );
+        attributeList.add( new Attribute("abs_angleXangleY_Corr") );
+        attributeList.add( new Attribute("abs_angleXangleZ_Corr") );
+        attributeList.add( new Attribute("abs_angleYangleZ_Corr") );
 
         // Result Type
         ArrayList<String> classVal = new ArrayList<String>();
@@ -654,7 +1002,6 @@ public class StrokeClassifier {
         classVal.add("drop");
         classVal.add("long");
         classVal.add("smash");
-        classVal.add("forehand serve");
         attributeList.add(new Attribute("Type", classVal));
 
         // Empty Test Dataset
