@@ -39,11 +39,11 @@ public class StrokeListPage extends Activity {
 
     private long DataID = -1;
     private String DataPath;
-    private long offset;
 
     // Audio Data
-    private double[] whole_audio_time = {};
-    private double[] whole_audio_value = {};
+    private short[] raw_value;
+    private long offset;
+    private final float deltaT = (1 / (float) SoundWaveHandler.SAMPLE_RATE) * 1000;
     private final static long SHOWRANGE = 1000; // show 1 sec data
 
     // Stroke
@@ -89,8 +89,8 @@ public class StrokeListPage extends Activity {
             double[] audio_time = new double[len];
             double[] audio_val = new double[len];
             for(int i = 0; i < len; i++){
-                audio_time[i] = whole_audio_time[info.left_idx+i];
-                audio_val[i] = whole_audio_value[info.left_idx+i];
+                audio_time[i] = getAudioTime(info.left_idx+i);
+                audio_val[i] = getAudioValue(info.left_idx+i);
             }
 
             Intent i = new Intent(StrokeListPage.this, ShowTestingData.class);
@@ -111,9 +111,8 @@ public class StrokeListPage extends Activity {
             public void run(){
                 strokelist_dataset.clear();
                 strokelist_dataset.addAll(SQLiteGetStrokeById(DataID));
-                SetAudioSamplesByPath(DataPath, offset);
-                BuildStrokeTable(strokelist_dataset, whole_audio_time);
-
+                SetAudioSamplesByPath(DataPath);
+                BuildStrokeTable(strokelist_dataset);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -126,22 +125,24 @@ public class StrokeListPage extends Activity {
 
     }
 
+    private final double getAudioTime(final int index){
+        return offset + deltaT * index;
+    }
+    private final double getAudioValue(final int index){
+        return (double)raw_value[index] / 32768;
+    }
+    private final int getAudioSize(){
+        return raw_value.length;
+    }
+
     /***************
      *    File Related
      * ***************/
-    private void SetAudioSamplesByPath(final String path, final long offset) {
+    private void SetAudioSamplesByPath(final String path) {
         // Read Wav File, store data
         try {
             WavReader wr = new WavReader(new FileInputStream(path + "Sound.wav"));
-            short[] samples = wr.getShortSamples();
-
-            whole_audio_time = new double[samples.length];
-            whole_audio_value = new double[samples.length];
-            float deltaT = (1 / (float) SoundWaveHandler.SAMPLE_RATE) * 1000;
-            for (int i = 0; i < samples.length; i++) {
-                whole_audio_time[i] = offset + deltaT * i;
-                whole_audio_value[i] = (double)samples[i] / 32768;
-            }
+            raw_value = wr.getShortSamples();
         } catch (FileNotFoundException e) {
             Log.e(TAG, e.getMessage());
         }
@@ -173,18 +174,18 @@ public class StrokeListPage extends Activity {
         }
     }
 
-    private void BuildStrokeTable(final List<StrokeListItem.StrokeItem> dataset, final double[] audio_time){
+    private void BuildStrokeTable(final List<StrokeListItem.StrokeItem> dataset){
         int curStrokeCount = 0;
         int left = -1, right;
-        for(int i = 0; i < audio_time.length; i++){
+        for(int i = 0; i < getAudioSize(); i++){
             if(curStrokeCount >= dataset.size())
                 break;
 
             long curStrokeTime = dataset.get(curStrokeCount).stroke_time;
-            if(left == -1 && audio_time[i] >= curStrokeTime-SHOWRANGE/2) {
+            if(left == -1 && getAudioTime(i) >= curStrokeTime-SHOWRANGE/2) {
                 left = i;
                 right = left;
-                while(right < audio_time.length &&  audio_time[right] < curStrokeTime+SHOWRANGE/2)
+                while(right < getAudioSize() &&  getAudioTime(right) < curStrokeTime+SHOWRANGE/2)
                     right++;
 
                 StrokeInfo info = new StrokeInfo();

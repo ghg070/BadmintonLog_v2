@@ -14,13 +14,20 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.text.format.Time;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.PopupWindow;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -58,6 +65,8 @@ public class MainActivity extends Activity {
   	private Button btTesting;
 	private Boolean isTraining = false;
 	private Boolean isTesting = false;
+	private PopupWindow popupWindow; // for select model
+	private Spinner dropdown; // for select model
 
 	/* View History Related */
 	private Button btDataPage;
@@ -315,6 +324,59 @@ public class MainActivity extends Activity {
 		return intentFilter;
 	}
 
+	/**********************
+	 *	Pop Windwo Related
+	 * ********************/
+	private void ShowWindowForSelectModel(){
+		LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		View view = inflater.inflate(R.layout.modelpage, null);
+		View main = MainActivity.this.findViewById(android.R.id.content);
+		popupWindow = new PopupWindow(view);
+		popupWindow.setWidth(main.getWidth() - (int) getResources().getDimension(R.dimen.activity_horizontal_margin) * 2);
+		popupWindow.setHeight(main.getHeight() / 2);
+		popupWindow.showAtLocation(main, Gravity.CENTER, 0, 0);
+		popupWindow.setOutsideTouchable(true);
+
+		Button bt_ok = (Button)view.findViewById(R.id.bt_model_ok);
+		Button bt_cancel = (Button)view.findViewById(R.id.bt_model_cancel);
+		bt_ok.setOnClickListener(ConfirmModel);
+		bt_cancel.setOnClickListener(CancelWindow);
+
+		final String[] models = CheckModelInRaw();
+		dropdown = (Spinner)view.findViewById(R.id.sp_model_select);
+		ArrayAdapter<String> adapter = new ArrayAdapter<String>(view.getContext(), android.R.layout.simple_spinner_dropdown_item, models);
+		dropdown.setAdapter(adapter);
+	}
+
+	private Button.OnClickListener ConfirmModel = new View.OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			if(popupWindow != null){
+				Log.e(TAG,dropdown.getSelectedItem().toString());
+			}
+		}
+	};
+
+	private Button.OnClickListener CancelWindow = new View.OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			if(popupWindow != null){
+				popupWindow.dismiss();
+				popupWindow = null;
+			}
+		}
+	};
+
+	private String[] CheckModelInRaw(){
+		Field[] fields=R.raw.class.getFields();
+		String[] result = new String[fields.length];
+
+		for(int i=0; i < fields.length; i++)
+			result[i] = fields[i].getName();
+
+		return result;
+	}
+
 	/*********************
 	 *    Page Change Related
 	 *********************/
@@ -373,8 +435,9 @@ public class MainActivity extends Activity {
 	private Button.OnClickListener TestingStartClickListener = new Button.OnClickListener() {
 		@Override
 		public void onClick(View arg0) {
+			ShowWindowForSelectModel();
 			if(fbm != null && fbm.CheckModelHasTrained()){
-				if(SystemParameters.IsBtHeadsetReady/* && SystemParameters.IsKoalaReady*/ && !isTesting)
+				if(SystemParameters.IsBtHeadsetReady && SystemParameters.IsKoalaReady && !isTesting)
 					ActiveLogging(LogFileWriter.TESTING_TYPE);
 				else if(isTesting)
 					StopLogging();
@@ -495,7 +558,7 @@ public class MainActivity extends Activity {
 			}
 		}.start();
 	}
-	
+
 	private void SetMeasureStartTime(){
 		//Set time
 		long currentTime = System.currentTimeMillis();
