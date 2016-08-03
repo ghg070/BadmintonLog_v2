@@ -325,7 +325,7 @@ public class MainActivity extends Activity {
 	}
 
 	/**********************
-	 *	Pop Windwo Related
+	 *	Pop Window Related
 	 * ********************/
 	private void ShowWindowForSelectModel(){
 		LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -352,7 +352,12 @@ public class MainActivity extends Activity {
 		@Override
 		public void onClick(View v) {
 			if(popupWindow != null){
-				Log.e(TAG,dropdown.getSelectedItem().toString());
+				//Log.e(TAG,dropdown.getSelectedItem().toString());
+				SystemParameters.ModelName = dropdown.getSelectedItem().toString();
+				popupWindow.dismiss();
+				popupWindow = null;
+
+				ActiveLogging(LogFileWriter.TESTING_TYPE);
 			}
 		}
 	};
@@ -435,10 +440,9 @@ public class MainActivity extends Activity {
 	private Button.OnClickListener TestingStartClickListener = new Button.OnClickListener() {
 		@Override
 		public void onClick(View arg0) {
-			ShowWindowForSelectModel();
 			if(fbm != null && fbm.CheckModelHasTrained()){
 				if(SystemParameters.IsBtHeadsetReady && SystemParameters.IsKoalaReady && !isTesting)
-					ActiveLogging(LogFileWriter.TESTING_TYPE);
+					ShowWindowForSelectModel();
 				else if(isTesting)
 					StopLogging();
 				else
