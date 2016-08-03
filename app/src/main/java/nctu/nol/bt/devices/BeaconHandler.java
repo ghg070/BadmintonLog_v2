@@ -487,9 +487,9 @@ public class BeaconHandler implements SensorEventListener {
         Thread work = new Thread(){
             @Override
             public void run(){
-                ArrayList<float[]> AccData = GetSensorDataInStrokeWindow(AccDataset_for_algo, StrokeTime, true);
-                ArrayList<float[]> AccData_ReduceGravity = GetSensorDataInStrokeWindow(AccDataset_GravityReduced_for_algo, StrokeTime, true);
-                ArrayList<float[]> GyroData = GetSensorDataInStrokeWindow(GyroDataset_for_algo, StrokeTime, false);
+                ArrayList<SensorData> AccData = GetSensorDataInStrokeWindow(AccDataset_for_algo, StrokeTime, true);
+                ArrayList<SensorData> AccData_ReduceGravity = GetSensorDataInStrokeWindow(AccDataset_GravityReduced_for_algo, StrokeTime, true);
+                ArrayList<SensorData> GyroData = GetSensorDataInStrokeWindow(GyroDataset_for_algo, StrokeTime, false);
 
                 final ArrayList<Float> stroke_features =  StrokeTypeClassifier.FeatureExtraction(
                         AccData,
@@ -509,8 +509,8 @@ public class BeaconHandler implements SensorEventListener {
         }
     }
 
-    private final ArrayList<float[]> GetSensorDataInStrokeWindow(final LinkedBlockingDeque<SensorData> deque, final long StrokeTime, boolean isAccData){
-        ArrayList<float[]> result = new ArrayList<>();
+    private final ArrayList<SensorData> GetSensorDataInStrokeWindow(final LinkedBlockingDeque<SensorData> deque, final long StrokeTime, boolean isAccData){
+        ArrayList<SensorData> result = new ArrayList<>();
 
         Iterator<SensorData> it = deque.iterator();
         SensorData cur = null;
@@ -524,7 +524,7 @@ public class BeaconHandler implements SensorEventListener {
                     for (int i = 0; i < temp.length; i++)
                         cur.values[i] = temp[i];
                 }
-                result.add(cur.values);
+                result.add(cur);
             }else if( cur.time >= StrokeTime + StrokeClassifier.FeatureExtraction_Beta )
                 break;
         }
@@ -559,7 +559,7 @@ public class BeaconHandler implements SensorEventListener {
             if (uType == LogFileWriter.CALIBRATION_Y_TYPE) {
                 virtualY = new float[3];
                 for(int i = 0; i < 3; i++)
-                    virtualY[i] = average[i];
+                    virtualY[i] = average[i]*(-1);
                 Log.e(TAG, "virtualY" + virtualY[0] + virtualY[1] + virtualY[2]);
             } else if (uType == LogFileWriter.CALIBRATION_Z_TYPE) {
                 virtualZ = new float[3];

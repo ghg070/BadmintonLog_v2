@@ -34,6 +34,7 @@ public class SystemParameters {
 	//for Stroke
 	public static int StrokeCount = 0;
 	public static Vector<Long> StrokeTimes = new Vector<Long>();
+	public static String ModelName = "";
 
 	//for Local DB
 	public static long TrainingId = -1;

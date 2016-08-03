@@ -257,7 +257,7 @@ public class ShowTestingData extends Activity {
         sc.AddChartDataset(mFreq, mValue, Color.RED);
     }
 
-    private void HandleFrequencyTable(){
+    private double HandleFrequencyTable(){
         double sum = 0;
         for(int i = 0; i < ROWCOUNT; i++){
             if(fft_mainfreq.length > i) {
@@ -268,6 +268,8 @@ public class ShowTestingData extends Activity {
         }
         tv_WeightTotal.setText(String.format("%.3f", sum));
         tv_Threshold.setText(String.format("%.3f", Threshold));
+
+        return sum;
     }
 
 
@@ -285,9 +287,10 @@ public class ShowTestingData extends Activity {
                     public void run() {
                         if(MoveToCenter)
                             awc.MovePointToCenter(audio_time[data_idx], 0.5, 0.5);
-                        awc.ChangeSeriesColor(CurBlockIdx + 2, Color.argb(60, 0, 255, 0)); // 0: Audio Wave, 1: Peak Point, 2~end: Block
+
+                        double weight_sum = HandleFrequencyTable();
+                        awc.ChangeSeriesColor(CurBlockIdx + 2, (weight_sum > Threshold) ? Color.argb(60, 0, 255, 0) : Color.argb(60, 40, 40, 40)); // 0: Audio Wave, 1: Peak Point, 2~end: Block
                         sc.MakeChart();
-                        HandleFrequencyTable();
                     }
                 });
             }
