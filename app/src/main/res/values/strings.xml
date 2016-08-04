@@ -8,10 +8,10 @@
     <string name="TestingData">Testing</string>
 
     <!-- Button -->
-    <string name="Training_State">Finish\nTraining</string>
-    <string name="Not_Training_State">Start\nTraining</string>
-    <string name="Testing_State">Finish\nTesting</string>
-    <string name="Not_Testing_State">Start\nTesting</string>
+    <string name="Training_State">Finish\nSampling</string>
+    <string name="Not_Training_State">Voiceprint\nSampling</string>
+    <string name="Testing_State">Finish\nPlaying</string>
+    <string name="Not_Testing_State">Play\nBadminton</string>
     <string name="View_Data">View\nStroke Data</string>
 
     <!-- account -->

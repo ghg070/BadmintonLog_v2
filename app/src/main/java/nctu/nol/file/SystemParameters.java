@@ -1,5 +1,7 @@
 package nctu.nol.file;
 
+import android.text.format.Time;
+
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -65,6 +67,25 @@ public class SystemParameters {
 		//for Stroke
 		StrokeCount = 0;
 		StrokeTimes.clear();
+	}
+
+	public static void SetMeasureStartTime(){
+		//Set time
+		long currentTime = System.currentTimeMillis();
+		Time t=new Time();
+		t.set(currentTime);
+		String year = String.valueOf(t.year);
+		String month = String.valueOf(t.month+1);
+		String day = String.valueOf(t.monthDay);
+		int hour =t.hour;
+		int minute = t.minute;
+		int second = t.second;
+		int millisecond = (int)(currentTime%1000);
+
+		//YYYYMMDD-HHMMSS
+		String date = year+"-"+month+"-"+day+" "+String.format("%02d:%02d:%02d.%03d",hour, minute, second, millisecond);
+		StartDate = date;
+		StartTime = currentTime;
 	}
 
 }

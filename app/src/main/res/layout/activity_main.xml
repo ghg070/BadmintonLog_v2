@@ -12,7 +12,7 @@
 
 	<LinearLayout
 		android:layout_width="fill_parent"
-		android:layout_height="fill_parent"
+		android:layout_height="0sp"
 		android:layout_weight="1"
 		android:orientation="vertical" >
 
@@ -39,103 +39,15 @@
 			</Button>
 		</LinearLayout>
 
-		<!-- stroke count-->
-		<LinearLayout
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:layout_marginTop="20sp"
-			android:orientation="horizontal" >
-
-			<TextView
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:text = "Stroke : "
-				android:textSize="22sp">
-			</TextView>
-
-			<TextView
-				android:id="@+id/tv_stroke_count"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:layout_marginLeft="5sp"
-				android:text = "0"
-				android:textSize="22sp" >
-			</TextView>
-		</LinearLayout>
-
-		<!-- stroke type -->
-		<LinearLayout
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:layout_marginTop="5sp"
-			android:orientation="horizontal" >
-
-			<TextView
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:text = "Stroke Type: "
-				android:textSize="22sp">
-			</TextView>
-
-			<TextView
-				android:id="@+id/tv_stroke_type"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:layout_marginLeft="5sp"
-				android:text = "None"
-				android:textSize="22sp" >
-			</TextView>
-		</LinearLayout>
-
 	</LinearLayout>
 
 
 	<LinearLayout
+		android:id="@+id/fragment_container"
 		android:layout_width="fill_parent"
-		android:layout_height="fill_parent"
-		android:layout_weight="1"
+		android:layout_height="0sp"
+		android:layout_weight="4"
 		android:orientation="vertical" >
-
-		<!-- Button Control  -->
-		<LinearLayout
-			android:layout_width="match_parent"
-			android:layout_height="fill_parent"
-			android:orientation="horizontal" >
-
-			<Button
-				android:id="@+id/bt_trainingstart"
-				android:layout_width="fill_parent"
-				android:layout_height="fill_parent"
-				android:layout_weight="1"
-				android:text="@string/Not_Training_State"
-				android:textSize="25sp">
-			</Button>
-
-			<Button
-				android:id="@+id/bt_testingstart"
-				android:layout_width="fill_parent"
-				android:layout_height="fill_parent"
-				android:layout_weight="1"
-				android:text="@string/Not_Testing_State"
-				android:textSize="25sp">
-			</Button>
-		</LinearLayout>
-	</LinearLayout>
-
-	<LinearLayout
-		android:layout_width="fill_parent"
-		android:layout_height="fill_parent"
-		android:layout_weight="1"
-		android:orientation="vertical" >
-
-		<Button
-			android:id="@+id/bt_viewstrokedata"
-			android:layout_width="fill_parent"
-			android:layout_height="fill_parent"
-			android:text="@string/View_Data"
-			android:textSize="25sp">
-		</Button>
-
 	</LinearLayout>
 
 </LinearLayout>
