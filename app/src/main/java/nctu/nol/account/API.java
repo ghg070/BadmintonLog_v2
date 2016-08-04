@@ -142,7 +142,7 @@ public class API {
             meta_data.put("account",account);
             params.put("data", filecontent);
             params.put("meta",meta_data);
-            params.put("filename", filepath.substring(filepath.length()-27)+filename);
+            params.put("filename",filepath.replace("/","-").substring(filepath.indexOf("NOL"))+filename);
 
         } catch (JSONException e) {
             e.printStackTrace();
