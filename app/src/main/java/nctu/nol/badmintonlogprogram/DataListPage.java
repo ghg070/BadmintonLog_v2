@@ -25,6 +25,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -187,20 +188,27 @@ public class DataListPage extends Activity {
 
                 public void onErrorResponse(VolleyError error) {
                     Toast.makeText(DataListPage.this, "something went wrong while uploading", Toast.LENGTH_SHORT).show();
-                    JSONObject response = null;
-                    try {
-                        response = new JSONObject(new String(error.networkResponse.data));
-                        Log.d("Tag", response.toString());
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                    if (error.networkResponse.data != null) {
+                        try {
+                            String body = new String(error.networkResponse.data, "UTF-8");
+                            Log.d("Tag", body);
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }
                     }
 
-                    Log.d("Tag", String.valueOf(error.networkResponse.statusCode));
+                    Log.d("Tag",String.valueOf(error.networkResponse.statusCode));
 
-                    editor.putString("account", sharedPreferences.getString("account", null));
+                    editor.putString("account",sharedPreferences.getString("account",null));
                     editor.commit();
+
                 }
-            });
+
+
+
+
+
+        });
 
         } else {
             Toast.makeText(DataListPage.this, "no network aviable now, will upload later", Toast.LENGTH_SHORT).show();
