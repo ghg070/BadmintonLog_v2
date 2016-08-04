@@ -171,10 +171,11 @@ public class AudioWaveChart {
         renderer.setYAxisMax(yMax); // Y軸顯示最大值
         renderer.setYLabelsColor(0, Color.BLACK); // Y軸線顏色
         renderer.setYLabelsAlign(Paint.Align.RIGHT);
+        renderer.setYLabelsVerticalPadding(-15.0f);
 
-        renderer.setAxisTitleTextSize(28);
+        renderer.setAxisTitleTextSize(42);
         renderer.setAxesColor(Color.BLACK); // 設定坐標軸顏色
-        renderer.setLabelsTextSize(28);
+        renderer.setLabelsTextSize(42);
         renderer.setLabelsColor(Color.BLACK); // 設定標籤顏色
 
         renderer.setMarginsColor(Color.parseColor("#eeeeee")); // 設定背景顏色
@@ -183,7 +184,7 @@ public class AudioWaveChart {
         renderer.setShowGrid(true); // 設定格線
         renderer.setGridColor(Color.LTGRAY);
         renderer.setShowLegend(false);
-        renderer.setMargins(new int[]{25, 50, 10, 50});
+        renderer.setMargins(new int[]{20, 80, 30, 80});
 
         renderer.setZoomEnabled(false, false);
         renderer.setPanEnabled(true, false);

@@ -253,8 +253,8 @@ public class ShowTrainingData extends Activity {
         if(result != null){
             for(int i = 0; i < ROWCOUNT; i++){
                 if(result.freqs.length > i) {
-                    tv_Freqs[ROWCOUNT - i - 1].setText(String.valueOf(result.freqs[i]));
-                    tv_Energy[ROWCOUNT - i - 1].setText(String.valueOf(result.vals[i]));
+                    tv_Freqs[ROWCOUNT - i - 1].setText(String.valueOf(Math.round(result.freqs[i])));
+                    tv_Energy[ROWCOUNT - i - 1].setText(String.format("%.2f",result.vals[i]));
                 }
             }
         }

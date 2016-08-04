@@ -261,13 +261,13 @@ public class ShowTestingData extends Activity {
         double sum = 0;
         for(int i = 0; i < ROWCOUNT; i++){
             if(fft_mainfreq.length > i) {
-                tv_Freqs[ROWCOUNT - i - 1].setText(String.format("%.3f",fft_mainfreq[i]));
-                tv_Weight[ROWCOUNT - i - 1].setText(String.format("%.3f",fft_mainfreq_score[i]));
+                tv_Freqs[ROWCOUNT - i - 1].setText(String.format("%d",Math.round(fft_mainfreq[i])));
+                tv_Weight[ROWCOUNT - i - 1].setText(String.format("%.2f",fft_mainfreq_score[i]));
                 sum += fft_mainfreq_score[i];
             }
         }
-        tv_WeightTotal.setText(String.format("%.3f", sum));
-        tv_Threshold.setText(String.format("%.3f", Threshold));
+        tv_WeightTotal.setText(String.format("%.2f", sum));
+        tv_Threshold.setText(String.format("%.2f", Threshold));
 
         return sum;
     }
