@@ -25,15 +25,15 @@
 
 			<Button
 				android:id="@+id/bt_micconnect"
-				android:layout_width="70sp"
-				android:layout_height="70sp"
+				android:layout_width="100sp"
+				android:layout_height="100sp"
 				android:layout_marginRight="150px"
 				android:background="@drawable/headset_disconnect" >
 			</Button>
 			<Button
 				android:id="@+id/bt_koalaconnect"
-				android:layout_width="70sp"
-				android:layout_height="70sp"
+				android:layout_width="100sp"
+				android:layout_height="100sp"
 				android:background="@drawable/koala_disconnect"
 				android:textSize="25sp">
 			</Button>
@@ -46,7 +46,7 @@
 		android:id="@+id/fragment_container"
 		android:layout_width="fill_parent"
 		android:layout_height="0sp"
-		android:layout_weight="4"
+		android:layout_weight="3"
 		android:orientation="vertical" >
 	</LinearLayout>
 
