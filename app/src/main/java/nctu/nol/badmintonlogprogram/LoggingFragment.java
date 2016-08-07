@@ -30,6 +30,7 @@ import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
 import nctu.nol.algo.ScoreComputing;
 import nctu.nol.algo.StrokeDetector;
+import nctu.nol.algo.TrainingWindowFinder;
 import nctu.nol.bt.devices.BeaconHandler;
 import nctu.nol.bt.devices.SoundWaveHandler;
 import nctu.nol.file.LogFileWriter;
@@ -307,16 +308,16 @@ public class LoggingFragment extends Fragment {
             count++;
         }
 
-        //Find all peak
-        PeakDetector pd = new PeakDetector(700, 350);
-        List<Integer> peaks = pd.findPeakIndex(times, vals, (float)0.35);
-        SystemParameters.StrokeCount = peaks.size();
+        //Find Training Window
+        TrainingWindowFinder twFinder = new TrainingWindowFinder(FrequencyBandModel.FFT_LENGTH);
+        List<Integer> wPos = twFinder.findWindowIndex(times, vals);
+        SystemParameters.StrokeCount = wPos.size();
 
 
         // Find top K freq band
         fbm = new FrequencyBandModel();
-        Vector<FrequencyBandModel.MainFreqInOneWindow> AllMainFreqBands = fbm.FindSpectrumMainFreqs(peaks, vals, SoundWaveHandler.SAMPLE_RATE);
-        fbm.setTopKFreqBandTable(AllMainFreqBands, peaks.size());
+        Vector<FrequencyBandModel.MainFreqInOneWindow> AllMainFreqBands = fbm.FindSpectrumMainFreqs(wPos, vals, SoundWaveHandler.SAMPLE_RATE);
+        fbm.setTopKFreqBandTable(AllMainFreqBands, wPos.size());
         List<HashMap.Entry<Float, Float>> TopKMainFreqs = fbm.getTopKMainFreqBandTable();
 
         // Count Stroke Detector's Threshold
@@ -338,7 +339,7 @@ public class LoggingFragment extends Fragment {
                 sortedPower[j] = mf.freqbands[j].Power;
             }
             try {
-                AllSpectrumMainFreqsTestWriter.writeFreqPeakIndexFile(mf.peak_num, mf.window_num, sortedFreq, sortedPower);
+                AllSpectrumMainFreqsTestWriter.writeFreqPeakIndexFile(mf.stroke_num, mf.window_num, sortedFreq, sortedPower);
             } catch (IOException e) {
                 Log.e(TAG,e.getMessage());
             }

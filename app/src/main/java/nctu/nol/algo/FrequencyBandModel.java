@@ -39,17 +39,17 @@ public class FrequencyBandModel {
 		//所有頻譜的主頻皆會存在AllSpectrumMainFreqs
 		Vector<MainFreqInOneWindow> AllSpectrumMainFreqs = new Vector<MainFreqInOneWindow>();
 
-		//Trace all peak position
+		//Trace all window position
 		for (int i = 0; i < pos.size(); i++) {
-			int peak = pos.get(i);
+			int wIndex = pos.get(i);
 
 			//check if the window exceed the dataset size 
-			if (dataset.length < peak + WINDOW_NUM * FFT_LENGTH)
+			if (dataset.length < wIndex + WINDOW_NUM * FFT_LENGTH)
 				break;
 
-			//每個波峰往後取WINDOW_NUM個window進行傅利葉分析
+			// 往後取WINDOW_NUM個window進行傅利葉分析
 			for (int j = 0; j < WINDOW_NUM; j++) {
-				int curPos = peak + j * FFT_LENGTH;
+				int curPos = wIndex + j * FFT_LENGTH;
 				final Vector<FreqBand> Spectrum =  getSpectrum(fft_algo, curPos, dataset, SamplingFreq);
 
 				//Find 5-max frequency band in a spectrum, store in AllSpectrumMainFreqs
@@ -67,7 +67,7 @@ public class FrequencyBandModel {
 		return AllSpectrumMainFreqs;
 	}
 
-	public void setTopKFreqBandTable(final Vector<MainFreqInOneWindow> AllSpectrumMainFreqs, int peak_num){
+	public void setTopKFreqBandTable(final Vector<MainFreqInOneWindow> AllSpectrumMainFreqs, int training_stroke_num){
 		HashMap<Float, Float> MainFreqMap = new HashMap<Float, Float>();
 		for(int i = 0 ; i < AllSpectrumMainFreqs.size(); i++){
 			MainFreqInOneWindow mf = AllSpectrumMainFreqs.get(i);
@@ -91,7 +91,7 @@ public class FrequencyBandModel {
 		//Average Value
 		for(int i = 0; i < TopKMainFreqBandTable.size(); i++){
 			HashMap.Entry<Float, Float> entry = TopKMainFreqBandTable.get(i);
-		    entry.setValue(entry.getValue()/(peak_num*WINDOW_NUM));
+		    entry.setValue(entry.getValue()/(training_stroke_num*WINDOW_NUM));
 		    
 		    Log.d(TAG,"key:"+entry.getKey()+" val:"+entry.getValue());
 
@@ -199,12 +199,12 @@ public class FrequencyBandModel {
 	}
 	
 	public class MainFreqInOneWindow{
-		public int peak_num;
+		public int stroke_num;
 		public int window_num;
 		public FreqBand[] freqbands;
 		
-		public MainFreqInOneWindow(int peak_index, int window_index, int Freq_Size){
-			this.peak_num = peak_index;
+		public MainFreqInOneWindow(int stroke_index, int window_index, int Freq_Size){
+			this.stroke_num = stroke_index;
 			this.window_num = window_index;
 			this.freqbands = new FreqBand[Freq_Size];
 			for(int i = 0; i < Freq_Size; i++)

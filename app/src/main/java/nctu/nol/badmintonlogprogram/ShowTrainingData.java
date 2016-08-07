@@ -31,6 +31,7 @@ import java.util.Vector;
 import nctu.nol.algo.CountSpectrum;
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
+import nctu.nol.algo.TrainingWindowFinder;
 import nctu.nol.badmintonlogprogram.chart.AudioWaveChart;
 import nctu.nol.badmintonlogprogram.chart.SpectrumChart;
 import nctu.nol.bt.devices.BeaconHandler;
@@ -65,16 +66,15 @@ public class ShowTrainingData extends Activity {
     private float[] audio_time_f = {};
     private float[] audio_value_f = {};
 
-    // Peak Data
-    private double[] peak_time = {};
-    private double[] peak_value = {};
-    private int[] peak_idx = {};
+    // Training Position
+    private int[] training_pos_idx = {};
 
     // FFT Data
     private double[] fft_freq = {};
     private double[] fft_value = {};
     private Button bt_prev, bt_next;
-    private int CurBlockIdx = 0;
+    private int CurBlockIdx = -1;
+    private int TotalBlockCount = 0;
 
 
 
@@ -132,16 +132,16 @@ public class ShowTrainingData extends Activity {
             @Override
             public void run() {
                 HandleAudioData(awc);
-                HandlePeakData(awc);
+                HandleTrainingPosition(awc);
                 HandleFreqTrainingBlock(awc);
 
                 runOnUiThread(new Runnable() {
                     public void run() {
                         awc.MakeChart();
 
-                        CurBlockIdx = 0;
-                        if (peak_time.length > 0)
-                            ChangeFocusBlock(0,true);
+                        if(CurBlockIdx == -1)
+                            CurBlockIdx = 0;
+                        ChangeFocusBlock(CurBlockIdx, true);
 
                         HandleFrequencyTable(DataID);
                         dialog.dismiss();
@@ -156,8 +156,8 @@ public class ShowTrainingData extends Activity {
     private Button.OnClickListener prevListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            if(peak_idx.length > 0) {
-                if (CurBlockIdx != 0) {
+            if(training_pos_idx.length > 0) {
+                if (CurBlockIdx > 0) {
                     CurBlockIdx--;
                     ChangeFocusBlock(CurBlockIdx, true);
                 }
@@ -168,8 +168,8 @@ public class ShowTrainingData extends Activity {
     private Button.OnClickListener nextListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            if(peak_idx.length > 0) {
-                if (CurBlockIdx != peak_idx.length * FrequencyBandModel.WINDOW_NUM - 1) {
+            if(training_pos_idx.length > 0) {
+                if (CurBlockIdx < TotalBlockCount) {
                     CurBlockIdx++;
                     ChangeFocusBlock(CurBlockIdx, true);
                 }
@@ -185,37 +185,55 @@ public class ShowTrainingData extends Activity {
         awc.AddChartDataset(audio_time, audio_value, Color.argb(255, 51, 102, 0));
     }
 
-    private void HandlePeakData(final AudioWaveChart awc){
-        // Peak Data
-        PeakDetector pd = new PeakDetector(700, 350);
-        List<Integer> peaks = pd.findPeakIndex(audio_time_f, audio_value_f, (float)0.35);
-        peak_time = new double[peaks.size()];
-        peak_value = new double[peaks.size()];
-        peak_idx = new int[peaks.size()];
-        for(int i = 0; i < peaks.size(); i++){
-            int idx = peaks.get(i);
-            peak_idx[i] = idx;
-            peak_time[i] = audio_time[idx];
-            peak_value[i] = audio_value[idx];
+    private void HandleTrainingPosition(final AudioWaveChart awc){
+        //Find Training Window
+        TrainingWindowFinder twFinder = new TrainingWindowFinder(FrequencyBandModel.FFT_LENGTH);
+        List<Integer> wPos = twFinder.findWindowIndex(audio_time_f, audio_value_f);
+
+        double []training_pos_time = new double[wPos.size()];
+        double []training_pos_value = new double[wPos.size()];
+        training_pos_idx = new int[wPos.size()];
+        for(int i = 0; i < wPos.size(); i++){
+            int idx = wPos.get(i);
+            training_pos_idx[i] = idx;
+            training_pos_time[i] = audio_time[idx];
+            training_pos_value[i] = audio_value[idx];
         }
-        awc.AddChartDataset(peak_time, peak_value, Color.RED);
+        awc.AddChartDataset(training_pos_time, training_pos_value, Color.TRANSPARENT);
     }
 
     private void HandleFreqTrainingBlock(final AudioWaveChart awc){
-        for(int i = 0; i < peak_idx.length; i++){
-            int idx = peak_idx[i];
-            for(int j = 0; j < FrequencyBandModel.WINDOW_NUM; j++){
-                double[] block_time = new double[2];
-                double[] block_value = new double[2];
+        int TrainingPosCount = 0, curPos = 0;
+        int redCount = 0;
 
-                block_time[0] = audio_time[idx];
-                block_value[0] = 1;
-                block_time[1] = audio_time[idx+FrequencyBandModel.FFT_LENGTH];
-                block_value[1] = 1;
-                idx += FrequencyBandModel.FFT_LENGTH;
-                awc.AddChartDataset(block_time, block_value, Color.argb(60, 255, 0, 0));
+        while(curPos + FrequencyBandModel.FFT_LENGTH < audio_time.length){
+            int CurTrainingPos = training_pos_idx[TrainingPosCount];
+            if(curPos == CurTrainingPos){
+                redCount+=5;
+                if(TrainingPosCount < training_pos_idx.length-1)
+                    TrainingPosCount++;
             }
+
+            double[] block_time = new double[2];
+            double[] block_value = new double[2];
+            block_time[0] = audio_time[curPos];
+            block_value[0] = 1;
+            block_time[1] = audio_time[curPos+FrequencyBandModel.FFT_LENGTH];
+            block_value[1] = 1;
+
+            if(redCount > 0){
+                if(CurBlockIdx == -1)
+                    CurBlockIdx = TotalBlockCount;
+
+                awc.AddChartDataset(block_time, block_value, Color.argb(60, 255, 0, 0));
+                redCount--;
+            }else
+                awc.AddChartDataset(block_time, block_value, Color.argb(60, 40, 40, 40));
+
+            curPos += FrequencyBandModel.FFT_LENGTH;
+            TotalBlockCount++;
         }
+
     }
 
     private void HandlerFFTData(final SpectrumChart sc, int start_position){
@@ -290,14 +308,12 @@ public class ShowTrainingData extends Activity {
         new Thread(){
             @Override
             public void run() {
-                final int block_idx_in_onepeak = CurBlockIdx%FrequencyBandModel.WINDOW_NUM;
-                final int p_idx = (CurBlockIdx-block_idx_in_onepeak)/FrequencyBandModel.WINDOW_NUM;
-                final int data_idx = peak_idx[p_idx] + block_idx_in_onepeak*FrequencyBandModel.FFT_LENGTH;
+                final int data_idx = CurBlockIdx*FrequencyBandModel.FFT_LENGTH;
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         if(MoveToCenter)
-                            awc.MovePointToCenter(peak_time[p_idx], 0.25, 0.75);
+                            awc.MovePointToCenter(audio_time[data_idx], 0.5, 0.5);
                         awc.ChangeSeriesColor(CurBlockIdx + 2, Color.argb(60, 0, 255, 0)); // 0: Audio Wave, 1: Peak Point, 2~end: Block
                         sc.ClearAllDataset();
                         HandlerFFTData(sc, data_idx);
@@ -347,20 +363,12 @@ public class ShowTrainingData extends Activity {
                 double clicked_time = intent.getDoubleExtra(AudioWaveChart.EXTRA_CLICK_POSITION_TIME, 0);
 
                 // check clicked_time is in fft block
-                for(int i = 0; i < peak_idx.length; i++) {
-                    for (int j = 0; j < FrequencyBandModel.WINDOW_NUM; j++) {
-                        int idx = peak_idx[i] + j*FrequencyBandModel.FFT_LENGTH;
-
-                        if(idx+FrequencyBandModel.FFT_LENGTH < audio_time.length
-                                && audio_time[idx] <= clicked_time
-                                && audio_time[idx+FrequencyBandModel.FFT_LENGTH] > clicked_time){
-
-                            int block_idx = i*FrequencyBandModel.WINDOW_NUM + j;
-                            CurBlockIdx = block_idx;
-                            ChangeFocusBlock(CurBlockIdx, false);
-
-                            break;
-                        }
+                for(int i = 0; i < TotalBlockCount; i++) {
+                    int idx = i*FrequencyBandModel.FFT_LENGTH;
+                    if( audio_time[idx] <= clicked_time && audio_time[idx+FrequencyBandModel.FFT_LENGTH] > clicked_time){
+                        CurBlockIdx = i;
+                        ChangeFocusBlock(CurBlockIdx, false);
+                        break;
                     }
                 }
             }
