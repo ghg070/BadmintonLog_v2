@@ -47,7 +47,7 @@ public class SpectrumChart {
     private RelativeLayout layout;
     private XYMultipleSeriesDataset XYDataset = new XYMultipleSeriesDataset();
     private GraphicalView chart;
-    private final static double Y_Min = 0, Y_Max = 120;
+    private final static double Y_Min = 0, Y_Max = 60;
 
     public SpectrumChart(Context c, RelativeLayout l){
         this.context = c;
@@ -75,7 +75,7 @@ public class SpectrumChart {
         XYMultipleSeriesRenderer renderer = buildRenderer(list_color, true);
 
         // Chart Render
-        setChartSettings(renderer, "Frequency (Hz)", "", 0, SoundWaveHandler.SAMPLE_RATE/2, Y_Min, Y_Max);// 定義折線圖
+        setChartSettings(renderer, "Frequency (Hz)", "", 0, SoundWaveHandler.SAMPLE_RATE/3, Y_Min, Y_Max);// 定義折線圖
 
 
         CombinedXYChart.XYCombinedChartDef[] types = new CombinedXYChart.XYCombinedChartDef[list_X_dataset.size()];
@@ -107,19 +107,20 @@ public class SpectrumChart {
         renderer.setYAxisMax(yMax); // Y軸顯示最大值
         renderer.setYLabelsColor(0, Color.BLACK); // Y軸線顏色
         renderer.setYLabelsAlign(Paint.Align.RIGHT);
+        renderer.setYLabelsVerticalPadding(-15.0f);
 
-        renderer.setAxisTitleTextSize(28);
+        renderer.setAxisTitleTextSize(42);
         renderer.setAxesColor(Color.BLACK); // 設定坐標軸顏色
-        renderer.setLabelsTextSize(28);
+        renderer.setLabelsTextSize(42);
         renderer.setLabelsColor(Color.BLACK); // 設定標籤顏色
 
-        renderer.setMarginsColor(Color.parseColor("#eeeeee")); // 設定背景顏色
+        renderer.setMarginsColor(Color.WHITE); // 設定背景顏色
         renderer.setApplyBackgroundColor(true);
-        renderer.setBackgroundColor(Color.argb(255, 238, 238, 238));
+        renderer.setBackgroundColor(Color.WHITE);
         renderer.setShowGrid(true); // 設定格線
         renderer.setGridColor(Color.LTGRAY);
         renderer.setShowLegend(false);
-        renderer.setMargins(new int[]{25, 50, 10, 50});
+        renderer.setMargins(new int[]{20, 80, 30, 80});
 
         renderer.setZoomEnabled(true, false);
         renderer.setPanEnabled(true, false);
@@ -152,7 +153,7 @@ public class SpectrumChart {
             r.setDisplayChartValues(true);
             r.setDisplayChartValuesDistance(0);
             r.setChartValuesFormat(new DecimalFormat("#"));
-            r.setChartValuesTextSize(24);
+            r.setChartValuesTextSize(35);
             r.setChartValuesSpacing(10);
             renderer.addSeriesRenderer(r);
             renderer.setPointSize(5.0f);

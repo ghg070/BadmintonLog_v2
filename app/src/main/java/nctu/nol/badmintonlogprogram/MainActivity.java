@@ -12,44 +12,28 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
-import android.text.format.Time;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.PopupWindow;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import nctu.nol.account.NetworkCheckService;
-import nctu.nol.algo.FrequencyBandModel;
-import nctu.nol.algo.PeakDetector;
-import nctu.nol.algo.ScoreComputing;
 import nctu.nol.algo.StrokeClassifier;
 import nctu.nol.algo.StrokeDetector;
 import nctu.nol.bt.devices.BeaconHandler;
 import nctu.nol.bt.devices.SoundWaveHandler;
-import nctu.nol.bt.devices.SoundWaveHandler.AudioData;
 import nctu.nol.file.LogFileWriter;
 import nctu.nol.file.SystemParameters;
-import nctu.nol.file.sqlite.DataListItem;
-import nctu.nol.file.sqlite.MainFreqListItem;
 
 
-public class MainActivity extends Activity {
+public class MainActivity extends FragmentActivity {
 
 	private final static String TAG = "MainActivity";
 	public final static int KOALA_SCAN_PAGE_RESULT = 11;
@@ -58,18 +42,6 @@ public class MainActivity extends Activity {
 	private BluetoothAdapter mBluetoothAdapter = null;	
 	private static final int REQUEST_ENABLE_BT = 1;
 	private static final int REQUEST_OPEN_BTSETTING = 2;
-	
-    /* Log Related */ 
-  	private static LogFileWriter ReadmeWriter;
-  	private Button btTraining;
-  	private Button btTesting;
-	private Boolean isTraining = false;
-	private Boolean isTesting = false;
-	private PopupWindow popupWindow; // for select model
-	private Spinner dropdown; // for select model
-
-	/* View History Related */
-	private Button btDataPage;
     
 	/* Sound Wave Related */
 	private SoundWaveHandler sw = null;
@@ -80,26 +52,20 @@ public class MainActivity extends Activity {
 	private Button btKoalaConnect;
 	private ProgressDialog WaitConnectDialog = null;
 
-    /* Algorithm Related */
-    private FrequencyBandModel fbm = null;
-	private ScoreComputing SC = null;
-    
-	/* Stroke */
-	private TextView tv_strokeCount;
-	private TextView tv_strokeType;
+	/* Fragment */
+	private LoggingFragment curFragment = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-		//View & Event Initial
-        initialViewandEvent();
         
         //Bluetooth Initial
         initialBTManager();
 
+		//View & Event Initial
+		initialViewandEvent();
     }
     
     @Override
@@ -128,8 +94,6 @@ public class MainActivity extends Activity {
 
 		unregisterReceiver(mSoundWaveHandlerStateUpdateReceiver);
 		unregisterReceiver(mKoalaStateUpdateReceiver);
-		unregisterReceiver(mStrokeCountUpdateReceiver);
-		unregisterReceiver(mStrokeTypeResultReceiver);
 
         Intent intent = new Intent(MainActivity.this,NetworkCheckService.class);
         stopService(intent);
@@ -174,23 +138,14 @@ public class MainActivity extends Activity {
     }
     
 	private void initialViewandEvent(){
-		//TextView
-		tv_strokeCount = (TextView) findViewById(R.id.tv_stroke_count);
-		tv_strokeType = (TextView) findViewById(R.id.tv_stroke_type);
-
 		//Button
 		btMicConnect = (Button) findViewById(R.id.bt_micconnect);
 		btKoalaConnect = (Button) findViewById(R.id.bt_koalaconnect);
-		btTraining = (Button) findViewById(R.id.bt_trainingstart);
-		btTesting = (Button) findViewById(R.id.bt_testingstart);
-		btDataPage = (Button) findViewById(R.id.bt_viewstrokedata);
 
 		btMicConnect.setOnClickListener(MicConnectListener);
 		btKoalaConnect.setOnClickListener(KoalaConnectListener);
-		btTraining.setOnClickListener(TrainingStartClickListener);
-		btTesting.setOnClickListener(TestingStartClickListener);
-		btDataPage.setOnClickListener(DataPageListener);
 
+		changeFragment(LoggingFragment.newInstance(MainActivity.this, sw, bh, LoggingFragment.TRAINING_TYPE));
 	}
 	private void initialBTManager() {
 		Log.d(TAG, "Check if BT is enable");
@@ -209,13 +164,8 @@ public class MainActivity extends Activity {
 
 		//Initial Beacon Handler
 		bh = new BeaconHandler(MainActivity.this);
-		registerReceiver(mKoalaStateUpdateReceiver,makeKoalaStateUpdateIntentFilter());
+		registerReceiver(mKoalaStateUpdateReceiver, makeKoalaStateUpdateIntentFilter());
 
-		//Initial StrokeDetector
-		registerReceiver(mStrokeCountUpdateReceiver,makeStrokeCountUpdateIntentFilter());
-
-		// Initial StrokeClassifier
-		registerReceiver(mStrokeTypeResultReceiver, makeStrokeTypeResultIntentFilter());
 	}
 
     
@@ -230,8 +180,7 @@ public class MainActivity extends Activity {
 				btKoalaConnect.setBackground(getResources().getDrawable(R.drawable.koala_connect));
 			}else if( BeaconHandler.ACTION_BEACON_DISCONNECT_STATE.equals(action) ){
 				btKoalaConnect.setBackground(getResources().getDrawable(R.drawable.koala_disconnect));
-				if( SystemParameters.isServiceRunning.get() && isTesting)
-					btTesting.performClick();
+				curFragment.InterruptLogging(LoggingFragment.DEVICE_KOALA);
 			}else if( BeaconHandler.ACTION_BEACON_FIRST_DATA_RECEIVE.equals(action) ){
 				WaitConnectDialog.dismiss();
 
@@ -258,15 +207,10 @@ public class MainActivity extends Activity {
 			String action = intent.getAction();
 			if( SoundWaveHandler.ACTION_SOUND_SERVICE_CONNECT_STATE.equals(action) ) {}
 			else if( SoundWaveHandler.ACTION_SOUND_NOT_PREPARE_STATE.equals(action) ){
-
 				btMicConnect.setBackground(getResources().getDrawable(R.drawable.headset_disconnect));
 				btMicConnect.setEnabled(true);
 				btKoalaConnect.setEnabled(true);
-
-            	if( SystemParameters.isServiceRunning.get() && isTraining )//if Logging is running
-            		btTraining.performClick();
-				else if( SystemParameters.isServiceRunning.get() && isTesting)
-					btTesting.performClick();
+				curFragment.InterruptLogging(LoggingFragment.DEVICE_HEADSET);
 
 			}else if( SoundWaveHandler.ACTION_SOUND_PREPARING_STATE.equals(action) ){
 				btMicConnect.setEnabled(false);
@@ -289,108 +233,6 @@ public class MainActivity extends Activity {
 		    
 		return intentFilter;
 	}
-	private final BroadcastReceiver mStrokeCountUpdateReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			String action = intent.getAction();
-			if( StrokeDetector.ACTION_STROKE_DETECTED_STATE.equals(action) ){
-				SystemParameters.StrokeCount++;
-				tv_strokeCount.setText(SystemParameters.StrokeCount + "");
-
-				long stroke_time = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
-			}
-		}
-	};
-	private static IntentFilter makeStrokeCountUpdateIntentFilter() {
-		final IntentFilter intentFilter = new IntentFilter();
-
-		intentFilter.addAction(StrokeDetector.ACTION_STROKE_DETECTED_STATE);
-
-		return intentFilter;
-	}
-	private final BroadcastReceiver mStrokeTypeResultReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			String action = intent.getAction();
-			if( StrokeClassifier.ACTION_OUTPUT_RESULT_STATE.equals(action) ){
-				String stroke_type = intent.getStringExtra(StrokeClassifier.EXTRA_TYPE);
-				tv_strokeType.setText(stroke_type);
-			}
-		}
-	};
-	private static IntentFilter makeStrokeTypeResultIntentFilter() {
-		final IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction(StrokeClassifier.ACTION_OUTPUT_RESULT_STATE);
-		return intentFilter;
-	}
-
-	/**********************
-	 *	Pop Window Related
-	 * ********************/
-	private void ShowWindowForSelectModel(){
-		LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		View view = inflater.inflate(R.layout.modelpage, null);
-		View main = MainActivity.this.findViewById(android.R.id.content);
-		popupWindow = new PopupWindow(view);
-		popupWindow.setWidth(main.getWidth() - (int) getResources().getDimension(R.dimen.activity_horizontal_margin) * 2);
-		popupWindow.setHeight(main.getHeight() / 2);
-		popupWindow.showAtLocation(main, Gravity.CENTER, 0, 0);
-		popupWindow.setOutsideTouchable(true);
-
-		Button bt_ok = (Button)view.findViewById(R.id.bt_model_ok);
-		Button bt_cancel = (Button)view.findViewById(R.id.bt_model_cancel);
-		bt_ok.setOnClickListener(ConfirmModel);
-		bt_cancel.setOnClickListener(CancelWindow);
-
-		final String[] models = CheckModelInRaw();
-		dropdown = (Spinner)view.findViewById(R.id.sp_model_select);
-		ArrayAdapter<String> adapter = new ArrayAdapter<String>(view.getContext(), android.R.layout.simple_spinner_dropdown_item, models);
-		dropdown.setAdapter(adapter);
-	}
-
-	private Button.OnClickListener ConfirmModel = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			if(popupWindow != null){
-				//Log.e(TAG,dropdown.getSelectedItem().toString());
-				SystemParameters.ModelName = dropdown.getSelectedItem().toString();
-				popupWindow.dismiss();
-				popupWindow = null;
-
-				ActiveLogging(LogFileWriter.TESTING_TYPE);
-			}
-		}
-	};
-
-	private Button.OnClickListener CancelWindow = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			if(popupWindow != null){
-				popupWindow.dismiss();
-				popupWindow = null;
-			}
-		}
-	};
-
-	private String[] CheckModelInRaw(){
-		Field[] fields=R.raw.class.getFields();
-		String[] result = new String[fields.length];
-
-		for(int i=0; i < fields.length; i++)
-			result[i] = fields[i].getName();
-
-		return result;
-	}
-
-	/*********************
-	 *    Page Change Related
-	 *********************/
-	private Button.OnClickListener DataPageListener = new Button.OnClickListener() {
-		public void onClick(View v) {
-			Intent i = new Intent(MainActivity.this, DataListPage.class);
-			startActivity(i);
-		}
-	};
 
 
 	/********************/
@@ -422,205 +264,6 @@ public class MainActivity extends Activity {
 		}
 	};
 
-    /********************/
-    /** Logging Event **/
-	/********************/
-    private Button.OnClickListener TrainingStartClickListener = new Button.OnClickListener() {
-		@Override
-		public void onClick(View arg0) {
-			if(SystemParameters.IsBtHeadsetReady && !isTraining)
-				ActiveLogging(LogFileWriter.TRAINING_TYPE);
-			else if(isTraining)
-				StopLogging();
-			else
-				Toast.makeText(MainActivity.this,"You have to connect bt headset.",Toast.LENGTH_SHORT).show();
-		}
-	};
-
-	private Button.OnClickListener TestingStartClickListener = new Button.OnClickListener() {
-		@Override
-		public void onClick(View arg0) {
-			if(fbm != null && fbm.CheckModelHasTrained()){
-				if(SystemParameters.IsBtHeadsetReady && SystemParameters.IsKoalaReady && !isTesting)
-					ShowWindowForSelectModel();
-				else if(isTesting)
-					StopLogging();
-				else
-					Toast.makeText(MainActivity.this,"You have to connect bt headset and koala.",Toast.LENGTH_SHORT).show();
-			}else{
-				Toast.makeText(getBaseContext(), "You must train your racket first.", Toast.LENGTH_SHORT).show();
-			}
-		}
-	};
-
-	private void ActiveLogging(final int LogType){
-		//SystemParameters Initial
-		SystemParameters.initializeSystemParameters();
-
-		//UI Button Control
-		if(LogType == LogFileWriter.TESTING_TYPE) {
-			btTesting.setText(R.string.Testing_State);
-			btTraining.setEnabled(false);
-			isTesting = true;
-		}
-		else{
-			btTraining.setText(R.string.Training_State);
-			btTesting.setEnabled(false);
-			isTraining = true;
-		}
-
-		//Initial Log File
-		ReadmeWriter = new LogFileWriter("Readme.txt", LogFileWriter.README_TYPE, LogType);
-
-		new Thread(){
-			@Override
-			public void run() {
-				// Trigger Sensor to Ready (wait isServiceRunning become true)
-				sw.startRecording(LogType);
-				if( isTesting ){
-					bh.startRecording(LogType);
-					StartTestingAlgo();
-				}
-
-				SetMeasureStartTime(); //設定開始時間
-				SystemParameters.isServiceRunning.set(true);
-
-				runOnUiThread(new Runnable() {
-					public void run(){
-					Toast.makeText(getBaseContext(), "Log Service is Start", Toast.LENGTH_SHORT).show();
-					//init UI
-					tv_strokeCount.setText("0");
-					tv_strokeType.setText("None");
-					}
-				});
-
-			}
-		}.start();
-	}
-
-	private void StopLogging(){
-		final ProgressDialog dialog = ProgressDialog.show(MainActivity.this,
-				"寫檔中", "處理檔案中，請稍後",true);
-
-		Toast.makeText(getBaseContext(), "Log Service is Stop", Toast.LENGTH_SHORT).show();
-		SystemParameters.isServiceRunning.set(false);
-		SystemParameters.Duration = (System.currentTimeMillis() - SystemParameters.StartTime)/1000.0;
-
-		new Thread(){
-			public void run(){
-				if(!isTesting) {
-					// Local Database Handler
-					long id = SQLiteInsertNewLoggingRecord(
-							SystemParameters.StartDate,
-							"ghg070",
-							SystemParameters.StrokeCount,
-							SystemParameters.filePath,
-							isTesting,
-							SystemParameters.SoundStartTime - SystemParameters.StartTime,
-							-1);
-					SystemParameters.TrainingId = id;
-				}else{
-					long id = SQLiteInsertNewLoggingRecord(
-							SystemParameters.StartDate,
-							"ghg070",
-							SystemParameters.StrokeCount,
-							SystemParameters.filePath,
-							isTesting, SystemParameters.SoundStartTime - SystemParameters.StartTime,
-							SystemParameters.TrainingId);
-					SystemParameters.TestingId = id;
-				}
-
-				sw.stopRecording();
-				if( isTesting ) bh.stopRecording();
-
-
-				//Wait log file write done
-				if( sw != null ) while(sw.isWrittingAudioDataLog.get());
-				if( SC != null ) while(SC.isWrittingWindowScore.get());
-				if( bh != null ) while(bh.isWrittingSensorDataLog.get());
-
-				if(isTraining) StartTrainingAlgo(sw);
-
-				//Show UI
-				runOnUiThread(new Runnable() {
-					public void run() {
-						showLogInformationDialog();
-
-						//UI Button Control
-						if (isTesting) {
-							btTesting.setText(R.string.Not_Testing_State);
-							btTraining.setEnabled(true);
-							isTesting = false;
-						} else if (isTraining) {
-							btTraining.setText(R.string.Not_Training_State);
-							btTesting.setEnabled(true);
-							isTraining = false;
-						}
-						dialog.dismiss();
-					}
-				});
-			}
-		}.start();
-	}
-
-	private void SetMeasureStartTime(){
-		//Set time
-		long currentTime = System.currentTimeMillis();
-	    Time t=new Time();
-		t.set(currentTime);
-	    String year = String.valueOf(t.year);
-	    String month = String.valueOf(t.month+1);
-	    String day = String.valueOf(t.monthDay);
-	    int hour =t.hour;
-	    int minute = t.minute;
-	    int second = t.second;
-	    int millisecond = (int)(currentTime%1000);
-	    
-	    //YYYYMMDD-HHMMSS
-	    String date = year+"-"+month+"-"+day+" "+String.format("%02d:%02d:%02d.%03d",hour, minute, second, millisecond);
-		SystemParameters.StartDate = date;
-		SystemParameters.StartTime = currentTime;
-	}
-
-    private void showLogInformationDialog(){//and also write readme.txt	
-		try {
-			if(ReadmeWriter != null){
-				ReadmeWriter.writeReadMeFile();
-				ReadmeWriter.closefile();
-			}	
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
-		alertDialogBuilder.setTitle("Log Information")
-						.setMessage("Duration: " + SystemParameters.Duration + "sec\n"
-								+ 	"SoundFile: "+SystemParameters.AudioCount+" records\n"
-								+	"InertialFile: "+SystemParameters.SensorCount+" records\n"
-						).setPositiveButton("OK",new DialogInterface.OnClickListener() {
-							@Override
-							public void onClick(DialogInterface dialog,int id) {}
-		}).show();
-	}
-
-	/************************
-	 *  Local Database Related
-	 ***********************/
-	private long SQLiteInsertNewLoggingRecord(String date, String subject, int stroke_num, String path, boolean is_testing, long offset, long match_id){
-		DataListItem dlistDB = new DataListItem(MainActivity.this);
-		long id = dlistDB.insert(date, subject, stroke_num, path, is_testing, offset, match_id);
-		dlistDB.close();
-		return id;
-	}
-
-	private void SQLiteInsertFreqModel(final List<HashMap.Entry<Float, Float>> freq_model, double threshold, long matching_training_id){
-		MainFreqListItem mflistDB = new MainFreqListItem(MainActivity.this);
-		mflistDB.insert(freq_model, threshold, matching_training_id);
-		mflistDB.close();
-	}
-
-
 	/************************
 	 *  Axis Calibration Related
 	 ***********************/
@@ -635,7 +278,7 @@ public class MainActivity extends Activity {
 		}
 		else {
 			Title = "Calibration Y";
-			Message = "請將拍子平放，熊耳朝上";
+			Message = "請將拍子水平放置";
 			TypeTemp = LogFileWriter.CALIBRATION_Y_TYPE;
 		}
 
@@ -659,7 +302,7 @@ public class MainActivity extends Activity {
 				try {
 					bh.startRecording(LogType);
 					//Service Start
-					SetMeasureStartTime();
+					SystemParameters.SetMeasureStartTime();
 					SystemParameters.isServiceRunning.set(true);
 					Thread.sleep(bh.Correct_Corrdinate_Time);
 					bh.stopRecording();
@@ -667,7 +310,7 @@ public class MainActivity extends Activity {
 					while(bh.isWrittingSensorDataLog.get()); //wait logging
 					bh.StartAxisCalibration(LogType);
 				} catch (Exception e) {
-					Log.e(TAG,e.getMessage());
+					Log.e(TAG, e.getMessage());
 				} finally {
 					runOnUiThread(new Runnable() {
 						@Override
@@ -680,87 +323,61 @@ public class MainActivity extends Activity {
 		}).start();
 	}
 
-    /***********************/
-    /** Algorithm Related **/
-    /***********************/
-    private void StartTrainingAlgo(final SoundWaveHandler sw){
-    	//split time array and data array
-		final LinkedBlockingQueue<AudioData> ads = sw.getSampleData();
-		float times[] = new float[ads.size()],
-				vals[] = new float[ads.size()];
-
-		Iterator<AudioData> it = ads.iterator();
-		int count = 0;
-		while(it.hasNext()){
-			AudioData ad = it.next();
-			times[count] = (float)ad.time;
-			vals[count] = ad.data;
-			count++;
-		}
-		
-		//Find all peak
-		PeakDetector pd = new PeakDetector(700, 350);
-		List<Integer> peaks = pd.findPeakIndex(times, vals, (float)0.35);
-		SystemParameters.StrokeCount = peaks.size();
 
 
-		// Find top K freq band
-		fbm = new FrequencyBandModel();
-		Vector<FrequencyBandModel.MainFreqInOneWindow> AllMainFreqBands = fbm.FindSpectrumMainFreqs(peaks, vals, SoundWaveHandler.SAMPLE_RATE);
-		fbm.setTopKFreqBandTable(AllMainFreqBands, peaks.size());
-		List<HashMap.Entry<Float, Float>> TopKMainFreqs = fbm.getTopKMainFreqBandTable();
+	private void changeFragment(Fragment f) {
+		curFragment = (LoggingFragment)f;
 
-		// Count Stroke Detector's Threshold
-		double threshold = StrokeDetector.ComputeScoreThreshold(TopKMainFreqs,vals,SoundWaveHandler.SAMPLE_RATE, FrequencyBandModel.FFT_LENGTH);
+		FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+		transaction.replace(R.id.fragment_container, f);
+		transaction.commitAllowingStateLoss();
+	}
 
-		// SQLite
-		if(TopKMainFreqs.size() > 0)
-			SQLiteInsertFreqModel(TopKMainFreqs, threshold, SystemParameters.TrainingId);
 
-		// Test File for All Spectrum Main Freq Bands
-		LogFileWriter AllSpectrumMainFreqsTestWriter = new LogFileWriter("AllSpectrumMainFreqs.csv", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
-		for(int i = 0; i < AllMainFreqBands.size(); i++){
-			FrequencyBandModel.MainFreqInOneWindow mf = AllMainFreqBands.get(i);
+	private final int group1Id = 1;
+	private final int VoicePrintId = Menu.FIRST;
+	private final int PlayId = Menu.FIRST +1;
+	private final int DataListId = Menu.FIRST +2;
 
-			float [] sortedFreq = new float[mf.freqbands.length];
-			float [] sortedPower = new float[mf.freqbands.length];
-			for(int j = 0; j < mf.freqbands.length; j++){
-				sortedFreq[j] = mf.freqbands[j].Freq;
-				sortedPower[j] = mf.freqbands[j].Power;
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		menu.add(group1Id, VoicePrintId, VoicePrintId, "Voiceprint");
+		menu.add(group1Id, PlayId, PlayId, "Play");
+		menu.add(group1Id, DataListId, DataListId, "Data List");
+
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		if(!SystemParameters.isServiceRunning.get()) {
+			switch (item.getItemId()) {
+				case VoicePrintId:
+					// write your code here
+					changeFragment(LoggingFragment.newInstance(MainActivity.this, sw, bh, LoggingFragment.TRAINING_TYPE));
+					return true;
+
+				case PlayId:
+					// write your code here
+					changeFragment(LoggingFragment.newInstance(MainActivity.this, sw, bh, LoggingFragment.TESTING_TYPE));
+					return true;
+
+				case DataListId:
+					// write your code here
+					Intent i = new Intent(MainActivity.this, DataListPage.class);
+					startActivity(i);
+					return true;
+				default:
+					return super.onOptionsItemSelected(item);
 			}
-			try {
-				AllSpectrumMainFreqsTestWriter.writeFreqPeakIndexFile(mf.peak_num, mf.window_num, sortedFreq, sortedPower);
-			} catch (IOException e) {
-				Log.e(TAG,e.getMessage());
-			}
+		}else {
+			Toast.makeText(MainActivity.this, "Please stop logging before selecting sub-page", Toast.LENGTH_SHORT).show();
+			return false;
 		}
-		AllSpectrumMainFreqsTestWriter.closefile();
+	}
 
-		//Test File for Top K Freq Band Table
-		LogFileWriter TopKMainFreqTableWriter = new LogFileWriter("TopKMainFreqTable.csv", LogFileWriter.OTHER_TYPE, LogFileWriter.TRAINING_TYPE);
-		for(int i = 0; i < TopKMainFreqs.size(); i++){
-			HashMap.Entry<Float, Float> entry = TopKMainFreqs.get(i);
-			float freq = entry.getKey();
-			float val = entry.getValue();
-			try {
-				TopKMainFreqTableWriter.writeMainFreqPower(freq, val);
-			} catch (IOException e) {
-				Log.e(TAG,e.getMessage());
-			}
-		}
-		TopKMainFreqTableWriter.closefile();
-    }
-    
-    private void StartTestingAlgo(){
-		/* 用來計算Window分數的模組 */
-		SC = new ScoreComputing(sw);
-		SC.StartComputingScore(fbm.getTopKMainFreqBandTable(), SoundWaveHandler.SAMPLE_RATE, FrequencyBandModel.FFT_LENGTH);
-		SC.StartLogging();
-
-		/* 用來偵測擊球的模組 */
-		StrokeDetector SD = new StrokeDetector(MainActivity.this, SC);
-		SD.StartStrokeDetector(bh);
-    }
 }
+
+
 
 

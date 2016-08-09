@@ -115,11 +115,4 @@ public class StrokeListItem {
         return result;
     }
 
-
-    public class StrokeItem{
-        public long id;
-        public long stroke_time;
-        public String stroke_type;
-        public long match_testing_id;
-    }
 }
