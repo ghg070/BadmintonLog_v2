@@ -21,8 +21,10 @@ import java.util.List;
 
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.StrokeClassifier;
+import nctu.nol.badmintonlogprogram.adapter.StrokeItemAdapter;
 import nctu.nol.bt.devices.SoundWaveHandler;
 import nctu.nol.file.WavReader;
+import nctu.nol.file.sqlite.StrokeItem;
 import nctu.nol.file.sqlite.StrokeListItem;
 
 /**
@@ -47,7 +49,7 @@ public class StrokeListPage extends Activity {
     private final static long SHOWRANGE = 1000; // show 1 sec data
 
     // Stroke
-    private List< StrokeListItem.StrokeItem> strokelist_dataset = new ArrayList<>();
+    private List<StrokeItem> strokelist_dataset = new ArrayList<>();
     private ListView lv_StrokeData;
     private StrokeItemAdapter Adapter;
     private List<StrokeInfo> StrokeTable = new ArrayList<>();
@@ -82,7 +84,7 @@ public class StrokeListPage extends Activity {
     private ListView.OnItemClickListener ListClickListener = new ListView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-            StrokeListItem.StrokeItem slist_item = strokelist_dataset.get(arg2);
+            StrokeItem slist_item = strokelist_dataset.get(arg2);
             StrokeInfo info = StrokeTable.get(arg2);
 
             int len = info.right_idx-info.left_idx+1;
@@ -153,9 +155,9 @@ public class StrokeListPage extends Activity {
     /**********************
      *      SQLite Related
      ***********************/
-    public List< StrokeListItem.StrokeItem> SQLiteGetStrokeById(long id){
+    public List< StrokeItem> SQLiteGetStrokeById(long id){
         StrokeListItem slistDB = new StrokeListItem(StrokeListPage.this);
-        List< StrokeListItem.StrokeItem> result = slistDB.GetStrokesInOneTestingFile(id);
+        List< StrokeItem> result = slistDB.GetStrokesInOneTestingFile(id);
         slistDB.close();
         return result;
     }
@@ -174,7 +176,7 @@ public class StrokeListPage extends Activity {
         }
     }
 
-    private void BuildStrokeTable(final List<StrokeListItem.StrokeItem> dataset){
+    private void BuildStrokeTable(final List<StrokeItem> dataset){
         int curStrokeCount = 0;
         int left = -1, right;
         for(int i = 0; i < getAudioSize(); i++){
@@ -202,69 +204,4 @@ public class StrokeListPage extends Activity {
             }
         }
     }
-
-    /************************
-     *     Custom ListView Related
-     ***********************/
-    public class StrokeItemAdapter extends BaseAdapter {
-        private LayoutInflater myInflater;
-        private List<StrokeListItem.StrokeItem> items;
-        private Context context;
-
-        public StrokeItemAdapter(Context context,List<StrokeListItem.StrokeItem> dataset){
-            myInflater = LayoutInflater.from(context);
-            this.items = dataset;
-            this.context = context;
-        }
-
-        /*private view holder class*/
-        private class ViewHolder {
-            TextView StrokeNum;
-            TextView StrokeTime;
-            TextView StrokeType;
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            ViewHolder holder = null;
-
-            LayoutInflater mInflater = (LayoutInflater)
-                    context.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
-            if (convertView == null) {
-                convertView = mInflater.inflate(R.layout.strokelist_item, null); // 動態載入xml
-                holder = new ViewHolder();
-                holder.StrokeNum = (TextView) convertView.findViewById(R.id.tv_strokelist_num);
-                holder.StrokeTime = (TextView) convertView.findViewById(R.id.tv_strokelist_time);
-                holder.StrokeType = (TextView) convertView.findViewById(R.id.tv_strokelist_type);
-
-                convertView.setTag(holder);
-            }
-            else {
-                // 取得進入recycler的view(移到畫面外的row), 達到重複利用
-                holder = (ViewHolder) convertView.getTag();
-            }
-
-            StrokeListItem.StrokeItem rowItem = (StrokeListItem.StrokeItem) getItem(position);
-
-            holder.StrokeNum.setText(String.valueOf(position + 1));
-            holder.StrokeTime.setText(StrokeClassifier.MillisecToString(rowItem.stroke_time));
-            holder.StrokeType.setText(rowItem.stroke_type);
-
-            return convertView;
-        }
-
-        @Override
-        public int getCount() {
-            return items.size();
-        }
-        @Override
-        public Object getItem(int id) {
-            return items.get(id);
-        }
-        @Override
-        public long getItemId(int position) {
-            return items.indexOf(getItem(position));
-        }
-
-    };
 }

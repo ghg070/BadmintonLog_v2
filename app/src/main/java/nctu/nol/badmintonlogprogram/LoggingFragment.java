@@ -3,8 +3,11 @@ package nctu.nol.badmintonlogprogram;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -14,12 +17,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.Toast;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -29,14 +34,18 @@ import java.util.concurrent.LinkedBlockingQueue;
 import nctu.nol.algo.FrequencyBandModel;
 import nctu.nol.algo.PeakDetector;
 import nctu.nol.algo.ScoreComputing;
+import nctu.nol.algo.StrokeClassifier;
 import nctu.nol.algo.StrokeDetector;
 import nctu.nol.algo.TrainingWindowFinder;
+import nctu.nol.badmintonlogprogram.adapter.StrokeItemAdapter;
 import nctu.nol.bt.devices.BeaconHandler;
 import nctu.nol.bt.devices.SoundWaveHandler;
 import nctu.nol.file.LogFileWriter;
 import nctu.nol.file.SystemParameters;
 import nctu.nol.file.sqlite.DataListItem;
 import nctu.nol.file.sqlite.MainFreqListItem;
+import nctu.nol.file.sqlite.StrokeItem;
+import nctu.nol.file.sqlite.StrokeListItem;
 
 /**
  * Created by Smile on 2016/8/4.
@@ -44,14 +53,15 @@ import nctu.nol.file.sqlite.MainFreqListItem;
 public class LoggingFragment extends Fragment {
     private final static String TAG = "LoggingFragment";
 
+    /* Connect Related */
     private static Activity mAct;
     private static SoundWaveHandler sw;
     private static BeaconHandler bh;
 
+    /* Fragment Relate */
     private View v;
     public final static int TRAINING_TYPE = 1;
     public final static int TESTING_TYPE = 2;
-
     private final static String PAGETYPE_KEY = "LoggingFragment.PAGE_TYPE";
 
     /* Algorithm Related */
@@ -60,12 +70,17 @@ public class LoggingFragment extends Fragment {
 
     /* Log Related */
     private static LogFileWriter ReadmeWriter;
-    private Button btTraining;
-    private Button btTesting;
-    private Boolean isTraining = false;
-    private Boolean isTesting = false;
+    private static Button btTraining;
+    private static Button btTesting;
+    private static Boolean isTraining = false;
+    private static Boolean isTesting = false;
     private PopupWindow popupWindow; // for select model
     private Spinner dropdown; // for select model
+
+    /* Stroke List */
+    private static List<StrokeItem> strokelist_dataset = new ArrayList<>();
+    private static ListView lv_StrokeData;
+    private static StrokeItemAdapter Adapter;
 
     /* Interrupt Logging */
     public static final int DEVICE_HEADSET = 1;
@@ -86,6 +101,9 @@ public class LoggingFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Initial StrokeClassifier
+        mAct.registerReceiver(mStrokeTypeResultReceiver, makeStrokeTypeResultIntentFilter());
     }
 
     @Override
@@ -100,8 +118,18 @@ public class LoggingFragment extends Fragment {
             v = inflater.inflate(R.layout.testing_fragment, container, false);
             btTesting = (Button) v.findViewById(R.id.bt_play);
             btTesting.setOnClickListener(TestingStartClickListener);
+
+            lv_StrokeData = (ListView) v.findViewById(R.id.lv_realtime_showstroke);
+            Adapter = new StrokeItemAdapter(mAct.getApplicationContext(), strokelist_dataset);
+            lv_StrokeData.setAdapter(Adapter);
         }
         return v;
+    }
+
+    @Override
+    public void onDestroy(){
+        mAct.unregisterReceiver(mStrokeTypeResultReceiver);
+        super.onDestroy();
     }
 
 
@@ -144,6 +172,7 @@ public class LoggingFragment extends Fragment {
         if(LogType == LogFileWriter.TESTING_TYPE) {
             btTesting.setText(R.string.Testing_State);
             isTesting = true;
+            ClearStrokeList();
         }
         else{
             btTraining.setText(R.string.Training_State);
@@ -370,6 +399,46 @@ public class LoggingFragment extends Fragment {
 		/* 用來偵測擊球的模組 */
         StrokeDetector SD = new StrokeDetector(mAct, SC);
         SD.StartStrokeDetector(bh);
+    }
+
+    /*******************/
+    /** ListView Related **/
+    /*******************/
+    private void AddStrokeData(long StrokeTime, String StrokeType){
+        StrokeItem sItem = new StrokeItem();
+        sItem.stroke_time = StrokeTime;
+        sItem.stroke_type = StrokeType;
+
+        strokelist_dataset.add(sItem);
+        Adapter.notifyDataSetChanged();
+        lv_StrokeData.setSelection(lv_StrokeData.getCount() - 1);
+    }
+
+    private void ClearStrokeList(){
+        strokelist_dataset.clear();
+        Adapter.notifyDataSetChanged();
+    }
+
+    /*******************/
+    /** Broadcast Related **/
+    /*******************/
+    private final BroadcastReceiver mStrokeTypeResultReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if( StrokeClassifier.ACTION_OUTPUT_RESULT_STATE.equals(action) ){
+                SystemParameters.StrokeCount++;
+                long stroke_time = intent.getLongExtra(StrokeClassifier.EXTRA_TIME, 0);
+                String stroke_type = intent.getStringExtra(StrokeClassifier.EXTRA_TYPE);
+
+                AddStrokeData(stroke_time, stroke_type);
+            }
+        }
+    };
+    private static IntentFilter makeStrokeTypeResultIntentFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(StrokeClassifier.ACTION_OUTPUT_RESULT_STATE);
+        return intentFilter;
     }
 
 

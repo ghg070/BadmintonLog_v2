@@ -88,4 +88,18 @@ public class SystemParameters {
 		StartTime = currentTime;
 	}
 
+	public static String MillisecToString(long timestamp){
+
+		//compute the passed minutes
+		Long minutes = (timestamp/1000)/60;
+		//compute the passed seconds
+		Long seconds = (timestamp/1000) % 60;
+		//compute the passed hours
+		Long millisecond = timestamp%1000 ;
+
+
+		// MM:SS.mmm
+		return String.format("%02d:%02d.%03d", minutes, seconds, millisecond);
+	}
+
 }

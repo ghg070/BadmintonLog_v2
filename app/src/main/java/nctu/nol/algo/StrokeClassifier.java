@@ -29,6 +29,7 @@ public class StrokeClassifier {
 
     // Broadcast Related
     public final static String ACTION_OUTPUT_RESULT_STATE = "STROKECLASSIFIER.ACTION_OUTPUT_RESULT_STATE";
+    public final static String EXTRA_TIME = "STROKECLASSIFIER.EXTRA_TIME";
     public final static String EXTRA_TYPE = "STROKECLASSIFIER.EXTRA_TYPE";
 
     // LogFile Related
@@ -93,6 +94,7 @@ public class StrokeClassifier {
             //print result
             Log.d(TAG, dataset.classAttribute().value((int)result));
             Intent broadcast = new Intent(ACTION_OUTPUT_RESULT_STATE);
+            broadcast.putExtra(EXTRA_TIME, stroke_time);
             broadcast.putExtra(EXTRA_TYPE, type);
             mContext.sendBroadcast(broadcast);
 
@@ -102,7 +104,7 @@ public class StrokeClassifier {
 
             // Log File
             try {
-                StrokeWriter.writeStroke( MillisecToString(stroke_time), type);
+                StrokeWriter.writeStroke( SystemParameters.MillisecToString(stroke_time), type);
             } catch (IOException e) {
                 Log.e(TAG,e.getMessage());
             }
@@ -1193,20 +1195,6 @@ public class StrokeClassifier {
             quickSort(arr, left, index - 1);
         if (index < right)
             quickSort(arr, index, right);
-    }
-
-    public static String MillisecToString(long timestamp){
-
-        //compute the passed minutes
-        Long minutes = (timestamp/1000)/60;
-        //compute the passed seconds
-        Long seconds = (timestamp/1000) % 60;
-        //compute the passed hours
-        Long millisecond = timestamp%1000 ;
-
-
-        // MM:SS.mmm
-        return String.format("%02d:%02d.%03d", minutes, seconds, millisecond);
     }
 
 }

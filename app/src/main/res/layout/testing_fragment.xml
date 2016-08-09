@@ -7,16 +7,18 @@
         android:id="@+id/bt_play"
         android:layout_width="fill_parent"
         android:layout_height="0sp"
-        android:layout_weight="4"
+        android:layout_weight="1"
         android:text="@string/Not_Testing_State"
         android:textSize="25sp">
     </Button>
 
-    <LinearLayout
+    <ListView
+        android:id="@+id/lv_realtime_showstroke"
         android:layout_width="match_parent"
         android:layout_height="0sp"
+        android:layout_marginTop="30sp"
         android:orientation="vertical"
-        android:layout_weight="1">
-     </LinearLayout>
+        android:layout_weight="3">
+     </ListView>
 
 </LinearLayout>

@@ -94,8 +94,6 @@ public class MainActivity extends FragmentActivity {
 
 		unregisterReceiver(mSoundWaveHandlerStateUpdateReceiver);
 		unregisterReceiver(mKoalaStateUpdateReceiver);
-		unregisterReceiver(mStrokeCountUpdateReceiver);
-		unregisterReceiver(mStrokeTypeResultReceiver);
 
         Intent intent = new Intent(MainActivity.this,NetworkCheckService.class);
         stopService(intent);
@@ -168,11 +166,6 @@ public class MainActivity extends FragmentActivity {
 		bh = new BeaconHandler(MainActivity.this);
 		registerReceiver(mKoalaStateUpdateReceiver, makeKoalaStateUpdateIntentFilter());
 
-		//Initial StrokeDetector
-		registerReceiver(mStrokeCountUpdateReceiver,makeStrokeCountUpdateIntentFilter());
-
-		// Initial StrokeClassifier
-		registerReceiver(mStrokeTypeResultReceiver, makeStrokeTypeResultIntentFilter());
 	}
 
     
@@ -238,37 +231,6 @@ public class MainActivity extends FragmentActivity {
 		intentFilter.addAction(SoundWaveHandler.ACTION_SOUND_PREPARING_STATE);
 		intentFilter.addAction(SoundWaveHandler.ACTION_SOUND_PREPARED_STATE);
 		    
-		return intentFilter;
-	}
-	private final BroadcastReceiver mStrokeCountUpdateReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			String action = intent.getAction();
-			if( StrokeDetector.ACTION_STROKE_DETECTED_STATE.equals(action) ){
-				SystemParameters.StrokeCount++;
-				long stroke_time = intent.getLongExtra(StrokeDetector.EXTRA_STROKETIME,0);
-			}
-		}
-	};
-	private static IntentFilter makeStrokeCountUpdateIntentFilter() {
-		final IntentFilter intentFilter = new IntentFilter();
-
-		intentFilter.addAction(StrokeDetector.ACTION_STROKE_DETECTED_STATE);
-
-		return intentFilter;
-	}
-	private final BroadcastReceiver mStrokeTypeResultReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			String action = intent.getAction();
-			if( StrokeClassifier.ACTION_OUTPUT_RESULT_STATE.equals(action) ){
-				String stroke_type = intent.getStringExtra(StrokeClassifier.EXTRA_TYPE);
-			}
-		}
-	};
-	private static IntentFilter makeStrokeTypeResultIntentFilter() {
-		final IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction(StrokeClassifier.ACTION_OUTPUT_RESULT_STATE);
 		return intentFilter;
 	}
 
@@ -388,24 +350,29 @@ public class MainActivity extends FragmentActivity {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-			case VoicePrintId:
-				// write your code here
-				changeFragment(LoggingFragment.newInstance(MainActivity.this, sw, bh, LoggingFragment.TRAINING_TYPE));
-				return true;
+		if(!SystemParameters.isServiceRunning.get()) {
+			switch (item.getItemId()) {
+				case VoicePrintId:
+					// write your code here
+					changeFragment(LoggingFragment.newInstance(MainActivity.this, sw, bh, LoggingFragment.TRAINING_TYPE));
+					return true;
 
-			case PlayId:
-				// write your code here
-				changeFragment(LoggingFragment.newInstance(MainActivity.this, sw, bh, LoggingFragment.TESTING_TYPE));
-				return true;
+				case PlayId:
+					// write your code here
+					changeFragment(LoggingFragment.newInstance(MainActivity.this, sw, bh, LoggingFragment.TESTING_TYPE));
+					return true;
 
-			case DataListId:
-				// write your code here
-				Intent i = new Intent(MainActivity.this, DataListPage.class);
-				startActivity(i);
-				return true;
-			default:
-				return super.onOptionsItemSelected(item);
+				case DataListId:
+					// write your code here
+					Intent i = new Intent(MainActivity.this, DataListPage.class);
+					startActivity(i);
+					return true;
+				default:
+					return super.onOptionsItemSelected(item);
+			}
+		}else {
+			Toast.makeText(MainActivity.this, "Please stop logging before selecting sub-page", Toast.LENGTH_SHORT).show();
+			return false;
 		}
 	}
 
