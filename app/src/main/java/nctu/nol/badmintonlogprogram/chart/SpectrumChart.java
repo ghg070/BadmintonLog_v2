@@ -153,7 +153,7 @@ public class SpectrumChart {
             r.setDisplayChartValues(true);
             r.setDisplayChartValuesDistance(0);
             r.setChartValuesFormat(new DecimalFormat("#"));
-            r.setChartValuesTextSize(24);
+            r.setChartValuesTextSize(35);
             r.setChartValuesSpacing(10);
             renderer.addSeriesRenderer(r);
             renderer.setPointSize(5.0f);

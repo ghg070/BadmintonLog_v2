@@ -341,7 +341,7 @@ public class MainActivity extends FragmentActivity {
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		menu.add(group1Id, VoicePrintId, VoicePrintId, "Voiceprint Sampling");
+		menu.add(group1Id, VoicePrintId, VoicePrintId, "Voiceprint");
 		menu.add(group1Id, PlayId, PlayId, "Play");
 		menu.add(group1Id, DataListId, DataListId, "Data List");
 
