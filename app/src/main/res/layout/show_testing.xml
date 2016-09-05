@@ -195,7 +195,7 @@
                         android:textSize="17sp"
                         android:textStyle="bold"
                         android:textAlignment="center"
-                        android:text="Total"/>
+                        android:text="Weight Total"/>
                     <TextView
                         android:id="@+id/tv_table_onestroke_weight_total"
                         android:layout_column="1"
@@ -209,9 +209,37 @@
                         android:textSize="17sp"
                         android:textStyle="bold"
                         android:textAlignment="center"
-                        android:text="Threshold"/>
+                        android:text="Score Threshold"/>
                     <TextView
-                        android:id="@+id/tv_table_onestroke_threshold"
+                        android:id="@+id/tv_table_onestroke_score_threshold"
+                        android:layout_column="1"
+                        android:textAlignment="textEnd"
+                        android:layout_marginLeft="30sp"
+                        android:textSize="17sp" />
+                </TableRow>
+                <TableRow>
+                    <TextView
+                        android:layout_column="0"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:textAlignment="center"
+                        android:text="Current Ratio"/>
+                    <TextView
+                        android:id="@+id/tv_table_onestroke_ratio"
+                        android:layout_column="1"
+                        android:textAlignment="textEnd"
+                        android:layout_marginLeft="30sp"
+                        android:textSize="17sp" />
+                </TableRow>
+                <TableRow>
+                    <TextView
+                        android:layout_column="0"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:textAlignment="center"
+                        android:text="Ratio Threshold"/>
+                    <TextView
+                        android:id="@+id/tv_table_onestroke_ratio_threshold"
                         android:layout_column="1"
                         android:textAlignment="textEnd"
                         android:layout_marginLeft="30sp"

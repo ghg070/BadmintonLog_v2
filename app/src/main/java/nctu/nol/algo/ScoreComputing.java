@@ -87,13 +87,19 @@ public class ScoreComputing {
                             }
                         }
 
-                        // Count score with specific freq bands and dataset
-                        float score = CountWindowScore(w_dataset, FreqIdxs, FreqMax);
-                        WindowScore w_score = new WindowScore(w_timestamp, score);
+                        // Get Spectrum
+                        FrequencyBandModel fbm  = new FrequencyBandModel();
+                        CountSpectrum cs = new CountSpectrum(FrequencyBandModel.FFT_LENGTH);
+                        final Vector<FrequencyBandModel.FreqBand> spec = fbm.getSpectrum(cs, 0, w_dataset, SoundWaveHandler.SAMPLE_RATE);
+
+                        // Count score and ratio
+                        float score = CountWindowScore(spec, FreqIdxs, FreqMax);
+                        float ratio = CountWindowRatio(spec, FreqIdxs);
+                        WindowScore w_score = new WindowScore(w_timestamp, score, ratio);
                         AllWindowScores_for_file.add(w_score);
                         AllWindowScores_for_algo.add(w_score);
 
-                        // Log.d(TAG, w_timestamp + " " + score);
+                        Log.d(TAG, w_timestamp + " " + score + " " + ratio);
                     }
                 }
             }
@@ -101,14 +107,31 @@ public class ScoreComputing {
         computing_t.start();
     }
 
-    public static float CountWindowScore(final float[] dataset, final List<Integer> FreqIdxs, final float FreqMax){
-        CountSpectrum CS = new CountSpectrum();
+    public static float CountWindowScore(final Vector<FrequencyBandModel.FreqBand> spec, final List<Integer> FreqIdxs, final float FreqMax){
         float score = 0;
-        for (int j = 0; j < FreqIdxs.size(); j++) {
-            float power = CS.dft_specific_idx(FreqIdxs.get(j), dataset);
-            score += power / FreqMax;
+        for(int i = 0; i < FreqIdxs.size(); i++) {
+            int idx = FreqIdxs.get(i);
+            final FrequencyBandModel.FreqBand fb = spec.get(idx);
+            score += fb.Power;
         }
-        return score;
+        return score/FreqMax;
+    }
+
+    public static float CountWindowRatio(final Vector<FrequencyBandModel.FreqBand> spec, final List<Integer> FreqIdxs){
+        double mainPower = 0, SquareRootPower = 0;
+
+        // totalPower
+        for(int i = 0; i < spec.size(); i++ )
+            SquareRootPower += Math.pow(spec.get(i).Power, 2);
+        SquareRootPower = Math.sqrt(SquareRootPower);
+
+        // mainFreqPower
+        for(int i = 0; i < FreqIdxs.size(); i++) {
+            int idx = FreqIdxs.get(i);
+            final FrequencyBandModel.FreqBand fb = spec.get(idx);
+            mainPower += fb.Power;
+        }
+        return (SquareRootPower != 0) ? (float)(mainPower/SquareRootPower) : 0;
     }
 
     /* 啟動Thread寫檔, 紀錄每個Window的分數 */
@@ -145,11 +168,13 @@ public class ScoreComputing {
     public class WindowScore{
         public long w_time; //用來儲存Window內最大值的時間戳記
         public float score; //用來儲存Window經計算後的分數
+        public float ratio; //用來儲存Window Ratio = 響應頻率總合/全部頻譜總合
 
         /* Constructor, Class內的初始化(參數之類的), 在new這個Class的時候會自動觸發 */
-        public WindowScore(long timestamp, float score){
+        public WindowScore(long timestamp, float score, float ratio){
             this.w_time = timestamp;
             this.score = score;
+            this.ratio = ratio;
         }
     }
 

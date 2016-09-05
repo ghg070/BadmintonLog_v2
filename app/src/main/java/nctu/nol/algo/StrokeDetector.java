@@ -28,6 +28,7 @@ public class StrokeDetector {
 
     /* Rule Related */
     private static double SCORETHRESHOLD = 0.55; // default, You can change by other method
+    public static double RATIOTHRESHOLD = 0.325; // fixed, SumMainFreqPower / SquareSumAllFreqPower
     private static final int WINDOWTHRESHOLD = 2;
     private static final double alpha = 0.15; // used to count score threshold
     private static final int RESERVEDWINDOWNUM = 10; //Window數超過該變數後, 才開始進行判斷
@@ -70,9 +71,13 @@ public class StrokeDetector {
             for (int j = i; (j-i) < w_size; j++)
                 w_dataset[j-i] = audio_samples[j];
 
+            // Get Spectrum
+            FrequencyBandModel fbm  = new FrequencyBandModel();
+            CountSpectrum cs = new CountSpectrum(FrequencyBandModel.FFT_LENGTH);
+            final Vector<FrequencyBandModel.FreqBand> spec = fbm.getSpectrum(cs, 0, w_dataset, SoundWaveHandler.SAMPLE_RATE);
 
-            // Count score with specific freq bands and dataset
-            float score = ScoreComputing.CountWindowScore(w_dataset, FreqIdxs, FreqMax);
+            // Count score
+            float score = ScoreComputing.CountWindowScore(spec, FreqIdxs, FreqMax);
             AllScores.add(score);
             sum += score;
         }
@@ -137,7 +142,7 @@ public class StrokeDetector {
         long stroke_t = 0;
         for (int i = 0; i < WINDOWTHRESHOLD; i++) {
             ScoreComputing.WindowScore ws = AllWindows.poll();
-            if (ws.score < SCORETHRESHOLD)
+            if (ws.score < SCORETHRESHOLD || ws.ratio < RATIOTHRESHOLD)
                 throw new NotMatchRuleException();
 
             if(i == 0)
