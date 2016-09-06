@@ -76,14 +76,14 @@ public class ScoreComputing {
                         long w_timestamp = 0;
 
                         // Copy data in specific window, and find timestamp of max value
-                        float max = Float.NEGATIVE_INFINITY;
+                        float audiomax = Float.NEGATIVE_INFINITY;
                         for (int i = 0; i < w_size; i++) {
                             SoundWaveHandler.AudioData ad = curSample.poll();
                             float w_data = ad.data;
                             w_dataset[i] = w_data;
-                            if (max < Math.abs(w_data)) {
+                            if (audiomax < Math.abs(w_data)) {
                                 w_timestamp = ad.time;
-                                max = Math.abs(w_data);
+                                audiomax = Math.abs(w_data);
                             }
                         }
 
@@ -95,7 +95,7 @@ public class ScoreComputing {
                         // Count score and ratio
                         float score = CountWindowScore(spec, FreqIdxs, FreqMax);
                         float ratio = CountWindowRatio(spec, FreqIdxs);
-                        WindowScore w_score = new WindowScore(w_timestamp, score, ratio);
+                        WindowScore w_score = new WindowScore(w_timestamp, score, ratio, audiomax);
                         AllWindowScores_for_file.add(w_score);
                         AllWindowScores_for_algo.add(w_score);
 
@@ -169,12 +169,14 @@ public class ScoreComputing {
         public long w_time; //用來儲存Window內最大值的時間戳記
         public float score; //用來儲存Window經計算後的分數
         public float ratio; //用來儲存Window Ratio = 響應頻率總合/全部頻譜總合
+        public float audio_max; //用來儲存音訊能量最大值
 
         /* Constructor, Class內的初始化(參數之類的), 在new這個Class的時候會自動觸發 */
-        public WindowScore(long timestamp, float score, float ratio){
+        public WindowScore(long timestamp, float score, float ratio, float audio_max){
             this.w_time = timestamp;
             this.score = score;
             this.ratio = ratio;
+            this.audio_max = audio_max;
         }
     }
 

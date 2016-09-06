@@ -25,6 +25,8 @@ public class StrokeDetector {
 
     /* Window Related */
     private ScoreComputing curSC;
+    private long prev_window_time;
+    private float prev_window_audiomax = Float.NEGATIVE_INFINITY;
 
     /* Rule Related */
     private static double SCORETHRESHOLD = 0.55; // default, You can change by other method
@@ -142,11 +144,16 @@ public class StrokeDetector {
         long stroke_t = 0;
         for (int i = 0; i < WINDOWTHRESHOLD; i++) {
             ScoreComputing.WindowScore ws = AllWindows.poll();
-            if (ws.score < SCORETHRESHOLD || ws.ratio < RATIOTHRESHOLD)
+            if (ws.score < SCORETHRESHOLD || ws.ratio < RATIOTHRESHOLD) {
+                prev_window_time = ws.w_time;
+                prev_window_audiomax = ws.audio_max;
                 throw new NotMatchRuleException();
+            }
 
-            if(i == 0)
+            if(i == 0 && prev_window_audiomax < ws.audio_max)
                 stroke_t = ws.w_time;
+            else if(i == 0 && prev_window_audiomax >= ws.audio_max)
+                stroke_t = prev_window_time;
         }
         return stroke_t;
     }
@@ -156,6 +163,8 @@ public class StrokeDetector {
         int jump_w = 8;
         while(AllWindows.size() > 0){
             ScoreComputing.WindowScore ws = AllWindows.poll();
+            prev_window_time = ws.w_time;
+            prev_window_audiomax = ws.audio_max;
             jump_w--;
             if (ws.score < SCORETHRESHOLD && jump_w < 1)
                 break;
