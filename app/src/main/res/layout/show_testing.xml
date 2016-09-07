@@ -209,7 +209,7 @@
                         android:textSize="17sp"
                         android:textStyle="bold"
                         android:textAlignment="center"
-                        android:text="Score Threshold"/>
+                        android:text="Weight Threshold"/>
                     <TextView
                         android:id="@+id/tv_table_onestroke_score_threshold"
                         android:layout_column="1"
