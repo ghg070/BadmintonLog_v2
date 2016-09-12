@@ -9,15 +9,18 @@ import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.Vector;
 
 import nctu.nol.algo.CountSpectrum;
 import nctu.nol.algo.FrequencyBandModel;
+import nctu.nol.algo.StrokeDetector;
 import nctu.nol.badmintonlogprogram.chart.AudioWaveChart;
 import nctu.nol.badmintonlogprogram.chart.SpectrumChart;
 import nctu.nol.bt.devices.SoundWaveHandler;
@@ -39,7 +42,9 @@ public class ShowTestingData extends Activity {
     private TextView[] tv_Freqs = new TextView[ROWCOUNT];
     private TextView[] tv_Weight = new TextView[ROWCOUNT];
     private TextView tv_WeightTotal;
-    private TextView tv_Threshold;
+    private TextView tv_Ratio;
+    private TextView tv_ScoreThreshold;
+    private TextView tv_RatioThreshold;
 
     // Extra data
     private long StrokeTime;
@@ -57,7 +62,9 @@ public class ShowTestingData extends Activity {
     private double[] fft_value = {};
     private double [] fft_mainfreq = new double[FrequencyBandModel.PEAKFREQ_NUM],
                 fft_mainfreq_score = new double[FrequencyBandModel.PEAKFREQ_NUM];
-    private double Threshold = 0;
+    private double fft_mainfreq_ratio = 0;
+    private double ScoreThreshold = 0;
+    private double RatioThreshold = StrokeDetector.RATIOTHRESHOLD;
     private Button bt_prev, bt_next;
     private int CurBlockIdx = 0;
     private int BlockNum = 0;
@@ -114,7 +121,9 @@ public class ShowTestingData extends Activity {
         tv_Weight[4] = (TextView) findViewById(R.id.tv_table_onestroke_weight5);
 
         tv_WeightTotal = (TextView) findViewById(R.id.tv_table_onestroke_weight_total);
-        tv_Threshold = (TextView) findViewById(R.id.tv_table_onestroke_threshold);
+        tv_ScoreThreshold = (TextView) findViewById(R.id.tv_table_onestroke_score_threshold);
+        tv_Ratio = (TextView) findViewById(R.id.tv_table_onestroke_ratio);
+        tv_RatioThreshold = (TextView) findViewById(R.id.tv_table_onestroke_ratio_threshold);
     }
 
     private void Prepare(){
@@ -236,15 +245,26 @@ public class ShowTestingData extends Activity {
         MainFreqListItem.FreqModel model = mflistDB.GetFreqModel(match_traing_id);
         mflistDB.close();
 
-        Threshold = model.threshold;
+        // Get Score Threshold
+        ScoreThreshold = model.threshold;
+
+        // Get Max Freq Power
         double maxValue = Double.NEGATIVE_INFINITY;
         for(int i = 0 ; i < model.vals.length; i++){
             if(model.vals[i] > maxValue)
                 maxValue = model.vals[i];
         }
 
+        // Count Total Freq Power
+        double SquareRootPower = 0;
+        for(int i = 0 ; i < spec.size(); i++)
+            SquareRootPower += Math.pow(spec.get(i).Power, 2);
+        SquareRootPower = Math.sqrt(SquareRootPower);
+
+        // Count Score for Each Main Freqs
         double[] mFreq = new double[FrequencyBandModel.PEAKFREQ_NUM];
         double[] mValue = new double[FrequencyBandModel.PEAKFREQ_NUM];
+        double powerSum = 0;
         for(int i = 0; i < FrequencyBandModel.PEAKFREQ_NUM; i++){
             int f_idx = (int)Math.round(model.freqs[i] / ((double) SoundWaveHandler.SAMPLE_RATE / FrequencyBandModel.FFT_LENGTH));
             mFreq[i] = fft_freq[f_idx];
@@ -252,24 +272,31 @@ public class ShowTestingData extends Activity {
 
             fft_mainfreq[i] = fft_freq[f_idx];
             fft_mainfreq_score[i] = fft_value[f_idx]/maxValue;
+            powerSum += fft_value[f_idx];
         }
+        fft_mainfreq_ratio = (SquareRootPower != 0) ? powerSum/SquareRootPower : 0;
+
         bubbleSort(mFreq, mValue);
         sc.AddChartDataset(mFreq, mValue, Color.RED);
     }
 
-    private double HandleFrequencyTable(){
-        double sum = 0;
+    private Pair<Double, Double> HandleFrequencyTable(){
+        double weightSum = 0, ratio = 0;
         for(int i = 0; i < ROWCOUNT; i++){
             if(fft_mainfreq.length > i) {
                 tv_Freqs[ROWCOUNT - i - 1].setText(String.format("%d",Math.round(fft_mainfreq[i])));
                 tv_Weight[ROWCOUNT - i - 1].setText(String.format("%.2f",fft_mainfreq_score[i]));
-                sum += fft_mainfreq_score[i];
+                weightSum += fft_mainfreq_score[i];
             }
         }
-        tv_WeightTotal.setText(String.format("%.2f", sum));
-        tv_Threshold.setText(String.format("%.2f", Threshold));
+        ratio = fft_mainfreq_ratio;
 
-        return sum;
+        tv_WeightTotal.setText(String.format("%.2f", weightSum));
+        tv_ScoreThreshold.setText(String.format("%.2f", ScoreThreshold));
+        tv_Ratio.setText(String.format("%.2f", fft_mainfreq_ratio));
+        tv_RatioThreshold.setText(String.format("%.2f", RatioThreshold));
+
+        return new Pair<>(weightSum, ratio);
     }
 
 
@@ -288,8 +315,11 @@ public class ShowTestingData extends Activity {
                         if(MoveToCenter)
                             awc.MovePointToCenter(audio_time[data_idx], 0.5, 0.5);
 
-                        double weight_sum = HandleFrequencyTable();
-                        awc.ChangeSeriesColor(CurBlockIdx + 2, (weight_sum > Threshold) ? Color.argb(60, 0, 255, 0) : Color.argb(60, 40, 40, 40)); // 0: Audio Wave, 1: Peak Point, 2~end: Block
+                        Pair<Double,Double> result = HandleFrequencyTable();
+                        awc.ChangeSeriesColor(CurBlockIdx + 2,
+                                (result.first > ScoreThreshold && result.second > RatioThreshold)
+                                        ? Color.argb(60, 0, 255, 0)
+                                        : Color.argb(60, 40, 40, 40)); // 0: Audio Wave, 1: Peak Point, 2~end: Block
                         sc.MakeChart();
                     }
                 });
