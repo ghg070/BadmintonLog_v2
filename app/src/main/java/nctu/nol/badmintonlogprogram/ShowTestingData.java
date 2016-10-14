@@ -40,8 +40,8 @@ public class ShowTestingData extends Activity {
 
     private final static int ROWCOUNT = FrequencyBandModel.PEAKFREQ_NUM;
     private TextView[] tv_Freqs = new TextView[ROWCOUNT];
-    private TextView[] tv_Weight = new TextView[ROWCOUNT];
-    private TextView tv_WeightTotal;
+    private TextView[] tv_Score = new TextView[ROWCOUNT];
+    private TextView tv_ScoreTotal;
     private TextView tv_Ratio;
     private TextView tv_ScoreThreshold;
     private TextView tv_RatioThreshold;
@@ -114,13 +114,13 @@ public class ShowTestingData extends Activity {
         tv_Freqs[3] = (TextView) findViewById(R.id.tv_table_onestroke_freq4);
         tv_Freqs[4] = (TextView) findViewById(R.id.tv_table_onestroke_freq5);
 
-        tv_Weight[0] = (TextView) findViewById(R.id.tv_table_onestroke_weight1);
-        tv_Weight[1] = (TextView) findViewById(R.id.tv_table_onestroke_weight2);
-        tv_Weight[2] = (TextView) findViewById(R.id.tv_table_onestroke_weight3);
-        tv_Weight[3] = (TextView) findViewById(R.id.tv_table_onestroke_weight4);
-        tv_Weight[4] = (TextView) findViewById(R.id.tv_table_onestroke_weight5);
+        tv_Score[0] = (TextView) findViewById(R.id.tv_table_onestroke_score1);
+        tv_Score[1] = (TextView) findViewById(R.id.tv_table_onestroke_score2);
+        tv_Score[2] = (TextView) findViewById(R.id.tv_table_onestroke_score3);
+        tv_Score[3] = (TextView) findViewById(R.id.tv_table_onestroke_score4);
+        tv_Score[4] = (TextView) findViewById(R.id.tv_table_onestroke_score5);
 
-        tv_WeightTotal = (TextView) findViewById(R.id.tv_table_onestroke_weight_total);
+        tv_ScoreTotal = (TextView) findViewById(R.id.tv_table_onestroke_score_total);
         tv_ScoreThreshold = (TextView) findViewById(R.id.tv_table_onestroke_score_threshold);
         tv_Ratio = (TextView) findViewById(R.id.tv_table_onestroke_ratio);
         tv_RatioThreshold = (TextView) findViewById(R.id.tv_table_onestroke_ratio_threshold);
@@ -256,15 +256,15 @@ public class ShowTestingData extends Activity {
         }
 
         // Count Total Freq Power
-        double SquareRootPower = 0;
+        double SquareRootTotalPower = 0;
         for(int i = 0 ; i < spec.size(); i++)
-            SquareRootPower += Math.pow(spec.get(i).Power, 2);
-        SquareRootPower = Math.sqrt(SquareRootPower);
+            SquareRootTotalPower += Math.pow(spec.get(i).Power, 2);
+        SquareRootTotalPower = Math.sqrt(SquareRootTotalPower);
 
-        // Count Score for Each Main Freqs
+        // Count Score and Ratio for Each Main Freqs
         double[] mFreq = new double[FrequencyBandModel.PEAKFREQ_NUM];
         double[] mValue = new double[FrequencyBandModel.PEAKFREQ_NUM];
-        double powerSum = 0;
+        double SquareRootMainPower = 0;
         for(int i = 0; i < FrequencyBandModel.PEAKFREQ_NUM; i++){
             int f_idx = (int)Math.round(model.freqs[i] / ((double) SoundWaveHandler.SAMPLE_RATE / FrequencyBandModel.FFT_LENGTH));
             mFreq[i] = fft_freq[f_idx];
@@ -272,9 +272,11 @@ public class ShowTestingData extends Activity {
 
             fft_mainfreq[i] = fft_freq[f_idx];
             fft_mainfreq_score[i] = fft_value[f_idx]/maxValue;
-            powerSum += fft_value[f_idx];
+            SquareRootMainPower += Math.pow(fft_value[f_idx],2);
         }
-        fft_mainfreq_ratio = (SquareRootPower != 0) ? powerSum/SquareRootPower : 0;
+        SquareRootMainPower = Math.sqrt(SquareRootMainPower);
+
+        fft_mainfreq_ratio = (SquareRootTotalPower != 0) ? SquareRootMainPower/SquareRootTotalPower : 0;
 
         bubbleSort(mFreq, mValue);
         sc.AddChartDataset(mFreq, mValue, Color.RED);
@@ -285,13 +287,13 @@ public class ShowTestingData extends Activity {
         for(int i = 0; i < ROWCOUNT; i++){
             if(fft_mainfreq.length > i) {
                 tv_Freqs[ROWCOUNT - i - 1].setText(String.format("%d",Math.round(fft_mainfreq[i])));
-                tv_Weight[ROWCOUNT - i - 1].setText(String.format("%.2f",fft_mainfreq_score[i]));
+                tv_Score[ROWCOUNT - i - 1].setText(String.format("%.2f",fft_mainfreq_score[i]));
                 weightSum += fft_mainfreq_score[i];
             }
         }
         ratio = fft_mainfreq_ratio;
 
-        tv_WeightTotal.setText(String.format("%.2f", weightSum));
+        tv_ScoreTotal.setText(String.format("%.2f", weightSum));
         tv_ScoreThreshold.setText(String.format("%.2f", ScoreThreshold));
         tv_Ratio.setText(String.format("%.2f", fft_mainfreq_ratio));
         tv_RatioThreshold.setText(String.format("%.2f", RatioThreshold));

@@ -118,20 +118,22 @@ public class ScoreComputing {
     }
 
     public static float CountWindowRatio(final Vector<FrequencyBandModel.FreqBand> spec, final List<Integer> FreqIdxs){
-        double mainPower = 0, SquareRootPower = 0;
+        double SquareRootMainPower = 0, SquareRootTotalPower = 0;
 
         // totalPower
         for(int i = 0; i < spec.size(); i++ )
-            SquareRootPower += Math.pow(spec.get(i).Power, 2);
-        SquareRootPower = Math.sqrt(SquareRootPower);
+            SquareRootTotalPower += Math.pow(spec.get(i).Power, 2);
+        SquareRootTotalPower = Math.sqrt(SquareRootTotalPower);
 
         // mainFreqPower
         for(int i = 0; i < FreqIdxs.size(); i++) {
             int idx = FreqIdxs.get(i);
             final FrequencyBandModel.FreqBand fb = spec.get(idx);
-            mainPower += fb.Power;
+            SquareRootMainPower += Math.pow(fb.Power, 2);
         }
-        return (SquareRootPower != 0) ? (float)(mainPower/SquareRootPower) : 0;
+        SquareRootMainPower = Math.sqrt(SquareRootMainPower);
+
+        return (SquareRootTotalPower != 0) ? (float)(SquareRootMainPower/SquareRootTotalPower) : 0;
     }
 
     /* 啟動Thread寫檔, 紀錄每個Window的分數 */

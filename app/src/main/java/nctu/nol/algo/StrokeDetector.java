@@ -30,7 +30,7 @@ public class StrokeDetector {
 
     /* Rule Related */
     private static double SCORETHRESHOLD = 0.55; // default, You can change by other method
-    public static double RATIOTHRESHOLD = 0.35; // fixed, SumMainFreqPower / SquareSumAllFreqPower
+    public static double RATIOTHRESHOLD = 0.15; // fixed, SquareSumMainFreqPower / SquareSumAllFreqPower
     private static final int WINDOWTHRESHOLD = 2;
     private static final double alpha = 0.15; // used to count score threshold
     private static final int RESERVEDWINDOWNUM = 10; //Window數超過該變數後, 才開始進行判斷
